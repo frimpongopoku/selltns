@@ -1,0 +1,97 @@
+import Link from "next/link";
+import { ClipboardList, Package, Wallet, TrendingUp } from "lucide-react";
+import { getOrders, getProducts } from "@/lib/api";
+import { StatCard } from "@/components/admin/stat-card";
+import { StatusBadge } from "@/components/storefront/status-badge";
+import { formatMoney, formatDate } from "@/lib/format";
+import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+export const metadata = { title: "Dashboard" };
+
+export default async function AdminDashboardPage() {
+  const [orders, products] = await Promise.all([getOrders(), getProducts()]);
+
+  const pending = orders.filter((o) => o.status === "PENDING").length;
+  const confirmed = orders.filter((o) => ["CONFIRMED", "MODIFIED"].includes(o.status)).length;
+  const completedTotal = orders
+    .filter((o) => o.status === "COMPLETED")
+    .reduce((sum, o) => sum + o.total, 0);
+  const activeProducts = products.filter((p) => p.isActive).length;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Here&apos;s what&apos;s happening with your store.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: "Pending order requests", value: String(pending), icon: ClipboardList, hint: "Need review" },
+          { label: "Confirmed / awaiting payment", value: String(confirmed), icon: Wallet },
+          { label: "Completed revenue", value: formatMoney(completedTotal), icon: TrendingUp },
+          { label: "Active products", value: String(activeProducts), icon: Package, hint: `${products.length} total` },
+        ].map((stat, i) => (
+          <div
+            key={stat.label}
+            style={{ animationDelay: `${i * 60}ms` }}
+            className="animate-in fade-in-0 slide-in-from-bottom-1 fill-mode-both duration-300"
+          >
+            <StatCard {...stat} />
+          </div>
+        ))}
+      </div>
+
+      <Card className="mt-9 p-0">
+        <div className="flex items-center justify-between border-b p-5">
+          <h2 className="font-medium">Recent order requests</h2>
+          <Link href="/admin/orders" className="text-sm text-primary hover:underline">
+            View all
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Customer</TableHead>
+                <TableHead>Items</TableHead>
+                <TableHead>Total</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.slice(0, 5).map((order) => (
+                <TableRow
+                  key={order.id}
+                  className="cursor-pointer"
+                >
+                  <TableCell>
+                    <Link href={`/admin/orders/${order.id}`} className="hover:underline">
+                      {order.customerName}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {order.items.length} item{order.items.length > 1 ? "s" : ""}
+                  </TableCell>
+                  <TableCell>{formatMoney(order.total)}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={order.status} />
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(order.createdAt)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+    </div>
+  );
+}

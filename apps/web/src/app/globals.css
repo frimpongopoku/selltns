@@ -1,0 +1,280 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-manrope);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ==========================================================================
+   Storefront theming — driven by ThemeTokens, see components/theme/theme-scope.tsx
+
+   ThemeScope only inlines the values that are actually customizable per
+   tenant (primary/accent/fonts/radius) as --store-*-custom. Background,
+   foreground, secondary and the light/dark resolution of primary + accent
+   live here as plain CSS keyed by [data-template] and .dark, so dark mode
+   works via the cascade with no client-side merging logic.
+   ========================================================================== */
+
+[data-template] {
+  --store-primary: var(--store-primary-custom);
+  --store-accent: var(--store-accent-custom);
+  /* Text placed on top of a primary-colored surface (e.g. store-btn-primary).
+     Defaults to the page background color, which reads correctly whenever
+     primary and background sit at opposite ends of the lightness scale. */
+  --store-primary-fg: var(--store-bg);
+  --store-border: color-mix(in oklab, var(--store-fg) 15%, var(--store-bg) 85%);
+  --store-hover-bg: color-mix(in oklab, var(--store-fg) 7%, transparent);
+  --store-muted-fg: color-mix(in oklab, var(--store-fg) 60%, var(--store-bg) 40%);
+  --store-surface: color-mix(in oklab, var(--store-fg) 3%, var(--store-bg) 97%);
+}
+
+[data-template="FASHION"] {
+  --store-bg: #faf6f1;
+  --store-fg: #1f1b16;
+  --store-secondary: #6b5b4d;
+}
+.dark [data-template="FASHION"] {
+  --store-bg: #1c1714;
+  --store-fg: #f5ece2;
+  --store-secondary: #c9b8a8;
+  --store-primary-fg: #ffffff;
+}
+
+[data-template="GENERAL"] {
+  --store-bg: #f7f5f1;
+  --store-fg: #1b2a27;
+  --store-secondary: #5b6b66;
+}
+.dark [data-template="GENERAL"] {
+  --store-bg: #12211d;
+  --store-fg: #eaf3ef;
+  --store-secondary: #9fb3ac;
+  --store-primary-fg: #ffffff;
+}
+
+[data-template="CLEAN"] {
+  --store-bg: #ffffff;
+  --store-fg: #111111;
+  --store-secondary: #6b6b6b;
+}
+.dark [data-template="CLEAN"] {
+  --store-bg: #0a0a0a;
+  --store-fg: #f2f2f2;
+  --store-secondary: #a3a3a3;
+  /* Clean's primary is always near-black in light mode (the button itself
+     IS the dark surface) — on a dark page that would disappear, so this is
+     the one template where primary flips instead of just bg/fg. */
+  --store-primary: #ffffff;
+}
+
+@layer components {
+  .store-heading {
+    font-family: var(--store-font-heading);
+  }
+  .store-btn-primary {
+    background-color: var(--store-primary);
+    color: var(--store-primary-fg);
+    border-radius: var(--store-radius);
+    transition:
+      filter 150ms ease,
+      transform 150ms ease;
+  }
+  .store-btn-primary:hover {
+    filter: brightness(0.92);
+  }
+  .store-btn-primary:active {
+    transform: scale(0.97);
+  }
+  .store-btn-secondary {
+    background-color: transparent;
+    color: var(--store-fg);
+    border: 1px solid var(--store-border);
+    border-radius: var(--store-radius);
+    transition:
+      background-color 150ms ease,
+      transform 150ms ease;
+  }
+  .store-btn-secondary:hover {
+    background-color: var(--store-hover-bg);
+  }
+  .store-btn-secondary:active {
+    transform: scale(0.97);
+  }
+  .store-card {
+    border-radius: var(--store-radius);
+    border: 1px solid var(--store-border);
+    transition: border-color 150ms ease;
+  }
+  .store-accent-text {
+    color: var(--store-accent);
+  }
+  .store-muted {
+    color: var(--store-muted-fg);
+  }
+  .store-surface {
+    background-color: var(--store-surface);
+  }
+  .store-input {
+    width: 100%;
+    background-color: var(--store-bg);
+    color: var(--store-fg);
+    border: 1px solid var(--store-border);
+    border-radius: var(--store-radius);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+  .store-input::placeholder {
+    color: var(--store-muted-fg);
+  }
+  .store-input:focus {
+    outline: none;
+    border-color: var(--store-primary);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--store-primary) 18%, transparent);
+  }
+  .store-label {
+    color: var(--store-fg);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+}
+
+[data-template="CLEAN"] .store-heading {
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+[data-template="CLEAN"] .store-nav-link {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+}
+
+[data-template="FASHION"] .store-heading {
+  font-style: italic;
+}
