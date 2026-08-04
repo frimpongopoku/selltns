@@ -131,6 +131,7 @@ export const products: Product[] = [
     stock: 14,
     isActive: true,
     images: [gallery[2].url, gallery[0].url],
+    displayOrder: 0,
     createdAt: '2026-01-10T10:00:00.000Z',
   },
   {
@@ -145,6 +146,7 @@ export const products: Product[] = [
     stock: 22,
     isActive: true,
     images: [gallery[1].url],
+    displayOrder: 1,
     createdAt: '2026-01-12T10:00:00.000Z',
   },
   {
@@ -159,6 +161,7 @@ export const products: Product[] = [
     stock: 30,
     isActive: true,
     images: [gallery[3].url],
+    displayOrder: 2,
     createdAt: '2026-01-14T10:00:00.000Z',
   },
   {
@@ -173,6 +176,7 @@ export const products: Product[] = [
     stock: 8,
     isActive: true,
     images: [gallery[4].url],
+    displayOrder: 3,
     createdAt: '2026-01-16T10:00:00.000Z',
   },
   {
@@ -187,6 +191,7 @@ export const products: Product[] = [
     stock: 0,
     isActive: true,
     images: [gallery[5].url],
+    displayOrder: 4,
     createdAt: '2026-01-18T10:00:00.000Z',
   },
   {
@@ -201,6 +206,7 @@ export const products: Product[] = [
     stock: 17,
     isActive: false,
     images: [gallery[2].url],
+    displayOrder: 5,
     createdAt: '2026-01-20T10:00:00.000Z',
   },
 ];
@@ -305,6 +311,7 @@ export const orders: Order[] = [
     trackingToken: 'trk_naa8842',
     createdAt: '2026-07-20T08:12:00.000Z',
     confirmedAt: null,
+    seenByAdminAt: null,
     history: [
       { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-20T08:12:00.000Z' },
     ],
@@ -322,6 +329,7 @@ export const orders: Order[] = [
     trackingToken: 'trk_kwab3310',
     createdAt: '2026-07-18T14:40:00.000Z',
     confirmedAt: '2026-07-18T16:05:00.000Z',
+    seenByAdminAt: '2026-07-18T16:00:00.000Z',
     history: [
       { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-18T14:40:00.000Z' },
       { status: 'CONFIRMED', note: 'Confirmed by Amara — ready for payment', at: '2026-07-18T16:05:00.000Z' },
@@ -341,6 +349,7 @@ export const orders: Order[] = [
     trackingToken: 'trk_efua2201',
     createdAt: '2026-07-15T09:22:00.000Z',
     confirmedAt: '2026-07-15T11:00:00.000Z',
+    seenByAdminAt: '2026-07-15T10:50:00.000Z',
     history: [
       { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-15T09:22:00.000Z' },
       { status: 'CONFIRMED', note: 'Confirmed by Kojo', at: '2026-07-15T11:00:00.000Z' },
@@ -360,6 +369,7 @@ export const orders: Order[] = [
     trackingToken: 'trk_yaw9981',
     createdAt: '2026-07-02T12:00:00.000Z',
     confirmedAt: '2026-07-02T13:00:00.000Z',
+    seenByAdminAt: '2026-07-02T12:45:00.000Z',
     history: [
       { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-02T12:00:00.000Z' },
       { status: 'CONFIRMED', note: 'Confirmed by Amara', at: '2026-07-02T13:00:00.000Z' },
@@ -379,6 +389,7 @@ export const orders: Order[] = [
     trackingToken: 'trk_aben7765',
     createdAt: '2026-06-28T15:30:00.000Z',
     confirmedAt: null,
+    seenByAdminAt: '2026-06-28T15:45:00.000Z',
     history: [
       { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-06-28T15:30:00.000Z' },
       { status: 'CANCELLED', note: 'Out of stock — cancelled by Amara', at: '2026-06-29T08:00:00.000Z' },

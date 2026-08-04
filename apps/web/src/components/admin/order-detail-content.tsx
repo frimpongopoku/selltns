@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { formatMoney, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@/components/storefront/status-badge";
 import { OrderActions } from "@/components/admin/order-actions";
 import { Card } from "@/components/ui/card";
+import { markOrderSeen } from "@/lib/api";
 import type { Order } from "@/lib/types";
 
 export function OrderDetailContent({
@@ -19,6 +20,15 @@ export function OrderDetailContent({
   onUpdated?: (order: Order) => void;
 }) {
   const [order, setOrder] = useState(initialOrder);
+
+  useEffect(() => {
+    if (order.seenByAdminAt) return;
+    markOrderSeen(order.id).then((updated) => {
+      setOrder(updated);
+      onUpdated?.(updated);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order.id]);
 
   function handleUpdated(updated: Order) {
     setOrder(updated);

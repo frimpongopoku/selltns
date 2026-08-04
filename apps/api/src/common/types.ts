@@ -61,6 +61,7 @@ export interface Product {
   stock: number;
   isActive: boolean;
   images: string[];
+  displayOrder: number;
   createdAt: string;
 }
 
@@ -105,6 +106,7 @@ export interface Order {
   trackingToken: string;
   createdAt: string;
   confirmedAt: string | null;
+  seenByAdminAt: string | null;
   history: { status: OrderStatus; note: string; at: string }[];
 }
 

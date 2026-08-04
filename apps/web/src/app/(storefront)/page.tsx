@@ -1,6 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getCollections, getProducts, getTenant } from "@/lib/api";
 import { ProductCard } from "@/components/storefront/product-card";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getTenant();
+  const description = `Small-batch, handmade pieces from ${tenant.name} — request your favorites and we'll confirm before arranging payment.`;
+  return {
+    title: tenant.name,
+    description,
+    openGraph: { title: tenant.name, description },
+  };
+}
 
 export default async function StoreHomePage() {
   const [tenant, products, collections] = await Promise.all([

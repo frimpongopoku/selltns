@@ -1,7 +1,23 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { getCollection, getTenant } from "@/lib/api";
 import { ThemeScope } from "@/components/theme/theme-scope";
 import { ProductCard } from "@/components/storefront/product-card";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const collection = await getCollection(slug).catch(() => null);
+  if (!collection) return { title: "Collection not found" };
+  return {
+    title: collection.seoTitle,
+    description: collection.seoDescription,
+    openGraph: { title: collection.seoTitle, description: collection.seoDescription },
+  };
+}
 
 export default async function CollectionPage({
   params,

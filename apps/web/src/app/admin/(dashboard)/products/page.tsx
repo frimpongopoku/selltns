@@ -36,6 +36,21 @@ export default async function AdminProductsPage() {
         </Link>
       </div>
 
+      {products.length === 0 ? (
+        <Card className="mt-7 flex flex-col items-center gap-3 py-16 text-center">
+          <p className="font-medium">No products yet</p>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Add your first product to start building your catalog — it&apos;ll
+            show up here and on your storefront once it&apos;s active.
+          </p>
+          <Link href="/admin/products/new">
+            <Button className="mt-2 gap-1.5">
+              <Plus className="h-4 w-4" />
+              New product
+            </Button>
+          </Link>
+        </Card>
+      ) : (
       <Card className="mt-7 p-0">
         <div className="overflow-x-auto">
           <Table>
@@ -84,6 +99,7 @@ export default async function AdminProductsPage() {
           </Table>
         </div>
       </Card>
+      )}
     </div>
   );
 }

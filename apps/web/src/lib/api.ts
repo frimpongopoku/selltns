@@ -99,8 +99,10 @@ export const getOrderByToken = (token: string) =>
 export const createOrder = (input: {
   customerName: string;
   customerContact: string;
-  items: OrderItem[];
+  items: { productId: string; quantity: number }[];
 }) => request<Order>("/orders", { method: "POST", body: JSON.stringify(input) });
+export const markOrderSeen = (id: string) =>
+  request<Order>(`/orders/${id}/seen`, { method: "PATCH" });
 export const updateOrderStatus = (
   id: string,
   status: OrderStatus,

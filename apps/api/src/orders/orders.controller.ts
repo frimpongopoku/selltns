@@ -2,6 +2,11 @@ import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import type { OrderItem, OrderStatus } from '../common/types';
 
+interface CreateOrderItemInput {
+  productId: string;
+  quantity: number;
+}
+
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -27,10 +32,15 @@ export class OrdersController {
     body: {
       customerName: string;
       customerContact: string;
-      items: OrderItem[];
+      items: CreateOrderItemInput[];
     },
   ) {
     return this.ordersService.create(body);
+  }
+
+  @Patch(':id/seen')
+  markSeen(@Param('id') id: string) {
+    return this.ordersService.markSeen(id);
   }
 
   @Patch(':id/status')

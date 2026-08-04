@@ -4,16 +4,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { signInMock } from "@/lib/auth-actions";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  function handleLogin() {
+  async function handleLogin() {
     setLoading(true);
-    setTimeout(() => {
-      router.push("/admin");
-    }, 600);
+    await signInMock();
+    router.push("/admin");
   }
 
   return (

@@ -7,7 +7,7 @@ export class ProductsService {
   private products: Product[] = [...seedProducts];
 
   findAll(): Product[] {
-    return this.products;
+    return [...this.products].sort((a, b) => a.displayOrder - b.displayOrder);
   }
 
   findOne(id: string): Product {
@@ -33,6 +33,9 @@ export class ProductsService {
       stock: input.stock ?? 0,
       isActive: input.isActive ?? true,
       images: input.images ?? [],
+      displayOrder:
+        input.displayOrder ??
+        this.products.reduce((max, p) => Math.max(max, p.displayOrder), -1) + 1,
       createdAt: new Date().toISOString(),
     };
     this.products = [product, ...this.products];

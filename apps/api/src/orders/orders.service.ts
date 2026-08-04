@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { orders as seedOrders } from '../common/seed-data';
 import { Order, OrderItem, OrderStatus } from '../common/types';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class OrdersService {
   private orders: Order[] = [...seedOrders];
+
+  constructor(private readonly productsService: ProductsService) {}
 
   findAll(): Order[] {
     return [...this.orders].sort(
@@ -27,9 +30,18 @@ export class OrdersService {
   create(input: {
     customerName: string;
     customerContact: string;
-    items: OrderItem[];
+    items: { productId: string; quantity: number }[];
   }): Order {
-    const total = input.items.reduce(
+    const items: OrderItem[] = input.items.map(({ productId, quantity }) => {
+      const product = this.productsService.findOne(productId);
+      return {
+        productId: product.id,
+        title: product.title,
+        quantity,
+        priceAtOrder: product.price,
+      };
+    });
+    const total = items.reduce(
       (sum, item) => sum + item.priceAtOrder * item.quantity,
       0,
     );
@@ -39,11 +51,12 @@ export class OrdersService {
       customerName: input.customerName,
       customerContact: input.customerContact,
       status: 'PENDING',
-      items: input.items,
+      items,
       total,
       trackingToken: `trk_${Math.random().toString(36).slice(2, 10)}`,
       createdAt: new Date().toISOString(),
       confirmedAt: null,
+      seenByAdminAt: null,
       history: [
         {
           status: 'PENDING',
@@ -69,6 +82,14 @@ export class OrdersService {
         { status, note: note ?? `Status changed to ${status}`, at: now },
       ],
     };
+    this.orders = this.orders.map((o) => (o.id === existing.id ? updated : o));
+    return updated;
+  }
+
+  markSeen(id: string): Order {
+    const existing = this.findOne(id);
+    if (existing.seenByAdminAt) return existing;
+    const updated: Order = { ...existing, seenByAdminAt: new Date().toISOString() };
     this.orders = this.orders.map((o) => (o.id === existing.id ? updated : o));
     return updated;
   }

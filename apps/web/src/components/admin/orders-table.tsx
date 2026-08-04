@@ -68,7 +68,17 @@ export function OrdersTable({ orders: initialOrders }: { orders: Order[] }) {
                       onClick={() => setSelectedId(order.id)}
                       className="cursor-pointer"
                     >
-                      <TableCell className="font-medium">{order.customerName}</TableCell>
+                      <TableCell className="font-medium">
+                        <span className="inline-flex items-center gap-2">
+                          {!order.seenByAdminAt && (
+                            <span
+                              title="New — not yet opened"
+                              className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                            />
+                          )}
+                          {order.customerName}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{order.customerContact}</TableCell>
                       <TableCell className="text-muted-foreground">{order.items.length}</TableCell>
                       <TableCell>{formatMoney(order.total)}</TableCell>

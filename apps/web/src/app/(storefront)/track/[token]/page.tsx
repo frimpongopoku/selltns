@@ -7,6 +7,7 @@ import { getOrderByToken, getPaymentMethods, getProduct, getTenant } from "@/lib
 import { formatMoney, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@/components/storefront/status-badge";
 import { TrackerActions } from "@/components/storefront/order-tracker";
+import { CopyValue } from "@/components/storefront/copy-value";
 import type { Product } from "@/lib/types";
 
 export async function generateMetadata({
@@ -25,6 +26,7 @@ export async function generateMetadata({
       title: `Order for ${order.customerName}`,
       description: `${summary} · Total ${formatMoney(order.total)}`,
     },
+    robots: { index: false, follow: true },
   };
 }
 
@@ -138,6 +140,20 @@ export default async function TrackOrderPage({
           <p className="store-muted mt-1.5 text-sm">
             Your order is confirmed — pay using one of the options below.
           </p>
+
+          <div className="store-card mt-4 flex items-center justify-between gap-3 p-4">
+            <div>
+              <p className="store-muted text-xs">Payment reference</p>
+              <p className="font-medium">Include this note with your payment</p>
+            </div>
+            <span className="store-accent-text font-mono text-sm font-semibold">
+              <CopyValue
+                value={order.trackingToken.replace(/^trk_/, "").toUpperCase()}
+                label="Reference"
+              />
+            </span>
+          </div>
+
           <div className="mt-4 flex flex-col gap-3">
             {enabledMethods.map((method) => (
               <div
@@ -154,7 +170,9 @@ export default async function TrackOrderPage({
                   {Object.entries(method.details).map(([k, v]) => (
                     <Fragment key={k}>
                       <dt className="capitalize">{k}</dt>
-                      <dd className="text-[var(--store-fg)]">{v}</dd>
+                      <dd className="text-[var(--store-fg)]">
+                        <CopyValue value={v} label={k} />
+                      </dd>
                     </Fragment>
                   ))}
                 </dl>

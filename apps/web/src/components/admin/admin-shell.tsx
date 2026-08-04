@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Menu, ExternalLink, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AdminNavLinks } from "./admin-nav-links";
+import { signOutMock } from "@/lib/auth-actions";
 import type { Tenant, TeamMember } from "@/lib/types";
 
 function initials(name: string) {
@@ -32,6 +34,13 @@ function BrandBlock({ tenant }: { tenant: Tenant }) {
 }
 
 function UserBlock({ user }: { user: TeamMember }) {
+  const router = useRouter();
+
+  async function handleLogout() {
+    await signOutMock();
+    router.push("/admin/login");
+  }
+
   return (
     <div className="flex items-center gap-3 rounded-lg border p-3.5 transition-colors hover:bg-accent/50">
       <Avatar>
@@ -43,13 +52,14 @@ function UserBlock({ user }: { user: TeamMember }) {
           {user.role.toLowerCase()}
         </p>
       </div>
-      <Link
-        href="/admin/login"
+      <button
+        type="button"
+        onClick={handleLogout}
         title="Log out"
         className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
       >
         <LogOut className="h-4 w-4" />
-      </Link>
+      </button>
     </div>
   );
 }
