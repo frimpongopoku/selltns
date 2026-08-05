@@ -79,12 +79,12 @@ export default async function StoreHomePage() {
           <h2 className="store-heading text-2xl font-semibold">All products</h2>
           <span className="store-muted text-sm">{activeProducts.length} items</span>
         </div>
-        <div className="mt-7 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-7 grid grid-cols-3 gap-3 sm:gap-5 lg:grid-cols-4">
           {activeProducts.map((product, i) => (
             <div
               key={product.id}
               style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}
-              className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-both duration-500"
+              className="h-full animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-both duration-500"
             >
               <ProductCard product={product} />
             </div>

@@ -26,7 +26,7 @@ export function AddToCartButton({
         setAdded(true);
         setTimeout(() => setAdded(false), 1200);
       }}
-      className="store-btn-primary gap-1.5 border-0 shadow-none"
+      className="store-btn-primary w-full gap-1.5 border-0 shadow-none"
       size={size}
     >
       <span
