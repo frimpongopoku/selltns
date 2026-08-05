@@ -23,6 +23,8 @@ model Tenant {
 
   memberships TenantMembership[]
   mediaAssets MediaAsset[]
+  products    Product[]
+  collections Collection[]
 
   @@map("tenants")
 }
@@ -73,4 +75,60 @@ model MediaAsset {
 
   @@index([tenantId])
   @@map("media_assets")
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  title        String
+  slug         String
+  description  String   @default("")
+  price        Int      @default(0)
+  sku          String   @default("")
+  stock        Int      @default(0)
+  isActive     Boolean  @default(true) @map("is_active")
+  images       String[] @default([])
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  collections CollectionProduct[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("products")
+}
+
+model Collection {
+  id             String   @id @default(cuid())
+  tenantId       String   @map("tenant_id")
+  title          String
+  slug           String
+  description    String   @default("")
+  coverImage     String   @default("") @map("cover_image")
+  seoTitle       String   @default("") @map("seo_title")
+  seoDescription String   @default("") @map("seo_description")
+  themeOverride  Json?    @map("theme_override")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant              @relation(fields: [tenantId], references: [id])
+  products CollectionProduct[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("collections")
+}
+
+model CollectionProduct {
+  collectionId String @map("collection_id")
+  productId    String @map("product_id")
+  position     Int    @default(0)
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, productId])
+  @@map("collection_products")
 }

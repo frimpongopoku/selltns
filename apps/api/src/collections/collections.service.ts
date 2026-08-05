@@ -1,84 +1,179 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { collections as seedCollections } from '../common/seed-data';
-import { Collection } from '../common/types';
-import { ProductsService } from '../products/products.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { slugify } from '../common/slugify';
+import type { Collection, ThemeTokens } from '../common/types';
+import { Prisma } from '@prisma/client';
+import type { Product as PrismaProduct } from '@prisma/client';
+
+const PRODUCTS_INCLUDE = {
+  products: {
+    orderBy: { position: 'asc' as const },
+    include: { product: true },
+  },
+} satisfies Prisma.CollectionInclude;
+
+interface CollectionRow {
+  id: string;
+  tenantId: string;
+  title: string;
+  slug: string;
+  description: string;
+  coverImage: string;
+  seoTitle: string;
+  seoDescription: string;
+  themeOverride: Prisma.JsonValue | null;
+  products: { productId: string; product: PrismaProduct }[];
+}
+
+function mapCollection(row: CollectionRow) {
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    title: row.title,
+    slug: row.slug,
+    description: row.description,
+    coverImage: row.coverImage,
+    seoTitle: row.seoTitle,
+    seoDescription: row.seoDescription,
+    themeOverride: row.themeOverride as ThemeTokens | null,
+    productIds: row.products.map((cp) => cp.productId),
+    products: row.products.map((cp) => cp.product),
+  };
+}
 
 @Injectable()
 export class CollectionsService {
-  private collections: Collection[] = [...seedCollections];
+  constructor(private readonly prisma: PrismaService) {}
 
-  constructor(private readonly productsService: ProductsService) {}
-
-  findAll(tenantId: string) {
-    return this.collections
-      .filter((c) => c.tenantId === tenantId)
-      .map((c) => this.withProducts(c));
+  async findAll(tenantId: string) {
+    const collections = await this.prisma.collection.findMany({
+      where: { tenantId },
+      include: PRODUCTS_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+    });
+    return collections.map(mapCollection);
   }
 
-  findOne(idOrSlug: string, tenantId: string) {
-    const collection = this.collections.find(
-      (c) => (c.id === idOrSlug || c.slug === idOrSlug) && c.tenantId === tenantId,
-    );
+  async findOne(idOrSlug: string, tenantId: string) {
+    const collection = await this.prisma.collection.findFirst({
+      where: { tenantId, OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
+      include: PRODUCTS_INCLUDE,
+    });
     if (!collection)
       throw new NotFoundException(`Collection ${idOrSlug} not found`);
-    return this.withProducts(collection);
+    return mapCollection(collection);
   }
 
-  create(input: Partial<Collection> & { tenantId: string }): Collection {
-    const collection: Collection = {
-      id: `col_${Date.now()}`,
-      tenantId: input.tenantId,
-      title: input.title ?? 'Untitled collection',
-      slug:
-        input.slug ??
-        (input.title ?? 'untitled')
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, ''),
-      description: input.description ?? '',
-      themeOverride: input.themeOverride ?? null,
-      seoTitle: input.seoTitle ?? input.title ?? '',
-      seoDescription: input.seoDescription ?? '',
-      productIds: input.productIds ?? [],
-      coverImage: input.coverImage ?? '',
-    };
-    this.collections = [collection, ...this.collections];
-    return collection;
-  }
-
-  update(id: string, tenantId: string, input: Partial<Collection>): Collection {
-    const existing = this.collections.find(
-      (c) => c.id === id && c.tenantId === tenantId,
+  async create(input: Partial<Collection> & { tenantId: string }) {
+    const slug = await this.uniqueSlug(
+      input.tenantId,
+      input.slug || input.title || 'collection',
     );
+    const productIds = input.productIds ?? [];
+
+    const collection = await this.prisma.collection.create({
+      data: {
+        tenantId: input.tenantId,
+        title: input.title ?? 'Untitled collection',
+        slug,
+        description: input.description ?? '',
+        coverImage: input.coverImage ?? '',
+        seoTitle: input.seoTitle ?? input.title ?? '',
+        seoDescription: input.seoDescription ?? '',
+        themeOverride: input.themeOverride
+          ? (input.themeOverride as unknown as Prisma.InputJsonValue)
+          : undefined,
+        products: {
+          create: productIds.map((productId, position) => ({
+            productId,
+            position,
+          })),
+        },
+      },
+      include: PRODUCTS_INCLUDE,
+    });
+    return mapCollection(collection);
+  }
+
+  async update(id: string, tenantId: string, input: Partial<Collection>) {
+    const existing = await this.prisma.collection.findFirst({
+      where: { id, tenantId },
+    });
     if (!existing) throw new NotFoundException(`Collection ${id} not found`);
-    const updated = { ...existing, ...input, id: existing.id, tenantId: existing.tenantId };
-    this.collections = this.collections.map((c) =>
-      c.id === existing.id ? updated : c,
-    );
-    return updated;
+
+    // Same rule as products — slug only moves when explicitly changed.
+    const slug =
+      input.slug && input.slug !== existing.slug
+        ? await this.uniqueSlug(tenantId, input.slug, existing.id)
+        : existing.slug;
+
+    const collection = await this.prisma.$transaction(async (tx) => {
+      if (input.productIds) {
+        await tx.collectionProduct.deleteMany({ where: { collectionId: id } });
+        if (input.productIds.length > 0) {
+          await tx.collectionProduct.createMany({
+            data: input.productIds.map((productId, position) => ({
+              collectionId: id,
+              productId,
+              position,
+            })),
+          });
+        }
+      }
+      const data: Prisma.CollectionUpdateInput = {
+        title: input.title ?? existing.title,
+        slug,
+        description: input.description ?? existing.description,
+        coverImage: input.coverImage ?? existing.coverImage,
+        seoTitle: input.seoTitle ?? existing.seoTitle,
+        seoDescription: input.seoDescription ?? existing.seoDescription,
+      };
+      if (input.themeOverride !== undefined) {
+        data.themeOverride =
+          input.themeOverride === null
+            ? Prisma.JsonNull
+            : (input.themeOverride as unknown as Prisma.InputJsonValue);
+      }
+
+      return tx.collection.update({
+        where: { id },
+        data,
+        include: PRODUCTS_INCLUDE,
+      });
+    });
+    return mapCollection(collection);
   }
 
-  remove(id: string, tenantId: string): { id: string } {
-    const existing = this.collections.find(
-      (c) => c.id === id && c.tenantId === tenantId,
-    );
+  async remove(id: string, tenantId: string): Promise<{ id: string }> {
+    const existing = await this.prisma.collection.findFirst({
+      where: { id, tenantId },
+    });
     if (!existing) throw new NotFoundException(`Collection ${id} not found`);
-    this.collections = this.collections.filter((c) => c.id !== existing.id);
+    await this.prisma.collection.delete({ where: { id: existing.id } });
     return { id: existing.id };
   }
 
-  private withProducts(collection: Collection) {
-    return {
-      ...collection,
-      products: collection.productIds
-        .map((id) => {
-          try {
-            return this.productsService.findOne(id, collection.tenantId);
-          } catch {
-            return null;
-          }
-        })
-        .filter(Boolean),
-    };
+  private async uniqueSlug(
+    tenantId: string,
+    base: string,
+    excludeId?: string,
+  ): Promise<string> {
+    const root = slugify(base) || 'collection';
+    let candidate = root;
+    let suffix = 2;
+    while (
+      await this.prisma.collection.findFirst({
+        where: {
+          tenantId,
+          slug: candidate,
+          ...(excludeId ? { id: { not: excludeId } } : {}),
+        },
+        select: { id: true },
+      })
+    ) {
+      candidate = `${root}-${suffix}`;
+      suffix += 1;
+    }
+    return candidate;
   }
 }

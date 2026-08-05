@@ -1,33 +1,30 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus } from "lucide-react";
-import { getCollections } from "@/lib/api";
+import { getCollections, getProducts } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { CollectionQuickCreateDialog } from "@/components/admin/collection-quick-create-dialog";
 
 export const metadata = { title: "Collections" };
 
 export default async function AdminCollectionsPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
-  const collections = await getCollections(me.tenant.id);
+  const [collections, products] = await Promise.all([
+    getCollections(me.tenant.id),
+    getProducts(me.tenant.id),
+  ]);
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Collections</h1>
           <p className="text-sm text-muted-foreground">
             Curated sets of products — each can have its own theme and SEO.
           </p>
         </div>
-        <Link href="/admin/collections/new">
-          <Button className="gap-1.5">
-            <Plus className="h-4 w-4" />
-            New collection
-          </Button>
-        </Link>
+        <CollectionQuickCreateDialog tenantId={me.tenant.id} products={products} />
       </div>
 
       {collections.length === 0 ? (
@@ -37,12 +34,9 @@ export default async function AdminCollectionsPage() {
             Group related products into a collection — it&apos;ll get its own
             page on your storefront, and you can even give it a different theme.
           </p>
-          <Link href="/admin/collections/new">
-            <Button className="mt-2 gap-1.5">
-              <Plus className="h-4 w-4" />
-              New collection
-            </Button>
-          </Link>
+          <div className="mt-2">
+            <CollectionQuickCreateDialog tenantId={me.tenant.id} products={products} />
+          </div>
         </Card>
       ) : (
       <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">

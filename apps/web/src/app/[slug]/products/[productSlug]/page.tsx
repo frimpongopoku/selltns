@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { getProduct, getTenantBySlug } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
+import { ProductGallery } from "@/components/storefront/product-gallery";
 
 export async function generateMetadata({
   params,
@@ -41,29 +41,7 @@ export default async function ProductPage({
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <div className="grid animate-in fade-in-0 slide-in-from-bottom-2 grid-cols-1 gap-10 duration-500 lg:grid-cols-2 lg:gap-14">
-        <div className="grid grid-cols-1 gap-3">
-          <div className="store-card relative aspect-square overflow-hidden">
-            {product.images[0] ? (
-              <Image
-                src={product.images[0]}
-                alt={product.title}
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
-                priority
-              />
-            ) : null}
-          </div>
-          {product.images.length > 1 && (
-            <div className="grid grid-cols-4 gap-3">
-              {product.images.slice(1).map((img) => (
-                <div key={img} className="store-card relative aspect-square overflow-hidden transition-opacity hover:opacity-80">
-                  <Image src={img} alt={product.title} fill sizes="120px" className="object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ProductGallery images={product.images} alt={product.title} />
         <div>
           <h1 className="store-heading text-3xl font-semibold">{product.title}</h1>
           <p className="store-accent-text mt-3 text-xl font-medium">

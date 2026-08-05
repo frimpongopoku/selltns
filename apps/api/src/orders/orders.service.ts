@@ -12,11 +12,16 @@ export class OrdersService {
   findAll(tenantId: string): Order[] {
     return this.orders
       .filter((o) => o.tenantId === tenantId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
   }
 
   findOne(id: string, tenantId: string): Order {
-    const order = this.orders.find((o) => o.id === id && o.tenantId === tenantId);
+    const order = this.orders.find(
+      (o) => o.id === id && o.tenantId === tenantId,
+    );
     if (!order) throw new NotFoundException(`Order ${id} not found`);
     return order;
   }
@@ -27,21 +32,26 @@ export class OrdersService {
     return order;
   }
 
-  create(input: {
+  async create(input: {
     tenantId: string;
     customerName: string;
     customerContact: string;
     items: { productId: string; quantity: number }[];
-  }): Order {
-    const items: OrderItem[] = input.items.map(({ productId, quantity }) => {
-      const product = this.productsService.findOne(productId, input.tenantId);
-      return {
-        productId: product.id,
-        title: product.title,
-        quantity,
-        priceAtOrder: product.price,
-      };
-    });
+  }): Promise<Order> {
+    const items: OrderItem[] = await Promise.all(
+      input.items.map(async ({ productId, quantity }) => {
+        const product = await this.productsService.findOne(
+          productId,
+          input.tenantId,
+        );
+        return {
+          productId: product.id,
+          title: product.title,
+          quantity,
+          priceAtOrder: product.price,
+        };
+      }),
+    );
     const total = items.reduce(
       (sum, item) => sum + item.priceAtOrder * item.quantity,
       0,
@@ -70,14 +80,18 @@ export class OrdersService {
     return order;
   }
 
-  updateStatus(id: string, tenantId: string, status: OrderStatus, note?: string): Order {
+  updateStatus(
+    id: string,
+    tenantId: string,
+    status: OrderStatus,
+    note?: string,
+  ): Order {
     const existing = this.findOne(id, tenantId);
     const now = new Date().toISOString();
     const updated: Order = {
       ...existing,
       status,
-      confirmedAt:
-        status === 'CONFIRMED' ? now : existing.confirmedAt,
+      confirmedAt: status === 'CONFIRMED' ? now : existing.confirmedAt,
       history: [
         ...existing.history,
         { status, note: note ?? `Status changed to ${status}`, at: now },
@@ -90,12 +104,20 @@ export class OrdersService {
   markSeen(id: string, tenantId: string): Order {
     const existing = this.findOne(id, tenantId);
     if (existing.seenByAdminAt) return existing;
-    const updated: Order = { ...existing, seenByAdminAt: new Date().toISOString() };
+    const updated: Order = {
+      ...existing,
+      seenByAdminAt: new Date().toISOString(),
+    };
     this.orders = this.orders.map((o) => (o.id === existing.id ? updated : o));
     return updated;
   }
 
-  modifyItems(id: string, tenantId: string, items: OrderItem[], note?: string): Order {
+  modifyItems(
+    id: string,
+    tenantId: string,
+    items: OrderItem[],
+    note?: string,
+  ): Order {
     const existing = this.findOne(id, tenantId);
     const total = items.reduce(
       (sum, item) => sum + item.priceAtOrder * item.quantity,
@@ -109,7 +131,11 @@ export class OrdersService {
       status: 'MODIFIED',
       history: [
         ...existing.history,
-        { status: 'MODIFIED', note: note ?? 'Order modified by admin', at: now },
+        {
+          status: 'MODIFIED',
+          note: note ?? 'Order modified by admin',
+          at: now,
+        },
       ],
     };
     this.orders = this.orders.map((o) => (o.id === existing.id ? updated : o));

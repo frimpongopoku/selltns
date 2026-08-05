@@ -79,7 +79,7 @@ export default async function StoreHomePage({
                     {collection.title}
                   </p>
                   <p className="text-xs text-white/80">
-                    {collection.products.length} pieces
+                    {collection.products.filter((p) => p.isActive).length} pieces
                   </p>
                 </div>
               </Link>

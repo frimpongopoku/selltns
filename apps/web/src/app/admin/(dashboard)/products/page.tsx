@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus } from "lucide-react";
 import { getProducts } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
 import { formatMoney } from "@/lib/format";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -15,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle";
+import { ProductQuickCreateDialog } from "@/components/admin/product-quick-create-dialog";
 
 export const metadata = { title: "Products" };
 
@@ -25,19 +24,14 @@ export default async function AdminProductsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Products</h1>
           <p className="text-sm text-muted-foreground">
             {products.length} products in your catalog.
           </p>
         </div>
-        <Link href="/admin/products/new">
-          <Button className="gap-1.5">
-            <Plus className="h-4 w-4" />
-            New product
-          </Button>
-        </Link>
+        <ProductQuickCreateDialog tenantId={me.tenant.id} />
       </div>
 
       {products.length === 0 ? (
@@ -47,12 +41,9 @@ export default async function AdminProductsPage() {
             Add your first product to start building your catalog — it&apos;ll
             show up here and on your storefront once it&apos;s active.
           </p>
-          <Link href="/admin/products/new">
-            <Button className="mt-2 gap-1.5">
-              <Plus className="h-4 w-4" />
-              New product
-            </Button>
-          </Link>
+          <div className="mt-2">
+            <ProductQuickCreateDialog tenantId={me.tenant.id} />
+          </div>
         </Card>
       ) : (
       <Card className="mt-7 p-0">

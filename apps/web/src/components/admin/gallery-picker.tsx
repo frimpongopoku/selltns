@@ -63,7 +63,7 @@ export function GalleryPicker({
             <Plus className="h-4 w-4" />
             Add
           </DialogTrigger>
-          <DialogContent className="max-w-xl">
+          <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Choose from gallery</DialogTitle>
             </DialogHeader>

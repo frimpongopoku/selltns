@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -24,10 +25,13 @@ export function CollectionForm({
   tenantId,
   collection,
   products,
+  onSaved,
 }: {
   tenantId: string;
   collection?: Collection;
   products: Product[];
+  /** When provided, called instead of navigating to the collections list on success. */
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(collection?.title ?? "");
@@ -67,7 +71,11 @@ export function CollectionForm({
         await createCollection(tenantId, payload);
         toast.success("Collection created");
       }
-      router.push("/admin/collections");
+      if (onSaved) {
+        onSaved();
+      } else {
+        router.push("/admin/collections");
+      }
       router.refresh();
     } catch {
       toast.error("Something went wrong");
@@ -114,6 +122,9 @@ export function CollectionForm({
 
       <div>
         <Label>Products in this collection</Label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Not-live products can&apos;t be newly added — turn a product live first.
+        </p>
         {products.length === 0 ? (
           <p className="mt-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
             No products yet — add one first, then come back to build this
@@ -121,15 +132,28 @@ export function CollectionForm({
           </p>
         ) : (
         <div className="mt-2 grid max-h-64 grid-cols-1 gap-2 overflow-y-auto rounded-lg border p-3 sm:grid-cols-2">
-          {products.map((product) => (
-            <label key={product.id} className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={productIds.includes(product.id)}
-                onCheckedChange={() => toggleProduct(product.id)}
-              />
-              {product.title}
-            </label>
-          ))}
+          {products.map((product) => {
+            const checked = productIds.includes(product.id);
+            const disabled = !product.isActive && !checked;
+            return (
+              <label
+                key={product.id}
+                className={`flex items-center gap-2 text-sm ${disabled ? "opacity-50" : ""}`}
+              >
+                <Checkbox
+                  checked={checked}
+                  disabled={disabled}
+                  onCheckedChange={() => toggleProduct(product.id)}
+                />
+                <span className="truncate">{product.title}</span>
+                {!product.isActive && (
+                  <Badge variant="outline" className="shrink-0 text-[10px]">
+                    Not live
+                  </Badge>
+                )}
+              </label>
+            );
+          })}
         </div>
         )}
       </div>

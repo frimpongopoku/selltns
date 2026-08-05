@@ -33,6 +33,7 @@ export default async function CollectionPage({
   if (!collection) notFound();
 
   const tokens = collection.themeOverride ?? tenant.themeTokens;
+  const activeProducts = collection.products.filter((p) => p.isActive);
 
   return (
     <ThemeScope tokens={tokens} className="min-h-0">
@@ -45,7 +46,7 @@ export default async function CollectionPage({
         <h1 className="store-heading text-3xl font-semibold">{collection.title}</h1>
         <p className="store-muted mt-3 max-w-lg leading-relaxed">{collection.description}</p>
         <div className="mt-9 grid grid-cols-3 gap-3 sm:gap-5 lg:grid-cols-4">
-          {collection.products.map((product, i) => (
+          {activeProducts.map((product, i) => (
             <div
               key={product.id}
               style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}
@@ -55,7 +56,7 @@ export default async function CollectionPage({
             </div>
           ))}
         </div>
-        {collection.products.length === 0 && (
+        {activeProducts.length === 0 && (
           <p className="store-muted mt-8">No products in this collection yet.</p>
         )}
       </div>

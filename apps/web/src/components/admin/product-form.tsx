@@ -15,9 +15,12 @@ import type { Product } from "@/lib/types";
 export function ProductForm({
   tenantId,
   product,
+  onSaved,
 }: {
   tenantId: string;
   product?: Product;
+  /** When provided, called instead of navigating to the products list on success. */
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(product?.title ?? "");
@@ -49,7 +52,11 @@ export function ProductForm({
         await createProduct(tenantId, payload);
         toast.success("Product created");
       }
-      router.push("/admin/products");
+      if (onSaved) {
+        onSaved();
+      } else {
+        router.push("/admin/products");
+      }
       router.refresh();
     } catch {
       toast.error("Something went wrong");
@@ -105,9 +112,15 @@ export function ProductForm({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Switch checked={isActive} onCheckedChange={setIsActive} />
-        <Label>Visible on storefront</Label>
+      <div className="flex items-start gap-3">
+        <Switch checked={isActive} onCheckedChange={setIsActive} className="mt-0.5" />
+        <div>
+          <Label>Live</Label>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            When off, this product is hidden from your storefront and can&apos;t be added to
+            collections.
+          </p>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 pt-2">
