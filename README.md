@@ -41,7 +41,7 @@ Then open:
 
 ## Notes on the mock data layer
 
-- The API seeds one demo tenant ("Amara & Co.") with products, collections,
+- The API seeds one demo tenant ("Akosua & Co.") with products, collections,
   orders, gallery images, payment methods and team members in
   `apps/api/src/common/seed-data.ts`. All mutations are in-memory and reset
   when the API restarts.

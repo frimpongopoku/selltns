@@ -52,7 +52,7 @@ export default function AdminLoginPage() {
         </Button>
         <p className="mt-6 text-xs text-muted-foreground">
           Mock auth for the design prototype — any click signs you in as{" "}
-          <span className="font-medium">Amara Boateng (Owner)</span>.
+          <span className="font-medium">Akosua Boateng (Owner)</span>.
         </p>
       </Card>
     </div>

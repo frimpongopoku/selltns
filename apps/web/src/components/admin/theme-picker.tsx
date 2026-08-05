@@ -102,7 +102,7 @@ export function ThemePicker({ current }: { current: ThemeTokens }) {
       <Card className="overflow-hidden p-0">
         <ThemeScope tokens={preview} className="p-7 transition-colors duration-300">
           <p className="store-nav-link store-accent-text text-xs font-semibold">Preview</p>
-          <h2 className="store-heading mt-2.5 text-2xl font-semibold">Amara & Co.</h2>
+          <h2 className="store-heading mt-2.5 text-2xl font-semibold">Akosua & Co.</h2>
           <p className="store-muted mt-2.5 max-w-xs text-sm leading-relaxed">
             Small-batch, handmade pieces — requested here, confirmed by us.
           </p>

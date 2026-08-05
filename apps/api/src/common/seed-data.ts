@@ -13,8 +13,8 @@ const TENANT_ID = 'tenant_demo';
 
 export const tenant: Tenant = {
   id: TENANT_ID,
-  name: 'Amara & Co.',
-  slug: 'amara',
+  name: 'Akosua & Co.',
+  slug: 'akosua',
   customDomain: null,
   domainVerified: false,
   themeTokens: {
@@ -35,7 +35,7 @@ export const teamMembers: TeamMember[] = [
   {
     id: 'user_1',
     tenantId: TENANT_ID,
-    name: 'Amara Boateng',
+    name: 'Akosua Boateng',
     email: 'amara@amaraandco.test',
     role: 'OWNER',
     invitedAt: '2026-01-04T09:00:00.000Z',
@@ -122,8 +122,8 @@ export const products: Product[] = [
   {
     id: 'prod_1',
     tenantId: TENANT_ID,
-    title: 'Adaeze Wax-Print Wrap Dress',
-    slug: 'adaeze-wrap-dress',
+    title: 'Adjoa Wax-Print Wrap Dress',
+    slug: 'adjoa-wrap-dress',
     description:
       'A flowing wrap dress cut from hand-selected wax-print cotton. Adjustable waist tie, lined bodice, true to size.',
     price: 420,
@@ -219,9 +219,9 @@ export const collections: Collection[] = [
     slug: 'new-arrivals',
     description: 'The latest pieces to land in the studio, fresh off the loom.',
     themeOverride: null,
-    seoTitle: 'New Arrivals — Amara & Co.',
+    seoTitle: 'New Arrivals — Akosua & Co.',
     seoDescription:
-      'Shop the newest handmade pieces from Amara & Co., made in small batches.',
+      'Shop the newest handmade pieces from Akosua & Co., made in small batches.',
     productIds: ['prod_1', 'prod_2', 'prod_3'],
     coverImage: gallery[0].url,
   },
@@ -232,7 +232,7 @@ export const collections: Collection[] = [
     slug: 'accessories',
     description: 'Bags, jewelry and finishing touches for every outfit.',
     themeOverride: null,
-    seoTitle: 'Accessories — Amara & Co.',
+    seoTitle: 'Accessories — Akosua & Co.',
     seoDescription: 'Hand-woven bags, beaded jewelry and leather accessories.',
     productIds: ['prod_2', 'prod_3', 'prod_4'],
     coverImage: gallery[1].url,
@@ -255,7 +255,7 @@ export const collections: Collection[] = [
       fontBody: 'var(--font-inter)',
       radius: '0.125rem',
     },
-    seoTitle: 'The Minimal Edit — Amara & Co.',
+    seoTitle: 'The Minimal Edit — Akosua & Co.',
     seoDescription: 'A pared-back capsule collection with a clean, minimal look.',
     productIds: ['prod_4', 'prod_5', 'prod_6'],
     coverImage: gallery[4].url,
@@ -268,7 +268,7 @@ export const paymentMethods: PaymentMethod[] = [
     tenantId: TENANT_ID,
     type: 'MOMO',
     label: 'MTN Mobile Money',
-    details: { number: '024 555 0134', name: 'Amara Boateng' },
+    details: { number: '024 555 0134', name: 'Akosua Boateng' },
     isEnabled: true,
     isPreferred: true,
   },
@@ -277,7 +277,7 @@ export const paymentMethods: PaymentMethod[] = [
     tenantId: TENANT_ID,
     type: 'MOMO',
     label: 'Telecel Cash',
-    details: { number: '020 111 8842', name: 'Amara Boateng' },
+    details: { number: '020 111 8842', name: 'Akosua Boateng' },
     isEnabled: true,
     isPreferred: false,
   },
@@ -287,7 +287,7 @@ export const paymentMethods: PaymentMethod[] = [
     type: 'BANK',
     label: 'GCB Bank',
     details: {
-      accountName: 'Amara & Co Ventures',
+      accountName: 'Akosua & Co Ventures',
       accountNumber: '1102345678901',
       branch: 'East Legon',
     },
@@ -304,7 +304,7 @@ export const orders: Order[] = [
     customerContact: '055 234 1122',
     status: 'PENDING',
     items: [
-      { productId: 'prod_1', title: 'Adaeze Wax-Print Wrap Dress', quantity: 1, priceAtOrder: 420 },
+      { productId: 'prod_1', title: 'Adjoa Wax-Print Wrap Dress', quantity: 1, priceAtOrder: 420 },
       { productId: 'prod_3', title: 'Ama Beaded Statement Necklace', quantity: 2, priceAtOrder: 145 },
     ],
     total: 710,
@@ -332,7 +332,7 @@ export const orders: Order[] = [
     seenByAdminAt: '2026-07-18T16:00:00.000Z',
     history: [
       { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-18T14:40:00.000Z' },
-      { status: 'CONFIRMED', note: 'Confirmed by Amara — ready for payment', at: '2026-07-18T16:05:00.000Z' },
+      { status: 'CONFIRMED', note: 'Confirmed by Akosua — ready for payment', at: '2026-07-18T16:05:00.000Z' },
     ],
   },
   {
@@ -363,7 +363,7 @@ export const orders: Order[] = [
     customerContact: '027 445 9981',
     status: 'COMPLETED',
     items: [
-      { productId: 'prod_1', title: 'Adaeze Wax-Print Wrap Dress', quantity: 1, priceAtOrder: 420 },
+      { productId: 'prod_1', title: 'Adjoa Wax-Print Wrap Dress', quantity: 1, priceAtOrder: 420 },
     ],
     total: 420,
     trackingToken: 'trk_yaw9981',
@@ -372,7 +372,7 @@ export const orders: Order[] = [
     seenByAdminAt: '2026-07-02T12:45:00.000Z',
     history: [
       { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-02T12:00:00.000Z' },
-      { status: 'CONFIRMED', note: 'Confirmed by Amara', at: '2026-07-02T13:00:00.000Z' },
+      { status: 'CONFIRMED', note: 'Confirmed by Akosua', at: '2026-07-02T13:00:00.000Z' },
       { status: 'COMPLETED', note: 'Payment received, order fulfilled', at: '2026-07-04T09:00:00.000Z' },
     ],
   },
@@ -392,7 +392,7 @@ export const orders: Order[] = [
     seenByAdminAt: '2026-06-28T15:45:00.000Z',
     history: [
       { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-06-28T15:30:00.000Z' },
-      { status: 'CANCELLED', note: 'Out of stock — cancelled by Amara', at: '2026-06-29T08:00:00.000Z' },
+      { status: 'CANCELLED', note: 'Out of stock — cancelled by Akosua', at: '2026-06-29T08:00:00.000Z' },
     ],
   },
 ];
@@ -401,7 +401,7 @@ export const storyBlocks: ContentBlock[] = [
   {
     id: 'block_1',
     type: 'TEXT',
-    heading: 'Behind Amara & Co.',
+    heading: 'Behind Akosua & Co.',
     body: 'Every piece starts in a small studio, not a factory. This page is where the maker shares process, sourcing, and the people behind each order.',
   },
   {
