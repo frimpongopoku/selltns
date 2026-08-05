@@ -64,6 +64,8 @@ model MediaAsset {
   width     Int
   height    Int
   bytes     Int
+  title     String?
+  tags      String[] @default([])
   altText   String   @default("") @map("alt_text")
   createdAt DateTime @default(now()) @map("created_at")
 

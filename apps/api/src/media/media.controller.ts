@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -18,8 +19,21 @@ export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 
   @Get()
-  findAll(@Query('tenantId') tenantId: string) {
-    return this.mediaService.findAll(tenantId);
+  findAll(
+    @Query('tenantId') tenantId: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.mediaService.findAll(tenantId, {
+      cursor,
+      limit: limit ? Number(limit) : undefined,
+      q,
+      from,
+      to,
+    });
   }
 
   @Post()
@@ -30,8 +44,20 @@ export class MediaController {
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body('tenantId') tenantId: string,
     @Body('altText') altText?: string,
+    @Body('title') title?: string,
+    @Body('tags') tags?: string,
   ) {
-    return this.mediaService.upload(tenantId, file, altText);
+    return this.mediaService.upload(tenantId, file, { altText, title, tags });
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body('tenantId') tenantId: string,
+    @Body('title') title?: string | null,
+    @Body('tags') tags?: unknown,
+  ) {
+    return this.mediaService.update(id, tenantId, { title, tags });
   }
 
   @Delete(':id')

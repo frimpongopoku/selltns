@@ -4,6 +4,7 @@ import type {
   CollectionWithProducts,
   ContentBlock,
   MediaAsset,
+  MediaPage,
   Order,
   OrderItem,
   OrderStatus,
@@ -92,8 +93,31 @@ export const deleteCollection = (id: string, tenantId: string) =>
   });
 
 // Gallery — uploading goes through lib/upload.ts (multipart, not JSON)
-export const getGallery = (tenantId: string) =>
-  request<MediaAsset[]>(`/media?tenantId=${tenantId}`);
+export interface GetGalleryParams {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  from?: string;
+  to?: string;
+}
+export const getGallery = (tenantId: string, params: GetGalleryParams = {}) => {
+  const search = new URLSearchParams({ tenantId });
+  if (params.cursor) search.set("cursor", params.cursor);
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.q) search.set("q", params.q);
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
+  return request<MediaPage>(`/media?${search.toString()}`);
+};
+export const updateMedia = (
+  id: string,
+  tenantId: string,
+  input: { title?: string | null; tags?: string[] },
+) =>
+  request<MediaAsset>(`/media/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ ...input, tenantId }),
+  });
 export const deleteMedia = (id: string, tenantId: string) =>
   request<{ id: string }>(`/media/${id}?tenantId=${tenantId}`, {
     method: "DELETE",

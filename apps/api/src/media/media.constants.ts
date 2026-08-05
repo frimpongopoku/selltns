@@ -19,3 +19,12 @@ export const THUMB_MAX_DIMENSION = 480;
 // small thumbnail where compression artifacts aren't visible at that size.
 export const DISPLAY_QUALITY = 82;
 export const THUMB_QUALITY = 70;
+
+export const MAX_TITLE_LENGTH = 120;
+export const MAX_TAGS_PER_ASSET = 10;
+export const MAX_TAG_LENGTH = 30;
+
+// Grid page size for the media library's infinite scroll — enough to fill
+// several screens before the first fetch-more, small enough to stay fast.
+export const MEDIA_PAGE_SIZE = 40;
+export const MEDIA_PAGE_SIZE_MAX = 100;

@@ -49,8 +49,15 @@ export interface MediaAsset {
   width: number;
   height: number;
   bytes: number;
+  title: string | null;
+  tags: string[];
   altText: string;
   createdAt: string;
+}
+
+export interface MediaPage {
+  items: MediaAsset[];
+  nextCursor: string | null;
 }
 
 export interface Product {
