@@ -14,12 +14,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { modifyOrderItems, updateOrderStatus } from "@/lib/api";
-import type { Order } from "@/lib/types";
+import type { Order, OrderStatus } from "@/lib/types";
 
 export function OrderActions({
+  tenantId,
   order,
   onUpdated,
 }: {
+  tenantId: string;
   order: Order;
   onUpdated?: (order: Order) => void;
 }) {
@@ -30,10 +32,10 @@ export function OrderActions({
     Object.fromEntries(order.items.map((i) => [i.productId, i.quantity])),
   );
 
-  async function setStatus(status: Parameters<typeof updateOrderStatus>[1], note?: string) {
+  async function setStatus(status: OrderStatus, note?: string) {
     setBusy(true);
     try {
-      const updated = await updateOrderStatus(order.id, status, note);
+      const updated = await updateOrderStatus(order.id, tenantId, status, note);
       toast.success(`Order marked ${status.toLowerCase()}`);
       onUpdated?.(updated);
       router.refresh();
@@ -46,7 +48,7 @@ export function OrderActions({
     setBusy(true);
     try {
       const items = order.items.map((i) => ({ ...i, quantity: quantities[i.productId] }));
-      const updated = await modifyOrderItems(order.id, items, "Quantities updated by admin");
+      const updated = await modifyOrderItems(order.id, tenantId, items, "Quantities updated by admin");
       toast.success("Order modified");
       onUpdated?.(updated);
       setModifyOpen(false);

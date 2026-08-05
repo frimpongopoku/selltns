@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PrismaModule } from './prisma/prisma.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { ProductsModule } from './products/products.module';
 import { CollectionsModule } from './collections/collections.module';
@@ -13,6 +14,7 @@ import { StoryModule } from './story/story.module';
 
 @Module({
   imports: [
+    PrismaModule,
     TenantsModule,
     ProductsModule,
     CollectionsModule,

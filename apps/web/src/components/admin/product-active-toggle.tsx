@@ -7,9 +7,11 @@ import { updateProduct } from "@/lib/api";
 
 export function ProductActiveToggle({
   productId,
+  tenantId,
   initialActive,
 }: {
   productId: string;
+  tenantId: string;
   initialActive: boolean;
 }) {
   const [active, setActive] = useState(initialActive);
@@ -23,7 +25,7 @@ export function ProductActiveToggle({
       onCheckedChange={(checked) => {
         setActive(checked);
         startTransition(async () => {
-          await updateProduct(productId, { isActive: checked });
+          await updateProduct(productId, tenantId, { isActive: checked });
           router.refresh();
         });
       }}

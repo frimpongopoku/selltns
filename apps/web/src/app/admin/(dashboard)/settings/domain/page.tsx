@@ -1,10 +1,12 @@
-import { getTenant } from "@/lib/api";
+import { redirect } from "next/navigation";
+import { getMe } from "@/lib/get-me";
 import { DomainSettings } from "@/components/admin/domain-settings";
 
 export const metadata = { title: "Domain" };
 
 export default async function AdminDomainSettingsPage() {
-  const tenant = await getTenant();
+  const me = await getMe();
+  if (!me) redirect("/admin/login");
 
   return (
     <div>
@@ -13,7 +15,7 @@ export default async function AdminDomainSettingsPage() {
         Manage where your storefront lives.
       </p>
       <div className="mt-7">
-        <DomainSettings tenant={tenant} />
+        <DomainSettings tenant={me.tenant} />
       </div>
     </div>
   );

@@ -21,9 +21,11 @@ import { THEME_PRESETS, THEME_TEMPLATE_META } from "@/lib/theme-presets";
 import type { Collection, Product, ThemeTemplate } from "@/lib/types";
 
 export function CollectionForm({
+  tenantId,
   collection,
   products,
 }: {
+  tenantId: string;
   collection?: Collection;
   products: Product[];
 }) {
@@ -59,10 +61,10 @@ export function CollectionForm({
     };
     try {
       if (collection) {
-        await updateCollection(collection.id, payload);
+        await updateCollection(collection.id, tenantId, payload);
         toast.success("Collection updated");
       } else {
-        await createCollection(payload);
+        await createCollection(tenantId, payload);
         toast.success("Collection created");
       }
       router.push("/admin/collections");
@@ -75,7 +77,7 @@ export function CollectionForm({
 
   async function handleDelete() {
     if (!collection) return;
-    await deleteCollection(collection.id);
+    await deleteCollection(collection.id, tenantId);
     toast.success("Collection deleted");
     router.push("/admin/collections");
     router.refresh();
@@ -87,6 +89,7 @@ export function CollectionForm({
         <Label>Cover image</Label>
         <div className="mt-1.5">
           <GalleryPicker
+            tenantId={tenantId}
             selected={coverImage}
             onChange={(urls) => setCoverImage(urls.slice(-1))}
           />

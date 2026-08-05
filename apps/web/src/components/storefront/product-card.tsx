@@ -1,16 +1,19 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import type { Product } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import { AddToCartButton } from "./add-to-cart-button";
+import { useStoreSlug } from "./store-context";
 
 export function ProductCard({ product }: { product: Product }) {
+  const slug = useStoreSlug();
+  const href = `/${slug}/products/${product.slug}`;
+
   return (
     <div className="store-card group flex h-full flex-col overflow-hidden bg-[var(--store-bg)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
-      <Link
-        href={`/products/${product.slug}`}
-        className="relative block aspect-[4/5] overflow-hidden"
-      >
+      <Link href={href} className="relative block aspect-[4/5] overflow-hidden">
         {product.images[0] ? (
           <Image
             src={product.images[0]}
@@ -29,7 +32,7 @@ export function ProductCard({ product }: { product: Product }) {
         )}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-5">
-        <Link href={`/products/${product.slug}`}>
+        <Link href={href}>
           <h3 className="store-heading line-clamp-2 min-h-[2.75em] text-sm leading-snug transition-colors group-hover:text-[var(--store-primary)] sm:text-base">
             {product.title}
           </h3>

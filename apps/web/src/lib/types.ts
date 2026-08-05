@@ -118,6 +118,7 @@ export type ContentBlockType = "TEXT" | "VIDEO" | "PHOTOS";
 
 export interface ContentBlock {
   id: string;
+  tenantId: string;
   type: ContentBlockType;
   heading?: string;
   body?: string;

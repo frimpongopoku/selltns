@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+model Tenant {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  customDomain   String?  @map("custom_domain")
+  domainVerified Boolean  @default(false) @map("domain_verified")
+  themeTokens    Json     @map("theme_tokens")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  memberships TenantMembership[]
+
+  @@map("tenants")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  googleSub String?  @unique @map("google_sub")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  memberships TenantMembership[]
+
+  @@map("users")
+}
+
+model TenantMembership {
+  id         String    @id @default(cuid())
+  tenantId   String    @map("tenant_id")
+  userId     String    @map("user_id")
+  role       Role
+  invitedAt  DateTime  @default(now()) @map("invited_at")
+  acceptedAt DateTime? @map("accepted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, userId])
+  @@map("tenant_memberships")
+}

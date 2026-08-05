@@ -9,9 +9,11 @@ import { getGallery } from "@/lib/api";
 import type { MediaAsset } from "@/lib/types";
 
 export function GalleryPicker({
+  tenantId,
   selected,
   onChange,
 }: {
+  tenantId: string;
   selected: string[];
   onChange: (urls: string[]) => void;
 }) {
@@ -19,8 +21,8 @@ export function GalleryPicker({
   const [assets, setAssets] = useState<MediaAsset[]>([]);
 
   useEffect(() => {
-    if (open) getGallery().then(setAssets);
-  }, [open]);
+    if (open) getGallery(tenantId).then(setAssets);
+  }, [open, tenantId]);
 
   function toggle(url: string) {
     onChange(selected.includes(url) ? selected.filter((u) => u !== url) : [...selected, url]);

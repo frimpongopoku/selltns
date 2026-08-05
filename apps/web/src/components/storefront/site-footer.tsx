@@ -1,7 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import type { Tenant } from "@/lib/types";
+import { useStoreSlug } from "./store-context";
 
 export function SiteFooter({ tenant }: { tenant: Tenant }) {
+  const slug = useStoreSlug();
+
   return (
     <footer className="mt-auto border-t border-[var(--store-border)] bg-[var(--store-bg)]">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
@@ -16,16 +21,16 @@ export function SiteFooter({ tenant }: { tenant: Tenant }) {
           <div className="flex gap-12 text-sm sm:gap-16">
             <div className="flex flex-col gap-3">
               <span className="text-xs font-semibold tracking-wide uppercase store-muted">Shop</span>
-              <Link href="/" className="transition-colors hover:text-[var(--store-primary)]">
+              <Link href={`/${slug}`} className="transition-colors hover:text-[var(--store-primary)]">
                 All products
               </Link>
-              <Link href="/collections" className="transition-colors hover:text-[var(--store-primary)]">
+              <Link href={`/${slug}/collections`} className="transition-colors hover:text-[var(--store-primary)]">
                 Collections
               </Link>
             </div>
             <div className="flex flex-col gap-3">
               <span className="text-xs font-semibold tracking-wide uppercase store-muted">Store</span>
-              <Link href="/story" className="transition-colors hover:text-[var(--store-primary)]">
+              <Link href={`/${slug}/story`} className="transition-colors hover:text-[var(--store-primary)]">
                 Our Story
               </Link>
               <span className="store-muted">{tenant.slug}.selltns.com</span>

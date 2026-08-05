@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type {
   Collection,
   CollectionWithProducts,
@@ -29,93 +30,142 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 // Tenant
-export const getTenant = () => request<Tenant>("/tenants/current");
-export const updateTenantTheme = (themeTokens: ThemeTokens) =>
-  request<Tenant>("/tenants/current/theme", {
+export const getTenantBySlug = cache((slug: string) =>
+  request<Tenant>(`/tenants/by-slug/${slug}`),
+);
+export const checkSlugAvailability = (slug: string) =>
+  request<{ available: boolean; reason?: "invalid" | "reserved" | "taken" }>(
+    `/tenants/check-slug/${slug}`,
+  );
+export const updateTenantTheme = (tenantId: string, themeTokens: ThemeTokens) =>
+  request<Tenant>(`/tenants/${tenantId}/theme`, {
     method: "PATCH",
     body: JSON.stringify(themeTokens),
   });
 
 // Products
-export const getProducts = () => request<Product[]>("/products");
-export const getProduct = (idOrSlug: string) =>
-  request<Product>(`/products/${idOrSlug}`);
-export const createProduct = (input: Partial<Product>) =>
-  request<Product>("/products", { method: "POST", body: JSON.stringify(input) });
-export const updateProduct = (id: string, input: Partial<Product>) =>
+export const getProducts = (tenantId: string) =>
+  request<Product[]>(`/products?tenantId=${tenantId}`);
+export const getProduct = (idOrSlug: string, tenantId: string) =>
+  request<Product>(`/products/${idOrSlug}?tenantId=${tenantId}`);
+export const createProduct = (tenantId: string, input: Partial<Product>) =>
+  request<Product>("/products", {
+    method: "POST",
+    body: JSON.stringify({ ...input, tenantId }),
+  });
+export const updateProduct = (
+  id: string,
+  tenantId: string,
+  input: Partial<Product>,
+) =>
   request<Product>(`/products/${id}`, {
     method: "PATCH",
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, tenantId }),
   });
-export const deleteProduct = (id: string) =>
-  request<{ id: string }>(`/products/${id}`, { method: "DELETE" });
+export const deleteProduct = (id: string, tenantId: string) =>
+  request<{ id: string }>(`/products/${id}?tenantId=${tenantId}`, {
+    method: "DELETE",
+  });
 
 // Collections
-export const getCollections = () =>
-  request<CollectionWithProducts[]>("/collections");
-export const getCollection = (idOrSlug: string) =>
-  request<CollectionWithProducts>(`/collections/${idOrSlug}`);
-export const createCollection = (input: Partial<Collection>) =>
+export const getCollections = (tenantId: string) =>
+  request<CollectionWithProducts[]>(`/collections?tenantId=${tenantId}`);
+export const getCollection = (idOrSlug: string, tenantId: string) =>
+  request<CollectionWithProducts>(`/collections/${idOrSlug}?tenantId=${tenantId}`);
+export const createCollection = (tenantId: string, input: Partial<Collection>) =>
   request<Collection>("/collections", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, tenantId }),
   });
-export const updateCollection = (id: string, input: Partial<Collection>) =>
+export const updateCollection = (
+  id: string,
+  tenantId: string,
+  input: Partial<Collection>,
+) =>
   request<Collection>(`/collections/${id}`, {
     method: "PATCH",
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, tenantId }),
   });
-export const deleteCollection = (id: string) =>
-  request<{ id: string }>(`/collections/${id}`, { method: "DELETE" });
+export const deleteCollection = (id: string, tenantId: string) =>
+  request<{ id: string }>(`/collections/${id}?tenantId=${tenantId}`, {
+    method: "DELETE",
+  });
 
 // Gallery
-export const getGallery = () => request<MediaAsset[]>("/media");
-export const createMedia = (input: Partial<MediaAsset>) =>
-  request<MediaAsset>("/media", { method: "POST", body: JSON.stringify(input) });
-export const deleteMedia = (id: string) =>
-  request<{ id: string }>(`/media/${id}`, { method: "DELETE" });
+export const getGallery = (tenantId: string) =>
+  request<MediaAsset[]>(`/media?tenantId=${tenantId}`);
+export const createMedia = (tenantId: string, input: Partial<MediaAsset>) =>
+  request<MediaAsset>("/media", {
+    method: "POST",
+    body: JSON.stringify({ ...input, tenantId }),
+  });
+export const deleteMedia = (id: string, tenantId: string) =>
+  request<{ id: string }>(`/media/${id}?tenantId=${tenantId}`, {
+    method: "DELETE",
+  });
 
 // Payment methods
-export const getPaymentMethods = () =>
-  request<PaymentMethod[]>("/payment-methods");
-export const createPaymentMethod = (input: Partial<PaymentMethod>) =>
+export const getPaymentMethods = (tenantId: string) =>
+  request<PaymentMethod[]>(`/payment-methods?tenantId=${tenantId}`);
+export const createPaymentMethod = (
+  tenantId: string,
+  input: Partial<PaymentMethod>,
+) =>
   request<PaymentMethod>("/payment-methods", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, tenantId }),
   });
-export const updatePaymentMethod = (id: string, input: Partial<PaymentMethod>) =>
+export const updatePaymentMethod = (
+  id: string,
+  tenantId: string,
+  input: Partial<PaymentMethod>,
+) =>
   request<PaymentMethod>(`/payment-methods/${id}`, {
     method: "PATCH",
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, tenantId }),
   });
-export const deletePaymentMethod = (id: string) =>
-  request<{ id: string }>(`/payment-methods/${id}`, { method: "DELETE" });
+export const deletePaymentMethod = (id: string, tenantId: string) =>
+  request<{ id: string }>(`/payment-methods/${id}?tenantId=${tenantId}`, {
+    method: "DELETE",
+  });
 
 // Orders
-export const getOrders = () => request<Order[]>("/orders");
-export const getOrder = (id: string) => request<Order>(`/orders/${id}`);
+export const getOrders = (tenantId: string) =>
+  request<Order[]>(`/orders?tenantId=${tenantId}`);
+export const getOrder = (id: string, tenantId: string) =>
+  request<Order>(`/orders/${id}?tenantId=${tenantId}`);
 export const getOrderByToken = (token: string) =>
   request<Order>(`/orders/track/${token}`);
 export const createOrder = (input: {
+  tenantId: string;
   customerName: string;
   customerContact: string;
   items: { productId: string; quantity: number }[];
 }) => request<Order>("/orders", { method: "POST", body: JSON.stringify(input) });
-export const markOrderSeen = (id: string) =>
-  request<Order>(`/orders/${id}/seen`, { method: "PATCH" });
+export const markOrderSeen = (id: string, tenantId: string) =>
+  request<Order>(`/orders/${id}/seen`, {
+    method: "PATCH",
+    body: JSON.stringify({ tenantId }),
+  });
 export const updateOrderStatus = (
   id: string,
+  tenantId: string,
   status: OrderStatus,
   note?: string,
 ) =>
   request<Order>(`/orders/${id}/status`, {
     method: "PATCH",
-    body: JSON.stringify({ status, note }),
+    body: JSON.stringify({ tenantId, status, note }),
   });
-export const modifyOrderItems = (id: string, items: OrderItem[], note?: string) =>
+export const modifyOrderItems = (
+  id: string,
+  tenantId: string,
+  items: OrderItem[],
+  note?: string,
+) =>
   request<Order>(`/orders/${id}/items`, {
     method: "PATCH",
-    body: JSON.stringify({ items, note }),
+    body: JSON.stringify({ tenantId, items, note }),
   });
 
 // Team
@@ -132,9 +182,10 @@ export const removeTeamMember = (id: string) =>
   request<{ id: string }>(`/team/${id}`, { method: "DELETE" });
 
 // Story page content blocks
-export const getStoryBlocks = () => request<ContentBlock[]>("/story");
-export const updateStoryBlocks = (blocks: ContentBlock[]) =>
+export const getStoryBlocks = (tenantId: string) =>
+  request<ContentBlock[]>(`/story?tenantId=${tenantId}`);
+export const updateStoryBlocks = (tenantId: string, blocks: ContentBlock[]) =>
   request<ContentBlock[]>("/story", {
     method: "PATCH",
-    body: JSON.stringify({ blocks }),
+    body: JSON.stringify({ tenantId, blocks }),
   });

@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type { Product } from "@/lib/types";
+import { useStoreSlug } from "./store-context";
 
 export interface CartLine {
   productId: string;
@@ -29,15 +30,16 @@ interface CartContextValue {
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
-const STORAGE_KEY = "selltns-cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const slug = useStoreSlug();
+  const storageKey = `selltns-cart:${slug}`;
   const [lines, setLines] = useState<CartLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const raw = window.localStorage.getItem(storageKey);
       // One-time hydration from localStorage after mount — deliberately deferred
       // to this effect (rather than a lazy useState initializer) so the client's
       // first render matches the server-rendered empty cart and avoids a
@@ -48,12 +50,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // ignore malformed local storage
     }
     setHydrated(true);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
-  }, [lines, hydrated]);
+    window.localStorage.setItem(storageKey, JSON.stringify(lines));
+  }, [lines, hydrated, storageKey]);
 
   const addItem = useCallback((product: Product, quantity = 1) => {
     setLines((prev) => {

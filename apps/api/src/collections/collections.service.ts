@@ -9,23 +9,25 @@ export class CollectionsService {
 
   constructor(private readonly productsService: ProductsService) {}
 
-  findAll() {
-    return this.collections.map((c) => this.withProducts(c));
+  findAll(tenantId: string) {
+    return this.collections
+      .filter((c) => c.tenantId === tenantId)
+      .map((c) => this.withProducts(c));
   }
 
-  findOne(idOrSlug: string) {
+  findOne(idOrSlug: string, tenantId: string) {
     const collection = this.collections.find(
-      (c) => c.id === idOrSlug || c.slug === idOrSlug,
+      (c) => (c.id === idOrSlug || c.slug === idOrSlug) && c.tenantId === tenantId,
     );
     if (!collection)
       throw new NotFoundException(`Collection ${idOrSlug} not found`);
     return this.withProducts(collection);
   }
 
-  create(input: Partial<Collection>): Collection {
+  create(input: Partial<Collection> & { tenantId: string }): Collection {
     const collection: Collection = {
       id: `col_${Date.now()}`,
-      tenantId: 'tenant_demo',
+      tenantId: input.tenantId,
       title: input.title ?? 'Untitled collection',
       slug:
         input.slug ??
@@ -44,18 +46,22 @@ export class CollectionsService {
     return collection;
   }
 
-  update(id: string, input: Partial<Collection>): Collection {
-    const existing = this.collections.find((c) => c.id === id);
+  update(id: string, tenantId: string, input: Partial<Collection>): Collection {
+    const existing = this.collections.find(
+      (c) => c.id === id && c.tenantId === tenantId,
+    );
     if (!existing) throw new NotFoundException(`Collection ${id} not found`);
-    const updated = { ...existing, ...input, id: existing.id };
+    const updated = { ...existing, ...input, id: existing.id, tenantId: existing.tenantId };
     this.collections = this.collections.map((c) =>
       c.id === existing.id ? updated : c,
     );
     return updated;
   }
 
-  remove(id: string): { id: string } {
-    const existing = this.collections.find((c) => c.id === id);
+  remove(id: string, tenantId: string): { id: string } {
+    const existing = this.collections.find(
+      (c) => c.id === id && c.tenantId === tenantId,
+    );
     if (!existing) throw new NotFoundException(`Collection ${id} not found`);
     this.collections = this.collections.filter((c) => c.id !== existing.id);
     return { id: existing.id };
@@ -67,7 +73,7 @@ export class CollectionsService {
       products: collection.productIds
         .map((id) => {
           try {
-            return this.productsService.findOne(id);
+            return this.productsService.findOne(id, collection.tenantId);
           } catch {
             return null;
           }

@@ -6,27 +6,29 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import type { Tenant } from "@/lib/types";
 import { CartIndicator } from "./cart-indicator";
+import { useStoreSlug } from "./store-context";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-
-const NAV_LINKS = [
-  { href: "/", label: "Shop" },
-  { href: "/collections", label: "Collections" },
-  { href: "/story", label: "Our Story" },
-];
 
 export function SiteHeader({ tenant }: { tenant: Tenant }) {
   const pathname = usePathname();
+  const slug = useStoreSlug();
   const [open, setOpen] = useState(false);
+
+  const navLinks = [
+    { href: `/${slug}`, label: "Shop" },
+    { href: `/${slug}/collections`, label: "Collections" },
+    { href: `/${slug}/story`, label: "Our Story" },
+  ];
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--store-border)] bg-[var(--store-bg)]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
-        <Link href="/" className="store-heading text-xl font-semibold tracking-tight">
+        <Link href={`/${slug}`} className="store-heading text-xl font-semibold tracking-tight">
           {tenant.name}
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) => {
+          {navLinks.map((link) => {
             const active = pathname === link.href;
             return (
               <Link
@@ -69,7 +71,7 @@ export function SiteHeader({ tenant }: { tenant: Tenant }) {
             className="absolute inset-0 bg-black/40 animate-in fade-in-0 duration-150"
           />
           <div className="absolute right-0 top-0 flex h-full w-4/5 max-w-xs animate-in slide-in-from-right duration-200 flex-col gap-1 bg-[var(--store-bg)] p-6">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

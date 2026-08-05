@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { gallery as seedGallery } from '../common/seed-data';
 import { MediaAsset } from '../common/types';
 
@@ -6,14 +6,14 @@ import { MediaAsset } from '../common/types';
 export class GalleryService {
   private assets: MediaAsset[] = [...seedGallery];
 
-  findAll(): MediaAsset[] {
-    return this.assets;
+  findAll(tenantId: string): MediaAsset[] {
+    return this.assets.filter((a) => a.tenantId === tenantId);
   }
 
-  create(input: Partial<MediaAsset>): MediaAsset {
+  create(input: Partial<MediaAsset> & { tenantId: string }): MediaAsset {
     const asset: MediaAsset = {
       id: `media_${Date.now()}`,
-      tenantId: 'tenant_demo',
+      tenantId: input.tenantId,
       url: input.url ?? 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200',
       thumbUrl: input.thumbUrl ?? input.url ?? '',
       altText: input.altText ?? '',
@@ -23,8 +23,10 @@ export class GalleryService {
     return asset;
   }
 
-  remove(id: string): { id: string } {
-    this.assets = this.assets.filter((a) => a.id !== id);
-    return { id };
+  remove(id: string, tenantId: string): { id: string } {
+    const existing = this.assets.find((a) => a.id === id && a.tenantId === tenantId);
+    if (!existing) throw new NotFoundException(`Media ${id} not found`);
+    this.assets = this.assets.filter((a) => a.id !== existing.id);
+    return { id: existing.id };
   }
 }

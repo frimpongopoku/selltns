@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ClipboardList, Package, Wallet, TrendingUp } from "lucide-react";
 import { getOrders, getProducts } from "@/lib/api";
+import { getMe } from "@/lib/get-me";
 import { StatCard } from "@/components/admin/stat-card";
 import { StatusBadge } from "@/components/storefront/status-badge";
 import { formatMoney, formatDate } from "@/lib/format";
@@ -10,7 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export const metadata = { title: "Dashboard" };
 
 export default async function AdminDashboardPage() {
-  const [orders, products] = await Promise.all([getOrders(), getProducts()]);
+  const me = await getMe();
+  if (!me) redirect("/admin/login");
+  const [orders, products] = await Promise.all([
+    getOrders(me.tenant.id),
+    getProducts(me.tenant.id),
+  ]);
 
   const pending = orders.filter((o) => o.status === "PENDING").length;
   const confirmed = orders.filter((o) => ["CONFIRMED", "MODIFIED"].includes(o.status)).length;

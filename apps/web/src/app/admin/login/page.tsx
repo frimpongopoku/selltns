@@ -1,10 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { signInMock } from "@/lib/auth-actions";
+import { signInWithGooglePopup } from "@/lib/firebase-client";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -12,8 +14,28 @@ export default function AdminLoginPage() {
 
   async function handleLogin() {
     setLoading(true);
-    await signInMock();
-    router.push("/admin");
+    try {
+      const idToken = await signInWithGooglePopup();
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      if (res.ok) {
+        router.push("/admin");
+        return;
+      }
+      const body = await res.json().catch(() => ({}) as { code?: string; message?: string });
+      if (body.code === "NOT_ALLOWLISTED") {
+        router.push("/admin/access-denied");
+        return;
+      }
+      toast.error(body.message ?? "Sign-in failed. Please try again.");
+    } catch {
+      toast.error("Sign-in failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -51,8 +73,10 @@ export default function AdminLoginPage() {
           {loading ? "Signing in…" : "Continue with Google"}
         </Button>
         <p className="mt-6 text-xs text-muted-foreground">
-          Mock auth for the design prototype — any click signs you in as{" "}
-          <span className="font-medium">Akosua Boateng (Owner)</span>.
+          New here?{" "}
+          <Link href="/register" className="underline underline-offset-2">
+            Create a store
+          </Link>
         </p>
       </Card>
     </div>

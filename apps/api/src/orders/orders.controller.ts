@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import type { OrderItem, OrderStatus } from '../common/types';
 
@@ -12,8 +12,8 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
-  findAll() {
-    return this.ordersService.findAll();
+  findAll(@Query('tenantId') tenantId: string) {
+    return this.ordersService.findAll(tenantId);
   }
 
   @Get('track/:token')
@@ -22,14 +22,15 @@ export class OrdersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.ordersService.findOne(id);
+  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
+    return this.ordersService.findOne(id, tenantId);
   }
 
   @Post()
   create(
     @Body()
     body: {
+      tenantId: string;
       customerName: string;
       customerContact: string;
       items: CreateOrderItemInput[];
@@ -39,23 +40,23 @@ export class OrdersController {
   }
 
   @Patch(':id/seen')
-  markSeen(@Param('id') id: string) {
-    return this.ordersService.markSeen(id);
+  markSeen(@Param('id') id: string, @Body() body: { tenantId: string }) {
+    return this.ordersService.markSeen(id, body.tenantId);
   }
 
   @Patch(':id/status')
   updateStatus(
     @Param('id') id: string,
-    @Body() body: { status: OrderStatus; note?: string },
+    @Body() body: { tenantId: string; status: OrderStatus; note?: string },
   ) {
-    return this.ordersService.updateStatus(id, body.status, body.note);
+    return this.ordersService.updateStatus(id, body.tenantId, body.status, body.note);
   }
 
   @Patch(':id/items')
   modifyItems(
     @Param('id') id: string,
-    @Body() body: { items: OrderItem[]; note?: string },
+    @Body() body: { tenantId: string; items: OrderItem[]; note?: string },
   ) {
-    return this.ordersService.modifyItems(id, body.items, body.note);
+    return this.ordersService.modifyItems(id, body.tenantId, body.items, body.note);
   }
 }

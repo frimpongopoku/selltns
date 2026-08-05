@@ -6,12 +6,13 @@ import { ContentBlock } from '../common/types';
 export class StoryService {
   private blocks: ContentBlock[] = [...storyBlocks];
 
-  findAll(): ContentBlock[] {
-    return this.blocks;
+  findAll(tenantId: string): ContentBlock[] {
+    return this.blocks.filter((b) => b.tenantId === tenantId);
   }
 
-  replaceAll(blocks: ContentBlock[]): ContentBlock[] {
-    this.blocks = blocks;
-    return this.blocks;
+  replaceAll(tenantId: string, blocks: ContentBlock[]): ContentBlock[] {
+    const stamped = blocks.map((b) => ({ ...b, tenantId }));
+    this.blocks = [...this.blocks.filter((b) => b.tenantId !== tenantId), ...stamped];
+    return stamped;
   }
 }

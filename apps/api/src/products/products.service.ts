@@ -6,20 +6,24 @@ import { Product } from '../common/types';
 export class ProductsService {
   private products: Product[] = [...seedProducts];
 
-  findAll(): Product[] {
-    return [...this.products].sort((a, b) => a.displayOrder - b.displayOrder);
+  findAll(tenantId: string): Product[] {
+    return this.products
+      .filter((p) => p.tenantId === tenantId)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
   }
 
-  findOne(id: string): Product {
-    const product = this.products.find((p) => p.id === id || p.slug === id);
-    if (!product) throw new NotFoundException(`Product ${id} not found`);
+  findOne(idOrSlug: string, tenantId: string): Product {
+    const product = this.products.find(
+      (p) => (p.id === idOrSlug || p.slug === idOrSlug) && p.tenantId === tenantId,
+    );
+    if (!product) throw new NotFoundException(`Product ${idOrSlug} not found`);
     return product;
   }
 
-  create(input: Partial<Product>): Product {
+  create(input: Partial<Product> & { tenantId: string }): Product {
     const product: Product = {
       id: `prod_${Date.now()}`,
-      tenantId: 'tenant_demo',
+      tenantId: input.tenantId,
       title: input.title ?? 'Untitled product',
       slug:
         input.slug ??
@@ -35,22 +39,24 @@ export class ProductsService {
       images: input.images ?? [],
       displayOrder:
         input.displayOrder ??
-        this.products.reduce((max, p) => Math.max(max, p.displayOrder), -1) + 1,
+        this.products
+          .filter((p) => p.tenantId === input.tenantId)
+          .reduce((max, p) => Math.max(max, p.displayOrder), -1) + 1,
       createdAt: new Date().toISOString(),
     };
     this.products = [product, ...this.products];
     return product;
   }
 
-  update(id: string, input: Partial<Product>): Product {
-    const existing = this.findOne(id);
-    const updated = { ...existing, ...input, id: existing.id };
+  update(id: string, tenantId: string, input: Partial<Product>): Product {
+    const existing = this.findOne(id, tenantId);
+    const updated = { ...existing, ...input, id: existing.id, tenantId: existing.tenantId };
     this.products = this.products.map((p) => (p.id === existing.id ? updated : p));
     return updated;
   }
 
-  remove(id: string): { id: string } {
-    const existing = this.findOne(id);
+  remove(id: string, tenantId: string): { id: string } {
+    const existing = this.findOne(id, tenantId);
     this.products = this.products.filter((p) => p.id !== existing.id);
     return { id: existing.id };
   }

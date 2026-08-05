@@ -23,7 +23,7 @@ export function TrackerActions({ order, tenant }: { order: Order; tenant: Tenant
   async function handleCancel() {
     setCancelling(true);
     try {
-      await updateOrderStatus(order.id, "CANCELLED", "Cancelled by customer");
+      await updateOrderStatus(order.id, tenant.id, "CANCELLED", "Cancelled by customer");
       toast.success("Order request cancelled");
       router.refresh();
     } catch {

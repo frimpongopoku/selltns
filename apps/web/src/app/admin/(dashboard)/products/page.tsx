@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { getProducts } from "@/lib/api";
+import { getMe } from "@/lib/get-me";
 import { formatMoney } from "@/lib/format";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +19,9 @@ import { ProductActiveToggle } from "@/components/admin/product-active-toggle";
 export const metadata = { title: "Products" };
 
 export default async function AdminProductsPage() {
-  const products = await getProducts();
+  const me = await getMe();
+  if (!me) redirect("/admin/login");
+  const products = await getProducts(me.tenant.id);
 
   return (
     <div>
@@ -90,6 +94,7 @@ export default async function AdminProductsPage() {
                   <TableCell>
                     <ProductActiveToggle
                       productId={product.id}
+                      tenantId={me.tenant.id}
                       initialActive={product.isActive}
                     />
                   </TableCell>

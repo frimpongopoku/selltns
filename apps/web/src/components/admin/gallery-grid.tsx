@@ -17,14 +17,20 @@ const STOCK_PHOTOS = [
   "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200",
 ];
 
-export function GalleryGrid({ assets }: { assets: MediaAsset[] }) {
+export function GalleryGrid({
+  tenantId,
+  assets,
+}: {
+  tenantId: string;
+  assets: MediaAsset[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   function handleUpload() {
     const url = STOCK_PHOTOS[Math.floor(Math.random() * STOCK_PHOTOS.length)];
     startTransition(async () => {
-      await createMedia({ url, thumbUrl: url, altText: "Uploaded photo" });
+      await createMedia(tenantId, { url, thumbUrl: url, altText: "Uploaded photo" });
       toast.success("Photo added to gallery");
       router.refresh();
     });
@@ -32,7 +38,7 @@ export function GalleryGrid({ assets }: { assets: MediaAsset[] }) {
 
   function handleDelete(id: string) {
     startTransition(async () => {
-      await deleteMedia(id);
+      await deleteMedia(id, tenantId);
       router.refresh();
     });
   }

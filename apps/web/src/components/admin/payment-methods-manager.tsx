@@ -27,7 +27,13 @@ import {
 import { createPaymentMethod, updatePaymentMethod } from "@/lib/api";
 import type { PaymentMethod } from "@/lib/types";
 
-export function PaymentMethodsManager({ methods }: { methods: PaymentMethod[] }) {
+export function PaymentMethodsManager({
+  tenantId,
+  methods,
+}: {
+  tenantId: string;
+  methods: PaymentMethod[];
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"MOMO" | "BANK">("MOMO");
@@ -37,12 +43,12 @@ export function PaymentMethodsManager({ methods }: { methods: PaymentMethod[] })
   const [saving, setSaving] = useState(false);
 
   async function toggleEnabled(method: PaymentMethod, isEnabled: boolean) {
-    await updatePaymentMethod(method.id, { isEnabled });
+    await updatePaymentMethod(method.id, tenantId, { isEnabled });
     router.refresh();
   }
 
   async function setPreferred(method: PaymentMethod) {
-    await updatePaymentMethod(method.id, { isPreferred: true });
+    await updatePaymentMethod(method.id, tenantId, { isPreferred: true });
     toast.success(`${method.label} set as preferred`);
     router.refresh();
   }
@@ -51,7 +57,7 @@ export function PaymentMethodsManager({ methods }: { methods: PaymentMethod[] })
     e.preventDefault();
     setSaving(true);
     try {
-      await createPaymentMethod({
+      await createPaymentMethod(tenantId, {
         type,
         label,
         details: type === "MOMO" ? { number, name } : { accountName: name, accountNumber: number },

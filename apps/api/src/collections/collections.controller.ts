@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CollectionsService } from './collections.service';
 import type { Collection } from '../common/types';
@@ -15,27 +16,30 @@ export class CollectionsController {
   constructor(private readonly collectionsService: CollectionsService) {}
 
   @Get()
-  findAll() {
-    return this.collectionsService.findAll();
+  findAll(@Query('tenantId') tenantId: string) {
+    return this.collectionsService.findAll(tenantId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.collectionsService.findOne(id);
+  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
+    return this.collectionsService.findOne(id, tenantId);
   }
 
   @Post()
-  create(@Body() body: Partial<Collection>) {
+  create(@Body() body: Partial<Collection> & { tenantId: string }) {
     return this.collectionsService.create(body);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: Partial<Collection>) {
-    return this.collectionsService.update(id, body);
+  update(
+    @Param('id') id: string,
+    @Body() body: Partial<Collection> & { tenantId: string },
+  ) {
+    return this.collectionsService.update(id, body.tenantId, body);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.collectionsService.remove(id);
+  remove(@Param('id') id: string, @Query('tenantId') tenantId: string) {
+    return this.collectionsService.remove(id, tenantId);
   }
 }

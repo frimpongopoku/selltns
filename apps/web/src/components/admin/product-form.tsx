@@ -12,7 +12,13 @@ import { GalleryPicker } from "@/components/admin/gallery-picker";
 import { createProduct, deleteProduct, updateProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
 
-export function ProductForm({ product }: { product?: Product }) {
+export function ProductForm({
+  tenantId,
+  product,
+}: {
+  tenantId: string;
+  product?: Product;
+}) {
   const router = useRouter();
   const [title, setTitle] = useState(product?.title ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
@@ -37,10 +43,10 @@ export function ProductForm({ product }: { product?: Product }) {
     };
     try {
       if (product) {
-        await updateProduct(product.id, payload);
+        await updateProduct(product.id, tenantId, payload);
         toast.success("Product updated");
       } else {
-        await createProduct(payload);
+        await createProduct(tenantId, payload);
         toast.success("Product created");
       }
       router.push("/admin/products");
@@ -53,7 +59,7 @@ export function ProductForm({ product }: { product?: Product }) {
 
   async function handleDelete() {
     if (!product) return;
-    await deleteProduct(product.id);
+    await deleteProduct(product.id, tenantId);
     toast.success("Product deleted");
     router.push("/admin/products");
     router.refresh();
@@ -64,7 +70,7 @@ export function ProductForm({ product }: { product?: Product }) {
       <div>
         <Label>Images</Label>
         <div className="mt-1.5">
-          <GalleryPicker selected={images} onChange={setImages} />
+          <GalleryPicker tenantId={tenantId} selected={images} onChange={setImages} />
         </div>
       </div>
 

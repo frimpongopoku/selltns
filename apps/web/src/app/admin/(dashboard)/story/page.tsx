@@ -1,10 +1,14 @@
+import { redirect } from "next/navigation";
 import { getStoryBlocks } from "@/lib/api";
+import { getMe } from "@/lib/get-me";
 import { StoryEditor } from "@/components/admin/story-editor";
 
 export const metadata = { title: "Story page" };
 
 export default async function AdminStoryPage() {
-  const blocks = await getStoryBlocks();
+  const me = await getMe();
+  if (!me) redirect("/admin/login");
+  const blocks = await getStoryBlocks(me.tenant.id);
 
   return (
     <div>
@@ -14,7 +18,7 @@ export default async function AdminStoryPage() {
         Story&rdquo; page — no ecommerce logic, just your brand&apos;s story.
       </p>
       <div className="mt-7">
-        <StoryEditor blocks={blocks} />
+        <StoryEditor tenantId={me.tenant.id} blocks={blocks} />
       </div>
     </div>
   );

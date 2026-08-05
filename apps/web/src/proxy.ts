@@ -6,8 +6,8 @@ export function proxy(request: NextRequest) {
   const isLoggedIn = request.cookies.has(ADMIN_SESSION_COOKIE);
   const { pathname } = request.nextUrl;
 
-  if (pathname === "/admin/login") {
-    if (isLoggedIn) {
+  if (pathname === "/admin/login" || pathname === "/admin/access-denied") {
+    if (isLoggedIn && pathname === "/admin/login") {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
     return NextResponse.next();

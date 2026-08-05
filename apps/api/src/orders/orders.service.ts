@@ -9,14 +9,14 @@ export class OrdersService {
 
   constructor(private readonly productsService: ProductsService) {}
 
-  findAll(): Order[] {
-    return [...this.orders].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+  findAll(tenantId: string): Order[] {
+    return this.orders
+      .filter((o) => o.tenantId === tenantId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  findOne(id: string): Order {
-    const order = this.orders.find((o) => o.id === id);
+  findOne(id: string, tenantId: string): Order {
+    const order = this.orders.find((o) => o.id === id && o.tenantId === tenantId);
     if (!order) throw new NotFoundException(`Order ${id} not found`);
     return order;
   }
@@ -28,12 +28,13 @@ export class OrdersService {
   }
 
   create(input: {
+    tenantId: string;
     customerName: string;
     customerContact: string;
     items: { productId: string; quantity: number }[];
   }): Order {
     const items: OrderItem[] = input.items.map(({ productId, quantity }) => {
-      const product = this.productsService.findOne(productId);
+      const product = this.productsService.findOne(productId, input.tenantId);
       return {
         productId: product.id,
         title: product.title,
@@ -47,7 +48,7 @@ export class OrdersService {
     );
     const order: Order = {
       id: `order_${Date.now()}`,
-      tenantId: 'tenant_demo',
+      tenantId: input.tenantId,
       customerName: input.customerName,
       customerContact: input.customerContact,
       status: 'PENDING',
@@ -69,8 +70,8 @@ export class OrdersService {
     return order;
   }
 
-  updateStatus(id: string, status: OrderStatus, note?: string): Order {
-    const existing = this.findOne(id);
+  updateStatus(id: string, tenantId: string, status: OrderStatus, note?: string): Order {
+    const existing = this.findOne(id, tenantId);
     const now = new Date().toISOString();
     const updated: Order = {
       ...existing,
@@ -86,16 +87,16 @@ export class OrdersService {
     return updated;
   }
 
-  markSeen(id: string): Order {
-    const existing = this.findOne(id);
+  markSeen(id: string, tenantId: string): Order {
+    const existing = this.findOne(id, tenantId);
     if (existing.seenByAdminAt) return existing;
     const updated: Order = { ...existing, seenByAdminAt: new Date().toISOString() };
     this.orders = this.orders.map((o) => (o.id === existing.id ? updated : o));
     return updated;
   }
 
-  modifyItems(id: string, items: OrderItem[], note?: string): Order {
-    const existing = this.findOne(id);
+  modifyItems(id: string, tenantId: string, items: OrderItem[], note?: string): Order {
+    const existing = this.findOne(id, tenantId);
     const total = items.reduce(
       (sum, item) => sum + item.priceAtOrder * item.quantity,
       0,

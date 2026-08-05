@@ -1,10 +1,14 @@
+import { redirect } from "next/navigation";
 import { getGallery } from "@/lib/api";
+import { getMe } from "@/lib/get-me";
 import { GalleryGrid } from "@/components/admin/gallery-grid";
 
 export const metadata = { title: "Gallery" };
 
 export default async function AdminGalleryPage() {
-  const assets = await getGallery();
+  const me = await getMe();
+  if (!me) redirect("/admin/login");
+  const assets = await getGallery(me.tenant.id);
 
   return (
     <div>
@@ -13,7 +17,7 @@ export default async function AdminGalleryPage() {
         Every photo uploaded anywhere in the admin lands here — this is the picker used for products and collections.
       </p>
       <div className="mt-7">
-        <GalleryGrid assets={assets} />
+        <GalleryGrid tenantId={me.tenant.id} assets={assets} />
       </div>
     </div>
   );

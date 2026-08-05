@@ -11,7 +11,15 @@ import { updateTenantTheme } from "@/lib/api";
 import { PALETTE_SWATCHES, THEME_PRESETS, THEME_TEMPLATE_META } from "@/lib/theme-presets";
 import type { ThemeTemplate, ThemeTokens } from "@/lib/types";
 
-export function ThemePicker({ current }: { current: ThemeTokens }) {
+export function ThemePicker({
+  tenantId,
+  tenantName,
+  current,
+}: {
+  tenantId: string;
+  tenantName: string;
+  current: ThemeTokens;
+}) {
   const router = useRouter();
   const [template, setTemplate] = useState<ThemeTemplate>(current.template);
   const [palette, setPalette] = useState(0);
@@ -27,7 +35,7 @@ export function ThemePicker({ current }: { current: ThemeTokens }) {
   async function handleSave() {
     setSaving(true);
     try {
-      await updateTenantTheme(preview);
+      await updateTenantTheme(tenantId, preview);
       toast.success("Storefront theme updated");
       router.refresh();
     } finally {
@@ -102,7 +110,7 @@ export function ThemePicker({ current }: { current: ThemeTokens }) {
       <Card className="overflow-hidden p-0">
         <ThemeScope tokens={preview} className="p-7 transition-colors duration-300">
           <p className="store-nav-link store-accent-text text-xs font-semibold">Preview</p>
-          <h2 className="store-heading mt-2.5 text-2xl font-semibold">Akosua & Co.</h2>
+          <h2 className="store-heading mt-2.5 text-2xl font-semibold">{tenantName}</h2>
           <p className="store-muted mt-2.5 max-w-xs text-sm leading-relaxed">
             Small-batch, handmade pieces — requested here, confirmed by us.
           </p>

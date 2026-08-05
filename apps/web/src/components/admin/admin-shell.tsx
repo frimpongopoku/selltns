@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AdminNavLinks } from "./admin-nav-links";
-import { signOutMock } from "@/lib/auth-actions";
+import { signOut } from "@/lib/auth-actions";
 import type { Tenant, TeamMember } from "@/lib/types";
 
 function initials(name: string) {
@@ -37,7 +37,7 @@ function UserBlock({ user }: { user: TeamMember }) {
   const router = useRouter();
 
   async function handleLogout() {
-    await signOutMock();
+    await signOut();
     router.push("/admin/login");
   }
 

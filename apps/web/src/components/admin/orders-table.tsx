@@ -15,7 +15,7 @@ import {
 import { StatusBadge } from "@/components/storefront/status-badge";
 import { OrderDetailContent } from "@/components/admin/order-detail-content";
 import { formatMoney, formatDate } from "@/lib/format";
-import type { Order, OrderStatus } from "@/lib/types";
+import type { Order, OrderStatus, Tenant } from "@/lib/types";
 
 const TABS: { value: OrderStatus | "ALL"; label: string }[] = [
   { value: "ALL", label: "All" },
@@ -26,7 +26,13 @@ const TABS: { value: OrderStatus | "ALL"; label: string }[] = [
   { value: "CANCELLED", label: "Cancelled" },
 ];
 
-export function OrdersTable({ orders: initialOrders }: { orders: Order[] }) {
+export function OrdersTable({
+  tenant,
+  orders: initialOrders,
+}: {
+  tenant: Tenant;
+  orders: Order[];
+}) {
   const [orders, setOrders] = useState(initialOrders);
   const [tab, setTab] = useState<OrderStatus | "ALL">("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -111,6 +117,7 @@ export function OrdersTable({ orders: initialOrders }: { orders: Order[] }) {
           {selected && (
             <OrderDetailContent
               key={selected.id}
+              tenant={tenant}
               order={selected}
               showOpenFullPage
               onUpdated={handleUpdated}

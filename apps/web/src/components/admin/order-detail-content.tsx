@@ -8,13 +8,15 @@ import { StatusBadge } from "@/components/storefront/status-badge";
 import { OrderActions } from "@/components/admin/order-actions";
 import { Card } from "@/components/ui/card";
 import { markOrderSeen } from "@/lib/api";
-import type { Order } from "@/lib/types";
+import type { Order, Tenant } from "@/lib/types";
 
 export function OrderDetailContent({
+  tenant,
   order: initialOrder,
   showOpenFullPage = false,
   onUpdated,
 }: {
+  tenant: Tenant;
   order: Order;
   showOpenFullPage?: boolean;
   onUpdated?: (order: Order) => void;
@@ -23,7 +25,7 @@ export function OrderDetailContent({
 
   useEffect(() => {
     if (order.seenByAdminAt) return;
-    markOrderSeen(order.id).then((updated) => {
+    markOrderSeen(order.id, tenant.id).then((updated) => {
       setOrder(updated);
       onUpdated?.(updated);
     });
@@ -71,7 +73,7 @@ export function OrderDetailContent({
       </Card>
 
       <div className="mt-6">
-        <OrderActions order={order} onUpdated={handleUpdated} />
+        <OrderActions tenantId={tenant.id} order={order} onUpdated={handleUpdated} />
       </div>
 
       <div className="mt-8">
@@ -88,7 +90,8 @@ export function OrderDetailContent({
       </div>
 
       <p className="mt-8 text-xs text-muted-foreground">
-        Customer tracking link: <span className="font-mono">/track/{order.trackingToken}</span>
+        Customer tracking link:{" "}
+        <span className="font-mono">/{tenant.slug}/track/{order.trackingToken}</span>
       </p>
     </div>
   );

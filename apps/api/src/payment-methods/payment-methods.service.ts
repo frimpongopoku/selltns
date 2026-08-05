@@ -6,14 +6,14 @@ import { PaymentMethod } from '../common/types';
 export class PaymentMethodsService {
   private methods: PaymentMethod[] = [...seedPaymentMethods];
 
-  findAll(): PaymentMethod[] {
-    return this.methods;
+  findAll(tenantId: string): PaymentMethod[] {
+    return this.methods.filter((m) => m.tenantId === tenantId);
   }
 
-  create(input: Partial<PaymentMethod>): PaymentMethod {
+  create(input: Partial<PaymentMethod> & { tenantId: string }): PaymentMethod {
     const method: PaymentMethod = {
       id: `pay_${Date.now()}`,
-      tenantId: 'tenant_demo',
+      tenantId: input.tenantId,
       type: input.type ?? 'MOMO',
       label: input.label ?? 'Untitled method',
       details: input.details ?? {},
@@ -24,21 +24,23 @@ export class PaymentMethodsService {
     return method;
   }
 
-  update(id: string, input: Partial<PaymentMethod>): PaymentMethod {
-    const existing = this.methods.find((m) => m.id === id);
+  update(id: string, tenantId: string, input: Partial<PaymentMethod>): PaymentMethod {
+    const existing = this.methods.find((m) => m.id === id && m.tenantId === tenantId);
     if (!existing) throw new NotFoundException(`Payment method ${id} not found`);
-    let updated = { ...existing, ...input, id: existing.id };
+    const updated = { ...existing, ...input, id: existing.id, tenantId: existing.tenantId };
     if (updated.isPreferred) {
-      this.methods = this.methods.map((m) => ({ ...m, isPreferred: false }));
-    } else {
-      this.methods = [...this.methods];
+      this.methods = this.methods.map((m) =>
+        m.tenantId === tenantId ? { ...m, isPreferred: false } : m,
+      );
     }
     this.methods = this.methods.map((m) => (m.id === existing.id ? updated : m));
     return updated;
   }
 
-  remove(id: string): { id: string } {
-    this.methods = this.methods.filter((m) => m.id !== id);
-    return { id };
+  remove(id: string, tenantId: string): { id: string } {
+    const existing = this.methods.find((m) => m.id === id && m.tenantId === tenantId);
+    if (!existing) throw new NotFoundException(`Payment method ${id} not found`);
+    this.methods = this.methods.filter((m) => m.id !== existing.id);
+    return { id: existing.id };
   }
 }

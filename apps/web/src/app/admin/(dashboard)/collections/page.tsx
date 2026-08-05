@@ -1,13 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { getCollections } from "@/lib/api";
+import { getMe } from "@/lib/get-me";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata = { title: "Collections" };
 
 export default async function AdminCollectionsPage() {
-  const collections = await getCollections();
+  const me = await getMe();
+  if (!me) redirect("/admin/login");
+  const collections = await getCollections(me.tenant.id);
 
   return (
     <div>

@@ -33,14 +33,20 @@ const BLOCK_META: Record<ContentBlockType, { label: string; icon: typeof Type }>
   PHOTOS: { label: "Photos", icon: ImagePlus },
 };
 
-function newBlock(type: ContentBlockType): ContentBlock {
+function newBlock(type: ContentBlockType, tenantId: string): ContentBlock {
   const id = `block_${Date.now()}_${Math.round(Math.random() * 1000)}`;
-  if (type === "TEXT") return { id, type, heading: "", body: "" };
-  if (type === "VIDEO") return { id, type, videoUrl: "", caption: "" };
-  return { id, type, heading: "", imageUrls: [] };
+  if (type === "TEXT") return { id, tenantId, type, heading: "", body: "" };
+  if (type === "VIDEO") return { id, tenantId, type, videoUrl: "", caption: "" };
+  return { id, tenantId, type, heading: "", imageUrls: [] };
 }
 
-export function StoryEditor({ blocks: initialBlocks }: { blocks: ContentBlock[] }) {
+export function StoryEditor({
+  tenantId,
+  blocks: initialBlocks,
+}: {
+  tenantId: string;
+  blocks: ContentBlock[];
+}) {
   const router = useRouter();
   const [blocks, setBlocks] = useState(initialBlocks);
   const [saving, setSaving] = useState(false);
@@ -65,13 +71,13 @@ export function StoryEditor({ blocks: initialBlocks }: { blocks: ContentBlock[] 
   }
 
   function addBlock(type: ContentBlockType) {
-    setBlocks((prev) => [...prev, newBlock(type)]);
+    setBlocks((prev) => [...prev, newBlock(type, tenantId)]);
   }
 
   async function handleSave() {
     setSaving(true);
     try {
-      await updateStoryBlocks(blocks);
+      await updateStoryBlocks(tenantId, blocks);
       toast.success("Story page updated");
       router.refresh();
     } finally {
@@ -190,6 +196,7 @@ export function StoryEditor({ blocks: initialBlocks }: { blocks: ContentBlock[] 
                 <Label>Photos</Label>
                 <div className="mt-1.5">
                   <GalleryPicker
+                    tenantId={tenantId}
                     selected={block.imageUrls ?? []}
                     onChange={(urls) => updateBlock(block.id, { imageUrls: urls })}
                   />
