@@ -114,6 +114,12 @@ export function CollectionForm({
 
       <div>
         <Label>Products in this collection</Label>
+        {products.length === 0 ? (
+          <p className="mt-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            No products yet — add one first, then come back to build this
+            collection.
+          </p>
+        ) : (
         <div className="mt-2 grid max-h-64 grid-cols-1 gap-2 overflow-y-auto rounded-lg border p-3 sm:grid-cols-2">
           {products.map((product) => (
             <label key={product.id} className="flex items-center gap-2 text-sm">
@@ -125,6 +131,7 @@ export function CollectionForm({
             </label>
           ))}
         </div>
+        )}
       </div>
 
       <div>

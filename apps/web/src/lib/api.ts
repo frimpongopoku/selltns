@@ -91,14 +91,9 @@ export const deleteCollection = (id: string, tenantId: string) =>
     method: "DELETE",
   });
 
-// Gallery
+// Gallery — uploading goes through lib/upload.ts (multipart, not JSON)
 export const getGallery = (tenantId: string) =>
   request<MediaAsset[]>(`/media?tenantId=${tenantId}`);
-export const createMedia = (tenantId: string, input: Partial<MediaAsset>) =>
-  request<MediaAsset>("/media", {
-    method: "POST",
-    body: JSON.stringify({ ...input, tenantId }),
-  });
 export const deleteMedia = (id: string, tenantId: string) =>
   request<{ id: string }>(`/media/${id}?tenantId=${tenantId}`, {
     method: "DELETE",

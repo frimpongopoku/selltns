@@ -46,8 +46,11 @@ export interface MediaAsset {
   tenantId: string;
   url: string;
   thumbUrl: string;
+  width: number;
+  height: number;
+  bytes: number;
   altText: string;
-  uploadedAt: string;
+  createdAt: string;
 }
 
 export interface Product {

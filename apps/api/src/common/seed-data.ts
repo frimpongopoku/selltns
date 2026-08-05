@@ -1,7 +1,6 @@
 import {
   Collection,
   ContentBlock,
-  MediaAsset,
   Order,
   PaymentMethod,
   Product,
@@ -61,61 +60,26 @@ export const teamMembers: TeamMember[] = [
   },
 ];
 
-export const gallery: MediaAsset[] = [
+// Stand-in image URLs for seeding the (still in-memory/mock) products and
+// collections below. Unrelated to the real media library, which is backed by
+// MediaAsset in Postgres + Cloudflare R2 — see apps/api/src/media.
+const gallery = [
   {
-    id: 'media_1',
-    tenantId: TENANT_ID,
     url: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200',
-    thumbUrl:
-      'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
-    altText: 'Folded kente-patterned fabric',
-    uploadedAt: '2026-01-05T10:00:00.000Z',
   },
   {
-    id: 'media_2',
-    tenantId: TENANT_ID,
     url: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200',
-    thumbUrl:
-      'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400',
-    altText: 'Handwoven basket bag on a stool',
-    uploadedAt: '2026-01-06T10:00:00.000Z',
   },
   {
-    id: 'media_3',
-    tenantId: TENANT_ID,
     url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=1200',
-    thumbUrl:
-      'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=400',
-    altText: 'Model wearing a printed wax-fabric dress',
-    uploadedAt: '2026-01-07T10:00:00.000Z',
   },
   {
-    id: 'media_4',
-    tenantId: TENANT_ID,
     url: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200',
-    thumbUrl:
-      'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400',
-    altText: 'Beaded necklace on white backdrop',
-    uploadedAt: '2026-01-08T10:00:00.000Z',
   },
   {
-    id: 'media_5',
-    tenantId: TENANT_ID,
     url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200',
-    thumbUrl:
-      'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400',
-    altText: 'Leather sandals on wooden table',
-    uploadedAt: '2026-01-09T10:00:00.000Z',
   },
-  {
-    id: 'media_6',
-    tenantId: TENANT_ID,
-    url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1200',
-    thumbUrl:
-      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=400',
-    altText: 'Detail shot of woven textile pattern',
-    uploadedAt: '2026-01-10T10:00:00.000Z',
-  },
+  { url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1200' },
 ];
 
 export const products: Product[] = [
@@ -256,7 +220,8 @@ export const collections: Collection[] = [
       radius: '0.125rem',
     },
     seoTitle: 'The Minimal Edit — Akosua & Co.',
-    seoDescription: 'A pared-back capsule collection with a clean, minimal look.',
+    seoDescription:
+      'A pared-back capsule collection with a clean, minimal look.',
     productIds: ['prod_4', 'prod_5', 'prod_6'],
     coverImage: gallery[4].url,
   },
@@ -304,8 +269,18 @@ export const orders: Order[] = [
     customerContact: '055 234 1122',
     status: 'PENDING',
     items: [
-      { productId: 'prod_1', title: 'Adjoa Wax-Print Wrap Dress', quantity: 1, priceAtOrder: 420 },
-      { productId: 'prod_3', title: 'Ama Beaded Statement Necklace', quantity: 2, priceAtOrder: 145 },
+      {
+        productId: 'prod_1',
+        title: 'Adjoa Wax-Print Wrap Dress',
+        quantity: 1,
+        priceAtOrder: 420,
+      },
+      {
+        productId: 'prod_3',
+        title: 'Ama Beaded Statement Necklace',
+        quantity: 2,
+        priceAtOrder: 145,
+      },
     ],
     total: 710,
     trackingToken: 'trk_naa8842',
@@ -313,7 +288,11 @@ export const orders: Order[] = [
     confirmedAt: null,
     seenByAdminAt: null,
     history: [
-      { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-20T08:12:00.000Z' },
+      {
+        status: 'PENDING',
+        note: 'Order request submitted by customer',
+        at: '2026-07-20T08:12:00.000Z',
+      },
     ],
   },
   {
@@ -323,7 +302,12 @@ export const orders: Order[] = [
     customerContact: '024 887 3310',
     status: 'CONFIRMED',
     items: [
-      { productId: 'prod_2', title: 'Nkuruma Woven Basket Bag', quantity: 1, priceAtOrder: 260 },
+      {
+        productId: 'prod_2',
+        title: 'Nkuruma Woven Basket Bag',
+        quantity: 1,
+        priceAtOrder: 260,
+      },
     ],
     total: 260,
     trackingToken: 'trk_kwab3310',
@@ -331,8 +315,16 @@ export const orders: Order[] = [
     confirmedAt: '2026-07-18T16:05:00.000Z',
     seenByAdminAt: '2026-07-18T16:00:00.000Z',
     history: [
-      { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-18T14:40:00.000Z' },
-      { status: 'CONFIRMED', note: 'Confirmed by Akosua — ready for payment', at: '2026-07-18T16:05:00.000Z' },
+      {
+        status: 'PENDING',
+        note: 'Order request submitted by customer',
+        at: '2026-07-18T14:40:00.000Z',
+      },
+      {
+        status: 'CONFIRMED',
+        note: 'Confirmed by Akosua — ready for payment',
+        at: '2026-07-18T16:05:00.000Z',
+      },
     ],
   },
   {
@@ -342,8 +334,18 @@ export const orders: Order[] = [
     customerContact: '050 776 2201',
     status: 'MODIFIED',
     items: [
-      { productId: 'prod_4', title: 'Kofi Leather Slide Sandals', quantity: 1, priceAtOrder: 190 },
-      { productId: 'prod_6', title: 'Yaa Draped Midi Skirt', quantity: 1, priceAtOrder: 240 },
+      {
+        productId: 'prod_4',
+        title: 'Kofi Leather Slide Sandals',
+        quantity: 1,
+        priceAtOrder: 190,
+      },
+      {
+        productId: 'prod_6',
+        title: 'Yaa Draped Midi Skirt',
+        quantity: 1,
+        priceAtOrder: 240,
+      },
     ],
     total: 430,
     trackingToken: 'trk_efua2201',
@@ -351,9 +353,21 @@ export const orders: Order[] = [
     confirmedAt: '2026-07-15T11:00:00.000Z',
     seenByAdminAt: '2026-07-15T10:50:00.000Z',
     history: [
-      { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-15T09:22:00.000Z' },
-      { status: 'CONFIRMED', note: 'Confirmed by Kojo', at: '2026-07-15T11:00:00.000Z' },
-      { status: 'MODIFIED', note: 'Sandal size swapped to 41 per customer request', at: '2026-07-16T10:00:00.000Z' },
+      {
+        status: 'PENDING',
+        note: 'Order request submitted by customer',
+        at: '2026-07-15T09:22:00.000Z',
+      },
+      {
+        status: 'CONFIRMED',
+        note: 'Confirmed by Kojo',
+        at: '2026-07-15T11:00:00.000Z',
+      },
+      {
+        status: 'MODIFIED',
+        note: 'Sandal size swapped to 41 per customer request',
+        at: '2026-07-16T10:00:00.000Z',
+      },
     ],
   },
   {
@@ -363,7 +377,12 @@ export const orders: Order[] = [
     customerContact: '027 445 9981',
     status: 'COMPLETED',
     items: [
-      { productId: 'prod_1', title: 'Adjoa Wax-Print Wrap Dress', quantity: 1, priceAtOrder: 420 },
+      {
+        productId: 'prod_1',
+        title: 'Adjoa Wax-Print Wrap Dress',
+        quantity: 1,
+        priceAtOrder: 420,
+      },
     ],
     total: 420,
     trackingToken: 'trk_yaw9981',
@@ -371,9 +390,21 @@ export const orders: Order[] = [
     confirmedAt: '2026-07-02T13:00:00.000Z',
     seenByAdminAt: '2026-07-02T12:45:00.000Z',
     history: [
-      { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-07-02T12:00:00.000Z' },
-      { status: 'CONFIRMED', note: 'Confirmed by Akosua', at: '2026-07-02T13:00:00.000Z' },
-      { status: 'COMPLETED', note: 'Payment received, order fulfilled', at: '2026-07-04T09:00:00.000Z' },
+      {
+        status: 'PENDING',
+        note: 'Order request submitted by customer',
+        at: '2026-07-02T12:00:00.000Z',
+      },
+      {
+        status: 'CONFIRMED',
+        note: 'Confirmed by Akosua',
+        at: '2026-07-02T13:00:00.000Z',
+      },
+      {
+        status: 'COMPLETED',
+        note: 'Payment received, order fulfilled',
+        at: '2026-07-04T09:00:00.000Z',
+      },
     ],
   },
   {
@@ -383,7 +414,12 @@ export const orders: Order[] = [
     customerContact: '059 002 7765',
     status: 'CANCELLED',
     items: [
-      { productId: 'prod_5', title: 'Abena Kente-Trim Blazer', quantity: 1, priceAtOrder: 610 },
+      {
+        productId: 'prod_5',
+        title: 'Abena Kente-Trim Blazer',
+        quantity: 1,
+        priceAtOrder: 610,
+      },
     ],
     total: 610,
     trackingToken: 'trk_aben7765',
@@ -391,8 +427,16 @@ export const orders: Order[] = [
     confirmedAt: null,
     seenByAdminAt: '2026-06-28T15:45:00.000Z',
     history: [
-      { status: 'PENDING', note: 'Order request submitted by customer', at: '2026-06-28T15:30:00.000Z' },
-      { status: 'CANCELLED', note: 'Out of stock — cancelled by Akosua', at: '2026-06-29T08:00:00.000Z' },
+      {
+        status: 'PENDING',
+        note: 'Order request submitted by customer',
+        at: '2026-06-28T15:30:00.000Z',
+      },
+      {
+        status: 'CANCELLED',
+        note: 'Out of stock — cancelled by Akosua',
+        at: '2026-06-29T08:00:00.000Z',
+      },
     ],
   },
 ];
@@ -417,6 +461,13 @@ export const storyBlocks: ContentBlock[] = [
     tenantId: TENANT_ID,
     type: 'PHOTOS',
     heading: 'In the studio',
-    imageUrls: [gallery[0].url, gallery[1].url, gallery[2].url, gallery[3].url, gallery[4].url, gallery[5].url],
+    imageUrls: [
+      gallery[0].url,
+      gallery[1].url,
+      gallery[2].url,
+      gallery[3].url,
+      gallery[4].url,
+      gallery[5].url,
+    ],
   },
 ];

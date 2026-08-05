@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Check, Plus, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { getGallery } from "@/lib/api";
 import type { MediaAsset } from "@/lib/types";
 
@@ -26,6 +27,11 @@ export function GalleryPicker({
 
   function toggle(url: string) {
     onChange(selected.includes(url) ? selected.filter((u) => u !== url) : [...selected, url]);
+  }
+
+  function handleUploaded(asset: MediaAsset) {
+    setAssets((prev) => [asset, ...prev]);
+    onChange([...selected, asset.url]);
   }
 
   return (
@@ -55,6 +61,14 @@ export function GalleryPicker({
             <DialogHeader>
               <DialogTitle>Choose from gallery</DialogTitle>
             </DialogHeader>
+
+            <MediaDropzone tenantId={tenantId} onUploaded={handleUploaded} compact />
+
+            {assets.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Your gallery is empty — upload your first photo above.
+              </p>
+            ) : (
             <div className="grid max-h-96 grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4">
               {assets.map((asset) => {
                 const isSelected = selected.includes(asset.url);
@@ -77,6 +91,7 @@ export function GalleryPicker({
                 );
               })}
             </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

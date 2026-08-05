@@ -95,6 +95,13 @@ export default async function AdminDashboardPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {orders.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                    No order requests yet.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>

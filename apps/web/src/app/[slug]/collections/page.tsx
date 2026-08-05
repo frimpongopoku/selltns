@@ -20,6 +20,9 @@ export default async function CollectionsIndexPage({
       <p className="store-muted mt-3 max-w-lg leading-relaxed">
         Curated sets of pieces — each with its own look and story.
       </p>
+      {collections.length === 0 ? (
+        <p className="store-muted mt-8">No collections yet — check back soon.</p>
+      ) : (
       <div className="mt-9 grid grid-cols-1 gap-6 sm:grid-cols-2">
         {collections.map((collection, i) => (
           <Link
@@ -49,6 +52,7 @@ export default async function CollectionsIndexPage({
           </Link>
         ))}
       </div>
+      )}
     </div>
   );
 }

@@ -41,15 +41,6 @@ export interface TeamMember {
   acceptedAt: string | null;
 }
 
-export interface MediaAsset {
-  id: string;
-  tenantId: string;
-  url: string;
-  thumbUrl: string;
-  altText: string;
-  uploadedAt: string;
-}
-
 export interface Product {
   id: string;
   tenantId: string;

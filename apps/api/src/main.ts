@@ -1,5 +1,7 @@
 import 'dotenv/config';
+import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 const REQUIRED_ENV_VARS = [
@@ -25,11 +27,14 @@ function checkRequiredEnv() {
 
 async function bootstrap() {
   checkRequiredEnv();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors({
     origin: process.env.WEB_ORIGIN ?? 'http://localhost:4310',
     credentials: true,
   });
+  // Only used when R2 env vars are absent and MediaModule falls back to disk
+  // storage for local dev — see media/storage/local-disk-storage.service.ts.
+  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
   await app.listen(process.env.PORT ?? 4311);
 }
 bootstrap();

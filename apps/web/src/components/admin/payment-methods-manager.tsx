@@ -124,6 +124,15 @@ export function PaymentMethodsManager({
         </Dialog>
       </div>
 
+      {methods.length === 0 ? (
+        <Card className="mt-6 flex flex-col items-center gap-2 py-14 text-center">
+          <p className="font-medium">No payment methods yet</p>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Add a Mobile Money or bank option so customers know how to pay
+            once you confirm their order.
+          </p>
+        </Card>
+      ) : (
       <div className="mt-6 flex flex-col gap-3">
         {methods.map((method) => (
           <Card key={method.id} className="flex flex-row items-center justify-between gap-4 p-5 transition-shadow hover:shadow-sm">
@@ -149,6 +158,7 @@ export function PaymentMethodsManager({
           </Card>
         ))}
       </div>
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ model Tenant {
   createdAt      DateTime @default(now()) @map("created_at")
 
   memberships TenantMembership[]
+  mediaAssets MediaAsset[]
 
   @@map("tenants")
 }
@@ -51,4 +52,23 @@ model TenantMembership {
 
   @@unique([tenantId, userId])
   @@map("tenant_memberships")
+}
+
+model MediaAsset {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  key       String
+  url       String
+  thumbKey  String   @map("thumb_key")
+  thumbUrl  String   @map("thumb_url")
+  width     Int
+  height    Int
+  bytes     Int
+  altText   String   @default("") @map("alt_text")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("media_assets")
 }

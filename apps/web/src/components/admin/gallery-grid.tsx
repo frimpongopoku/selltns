@@ -3,19 +3,11 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { X, Upload } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { createMedia, deleteMedia } from "@/lib/api";
+import { X } from "lucide-react";
+import { MediaDropzone } from "@/components/admin/media-dropzone";
+import { deleteMedia } from "@/lib/api";
+import { formatBytes } from "@/lib/media-constraints";
 import type { MediaAsset } from "@/lib/types";
-
-const STOCK_PHOTOS = [
-  "https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200",
-  "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200",
-  "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=1200",
-  "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1200",
-  "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1200",
-];
 
 export function GalleryGrid({
   tenantId,
@@ -25,16 +17,7 @@ export function GalleryGrid({
   assets: MediaAsset[];
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  function handleUpload() {
-    const url = STOCK_PHOTOS[Math.floor(Math.random() * STOCK_PHOTOS.length)];
-    startTransition(async () => {
-      await createMedia(tenantId, { url, thumbUrl: url, altText: "Uploaded photo" });
-      toast.success("Photo added to gallery");
-      router.refresh();
-    });
-  }
+  const [, startTransition] = useTransition();
 
   function handleDelete(id: string) {
     startTransition(async () => {
@@ -45,19 +28,24 @@ export function GalleryGrid({
 
   return (
     <div>
-      <Button onClick={handleUpload} disabled={isPending} className="gap-1.5">
-        <Upload className="h-4 w-4" />
-        {isPending ? "Uploading…" : "Upload photo"}
-      </Button>
-      <p className="mt-1.5 text-xs text-muted-foreground">
-        Mock upload — adds a random stock photo. Real uploads land here too,
-        this is the single picker used everywhere in the admin.
-      </p>
+      <MediaDropzone tenantId={tenantId} onUploaded={() => router.refresh()} />
 
+      {assets.length === 0 ? (
+        <div className="mt-8 flex flex-col items-center gap-2 rounded-lg border border-dashed py-16 text-center">
+          <p className="font-medium">No photos yet</p>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Upload your first photo — it&apos;ll be available to pick from
+            everywhere in the admin, including products and collections.
+          </p>
+        </div>
+      ) : (
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {assets.map((asset) => (
           <div key={asset.id} className="group relative aspect-square overflow-hidden rounded-lg border">
             <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="200px" className="object-cover" />
+            <div className="absolute inset-x-0 bottom-0 translate-y-full bg-black/60 px-2 py-1 text-[10px] text-white transition-transform group-hover:translate-y-0">
+              {asset.width}×{asset.height} · {formatBytes(asset.bytes)}
+            </div>
             <button
               type="button"
               onClick={() => handleDelete(asset.id)}
@@ -69,6 +57,7 @@ export function GalleryGrid({
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

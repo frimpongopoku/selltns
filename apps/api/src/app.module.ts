@@ -5,7 +5,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { ProductsModule } from './products/products.module';
 import { CollectionsModule } from './collections/collections.module';
-import { GalleryModule } from './gallery/gallery.module';
+import { MediaModule } from './media/media.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { OrdersModule } from './orders/orders.module';
 import { AuthModule } from './auth/auth.module';
@@ -18,7 +18,7 @@ import { StoryModule } from './story/story.module';
     TenantsModule,
     ProductsModule,
     CollectionsModule,
-    GalleryModule,
+    MediaModule,
     PaymentMethodsModule,
     OrdersModule,
     AuthModule,

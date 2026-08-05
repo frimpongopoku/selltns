@@ -30,6 +30,21 @@ export default async function AdminCollectionsPage() {
         </Link>
       </div>
 
+      {collections.length === 0 ? (
+        <Card className="mt-7 flex flex-col items-center gap-3 py-16 text-center">
+          <p className="font-medium">No collections yet</p>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Group related products into a collection — it&apos;ll get its own
+            page on your storefront, and you can even give it a different theme.
+          </p>
+          <Link href="/admin/collections/new">
+            <Button className="mt-2 gap-1.5">
+              <Plus className="h-4 w-4" />
+              New collection
+            </Button>
+          </Link>
+        </Card>
+      ) : (
       <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {collections.map((collection, i) => (
           <Link
@@ -56,6 +71,7 @@ export default async function AdminCollectionsPage() {
           </Link>
         ))}
       </div>
+      )}
     </div>
   );
 }
