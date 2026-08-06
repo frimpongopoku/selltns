@@ -17,9 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GalleryPicker } from "@/components/admin/gallery-picker";
+import { TagInput } from "@/components/admin/tag-input";
 import { createCollection, deleteCollection, updateCollection } from "@/lib/api";
 import { THEME_PRESETS, THEME_TEMPLATE_META } from "@/lib/theme-presets";
-import type { Collection, Product, ThemeTemplate } from "@/lib/types";
+import type { Collection, CollectionWithProducts, Product, ThemeTemplate } from "@/lib/types";
 
 export function CollectionForm({
   tenantId,
@@ -31,7 +32,7 @@ export function CollectionForm({
   collection?: Collection;
   products: Product[];
   /** When provided, called instead of navigating to the collections list on success. */
-  onSaved?: () => void;
+  onSaved?: (saved: CollectionWithProducts) => void;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(collection?.title ?? "");
@@ -39,6 +40,7 @@ export function CollectionForm({
   const [seoTitle, setSeoTitle] = useState(collection?.seoTitle ?? "");
   const [seoDescription, setSeoDescription] = useState(collection?.seoDescription ?? "");
   const [productIds, setProductIds] = useState<string[]>(collection?.productIds ?? []);
+  const [tags, setTags] = useState<string[]>(collection?.tags ?? []);
   const [coverImage, setCoverImage] = useState<string[]>(
     collection?.coverImage ? [collection.coverImage] : [],
   );
@@ -60,19 +62,17 @@ export function CollectionForm({
       seoTitle,
       seoDescription,
       productIds,
+      tags,
       coverImage: coverImage[0] ?? "",
       themeOverride: themeChoice === "none" ? null : THEME_PRESETS[themeChoice],
     };
     try {
-      if (collection) {
-        await updateCollection(collection.id, tenantId, payload);
-        toast.success("Collection updated");
-      } else {
-        await createCollection(tenantId, payload);
-        toast.success("Collection created");
-      }
+      const saved = collection
+        ? await updateCollection(collection.id, tenantId, payload)
+        : await createCollection(tenantId, payload);
+      toast.success(collection ? "Collection updated" : "Collection created");
       if (onSaved) {
-        onSaved();
+        onSaved(saved);
       } else {
         router.push("/admin/collections");
       }
@@ -118,6 +118,16 @@ export function CollectionForm({
           onChange={(e) => setDescription(e.target.value)}
           className="mt-1.5"
         />
+      </div>
+
+      <div>
+        <Label>Tags</Label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Helps you find this collection later — search by tag in the collections list.
+        </p>
+        <div className="mt-1.5">
+          <TagInput tags={tags} onChange={setTags} placeholder="Add a tag…" />
+        </div>
       </div>
 
       <div>

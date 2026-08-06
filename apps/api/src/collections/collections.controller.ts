@@ -16,8 +16,29 @@ export class CollectionsController {
   constructor(private readonly collectionsService: CollectionsService) {}
 
   @Get()
-  findAll(@Query('tenantId') tenantId: string) {
+  findAll(
+    @Query('tenantId') tenantId: string,
+    @Query('paginate') paginate?: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+    @Query('tag') tag?: string,
+  ) {
+    if (paginate === 'true') {
+      return this.collectionsService.findAllPaginated(tenantId, {
+        cursor,
+        limit: limit ? Number(limit) : undefined,
+        q,
+        tag,
+      });
+    }
     return this.collectionsService.findAll(tenantId);
+  }
+
+  // Must come before `:id` or Nest would try to look up a collection with id "tags".
+  @Get('tags')
+  findDistinctTags(@Query('tenantId') tenantId: string) {
+    return this.collectionsService.findDistinctTags(tenantId);
   }
 
   @Get(':id')

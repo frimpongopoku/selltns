@@ -1,6 +1,7 @@
 import { cache } from "react";
 import type {
   Collection,
+  CollectionPage,
   CollectionWithProducts,
   ContentBlock,
   MediaAsset,
@@ -90,10 +91,26 @@ export const deleteProduct = (id: string, tenantId: string) =>
 // Collections
 export const getCollections = (tenantId: string) =>
   request<CollectionWithProducts[]>(`/collections?tenantId=${tenantId}`);
+export interface GetCollectionsPageParams {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  tag?: string;
+}
+export const getCollectionsPage = (tenantId: string, params: GetCollectionsPageParams = {}) => {
+  const search = new URLSearchParams({ tenantId, paginate: "true" });
+  if (params.cursor) search.set("cursor", params.cursor);
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.q) search.set("q", params.q);
+  if (params.tag) search.set("tag", params.tag);
+  return request<CollectionPage>(`/collections?${search.toString()}`);
+};
+export const getCollectionTags = (tenantId: string) =>
+  request<string[]>(`/collections/tags?tenantId=${tenantId}`);
 export const getCollection = (idOrSlug: string, tenantId: string) =>
   request<CollectionWithProducts>(`/collections/${idOrSlug}?tenantId=${tenantId}`);
 export const createCollection = (tenantId: string, input: Partial<Collection>) =>
-  request<Collection>("/collections", {
+  request<CollectionWithProducts>("/collections", {
     method: "POST",
     body: JSON.stringify({ ...input, tenantId }),
   });
@@ -102,7 +119,7 @@ export const updateCollection = (
   tenantId: string,
   input: Partial<Collection>,
 ) =>
-  request<Collection>(`/collections/${id}`, {
+  request<CollectionWithProducts>(`/collections/${id}`, {
     method: "PATCH",
     body: JSON.stringify({ ...input, tenantId }),
   });

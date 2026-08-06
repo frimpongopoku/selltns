@@ -84,7 +84,7 @@ export function AdminShell({
           <AdminNavLinks />
         </div>
         <a
-          href="http://localhost:4310"
+          href={`/${tenant.slug}`}
           target="_blank"
           rel="noreferrer"
           className="flex items-center gap-2 rounded-lg px-1 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CollectionForm } from "@/components/admin/collection-form";
+import { emitCollectionCreated } from "@/lib/collection-events";
 import type { Product } from "@/lib/types";
 
 export function CollectionQuickCreateDialog({
@@ -33,7 +34,14 @@ export function CollectionQuickCreateDialog({
           <DialogTitle>New collection</DialogTitle>
         </DialogHeader>
         {open && (
-          <CollectionForm tenantId={tenantId} products={products} onSaved={() => setOpen(false)} />
+          <CollectionForm
+            tenantId={tenantId}
+            products={products}
+            onSaved={(created) => {
+              setOpen(false);
+              emitCollectionCreated(created);
+            }}
+          />
         )}
       </DialogContent>
     </Dialog>

@@ -91,11 +91,17 @@ export interface Collection {
   seoTitle: string;
   seoDescription: string;
   productIds: string[];
+  tags: string[];
   coverImage: string;
 }
 
 export interface CollectionWithProducts extends Collection {
   products: Product[];
+}
+
+export interface CollectionPage {
+  items: CollectionWithProducts[];
+  nextCursor: string | null;
 }
 
 export interface PaymentMethod {

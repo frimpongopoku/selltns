@@ -63,6 +63,7 @@ export interface Collection {
   seoTitle: string;
   seoDescription: string;
   productIds: string[];
+  tags: string[];
   coverImage: string;
 }
 

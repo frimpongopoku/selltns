@@ -193,6 +193,7 @@ export const collections: Collection[] = [
     seoDescription:
       'Shop the newest handmade pieces from Akosua & Co., made in small batches.',
     productIds: ['prod_1', 'prod_2', 'prod_3'],
+    tags: ['new', 'seasonal'],
     coverImage: gallery[0].url,
   },
   {
@@ -205,6 +206,7 @@ export const collections: Collection[] = [
     seoTitle: 'Accessories — Akosua & Co.',
     seoDescription: 'Hand-woven bags, beaded jewelry and leather accessories.',
     productIds: ['prod_2', 'prod_3', 'prod_4'],
+    tags: ['accessories', 'gifting'],
     coverImage: gallery[1].url,
   },
   {
@@ -229,6 +231,7 @@ export const collections: Collection[] = [
     seoDescription:
       'A pared-back capsule collection with a clean, minimal look.',
     productIds: ['prod_4', 'prod_5', 'prod_6'],
+    tags: ['minimal', 'capsule'],
     coverImage: gallery[4].url,
   },
 ];
@@ -239,7 +242,7 @@ export const paymentMethods: PaymentMethod[] = [
     tenantId: TENANT_ID,
     type: 'MOMO',
     label: 'MTN Mobile Money',
-    details: { number: '024 555 0134', name: 'Akosua Boateng' },
+    details: { network: 'MTN', number: '024 555 0134', name: 'Akosua Boateng' },
     isEnabled: true,
     isPreferred: true,
   },
@@ -248,7 +251,7 @@ export const paymentMethods: PaymentMethod[] = [
     tenantId: TENANT_ID,
     type: 'MOMO',
     label: 'Telecel Cash',
-    details: { number: '020 111 8842', name: 'Akosua Boateng' },
+    details: { network: 'Telecel', number: '020 111 8842', name: 'Akosua Boateng' },
     isEnabled: true,
     isPreferred: false,
   },
@@ -261,6 +264,8 @@ export const paymentMethods: PaymentMethod[] = [
       accountName: 'Akosua & Co Ventures',
       accountNumber: '1102345678901',
       branch: 'East Legon',
+      branchCode: '080149',
+      sortCode: '060105',
     },
     isEnabled: false,
     isPreferred: false,

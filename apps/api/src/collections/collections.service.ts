@@ -1,9 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { slugify } from '../common/slugify';
-import type { Collection, ThemeTokens } from '../common/types';
 import { Prisma } from '@prisma/client';
 import type { Product as PrismaProduct } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import { slugify } from '../common/slugify';
+import { normalizeTags } from '../common/normalize-tags';
+import { decodeCreatedAtCursor, encodeCreatedAtCursor } from '../common/cursor';
+import {
+  COLLECTIONS_PAGE_SIZE,
+  COLLECTIONS_PAGE_SIZE_MAX,
+  MAX_TAG_LENGTH,
+  MAX_TAGS_PER_COLLECTION,
+} from './collections.constants';
+import type { Collection, ThemeTokens } from '../common/types';
 
 const PRODUCTS_INCLUDE = {
   products: {
@@ -21,6 +29,8 @@ interface CollectionRow {
   coverImage: string;
   seoTitle: string;
   seoDescription: string;
+  tags: string[];
+  createdAt: Date;
   themeOverride: Prisma.JsonValue | null;
   products: { productId: string; product: PrismaProduct }[];
 }
@@ -35,10 +45,26 @@ function mapCollection(row: CollectionRow) {
     coverImage: row.coverImage,
     seoTitle: row.seoTitle,
     seoDescription: row.seoDescription,
+    tags: row.tags,
     themeOverride: row.themeOverride as ThemeTokens | null,
     productIds: row.products.map((cp) => cp.productId),
     products: row.products.map((cp) => cp.product),
   };
+}
+
+function tagsOf(input: Partial<Collection>) {
+  return normalizeTags(input.tags, {
+    maxTags: MAX_TAGS_PER_COLLECTION,
+    maxTagLength: MAX_TAG_LENGTH,
+    noun: 'collection',
+  });
+}
+
+export interface FindAllPaginatedParams {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  tag?: string;
 }
 
 @Injectable()
@@ -52,6 +78,75 @@ export class CollectionsService {
       orderBy: { createdAt: 'desc' },
     });
     return collections.map(mapCollection);
+  }
+
+  // Paginates the collections table directly via raw SQL (for search/cursor),
+  // then hydrates product relations for just that page via the normal Prisma
+  // include — simpler and safer than hand-rolling the join in raw SQL.
+  async findAllPaginated(tenantId: string, params: FindAllPaginatedParams) {
+    const limit = Math.min(
+      Math.max(params.limit ?? COLLECTIONS_PAGE_SIZE, 1),
+      COLLECTIONS_PAGE_SIZE_MAX,
+    );
+    const cursor = decodeCreatedAtCursor(params.cursor);
+    const q = params.q?.trim();
+
+    const searchClause = q
+      ? Prisma.sql`AND (title ILIKE ${'%' + q + '%'} OR EXISTS (SELECT 1 FROM unnest(tags) AS tag WHERE tag ILIKE ${'%' + q + '%'}))`
+      : Prisma.empty;
+    const tagClause = params.tag
+      ? Prisma.sql`AND ${params.tag} = ANY(tags)`
+      : Prisma.empty;
+    const cursorClause = cursor
+      ? Prisma.sql`AND (created_at, id) < (${cursor.createdAt}, ${cursor.id})`
+      : Prisma.empty;
+
+    const rows = await this.prisma.$queryRaw<
+      { id: string; created_at: Date }[]
+    >`
+      SELECT id, created_at
+      FROM collections
+      WHERE tenant_id = ${tenantId}
+      ${searchClause}
+      ${tagClause}
+      ${cursorClause}
+      ORDER BY created_at DESC, id DESC
+      LIMIT ${limit + 1}
+    `;
+
+    const hasMore = rows.length > limit;
+    const pageRows = hasMore ? rows.slice(0, limit) : rows;
+    const ids = pageRows.map((r) => r.id);
+
+    const collections = ids.length
+      ? await this.prisma.collection.findMany({
+          where: { id: { in: ids } },
+          include: PRODUCTS_INCLUDE,
+        })
+      : [];
+    const byId = new Map(collections.map((c) => [c.id, c]));
+    const items = ids
+      .map((id) => byId.get(id))
+      .filter((c): c is NonNullable<typeof c> => !!c)
+      .map(mapCollection);
+
+    const last = pageRows[pageRows.length - 1];
+    const nextCursor =
+      hasMore && last
+        ? encodeCreatedAtCursor({ createdAt: last.created_at, id: last.id })
+        : null;
+
+    return { items, nextCursor };
+  }
+
+  async findDistinctTags(tenantId: string): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<{ tag: string }[]>`
+      SELECT DISTINCT unnest(tags) AS tag
+      FROM collections
+      WHERE tenant_id = ${tenantId}
+      ORDER BY tag ASC
+    `;
+    return rows.map((r) => r.tag);
   }
 
   async findOne(idOrSlug: string, tenantId: string) {
@@ -80,6 +175,7 @@ export class CollectionsService {
         coverImage: input.coverImage ?? '',
         seoTitle: input.seoTitle ?? input.title ?? '',
         seoDescription: input.seoDescription ?? '',
+        tags: tagsOf(input),
         themeOverride: input.themeOverride
           ? (input.themeOverride as unknown as Prisma.InputJsonValue)
           : undefined,
@@ -127,6 +223,7 @@ export class CollectionsService {
         coverImage: input.coverImage ?? existing.coverImage,
         seoTitle: input.seoTitle ?? existing.seoTitle,
         seoDescription: input.seoDescription ?? existing.seoDescription,
+        tags: input.tags !== undefined ? tagsOf(input) : existing.tags,
       };
       if (input.themeOverride !== undefined) {
         data.themeOverride =

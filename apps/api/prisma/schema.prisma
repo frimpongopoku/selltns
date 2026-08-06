@@ -12,6 +12,11 @@ enum Role {
   STAFF
 }
 
+enum PaymentMethodType {
+  MOMO
+  BANK
+}
+
 model Tenant {
   id             String   @id @default(cuid())
   name           String
@@ -21,10 +26,11 @@ model Tenant {
   themeTokens    Json     @map("theme_tokens")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  memberships TenantMembership[]
-  mediaAssets MediaAsset[]
-  products    Product[]
-  collections Collection[]
+  memberships    TenantMembership[]
+  mediaAssets    MediaAsset[]
+  products       Product[]
+  collections    Collection[]
+  paymentMethods PaymentMethod[]
 
   @@map("tenants")
 }
@@ -110,6 +116,7 @@ model Collection {
   coverImage     String   @default("") @map("cover_image")
   seoTitle       String   @default("") @map("seo_title")
   seoDescription String   @default("") @map("seo_description")
+  tags           String[] @default([])
   themeOverride  Json?    @map("theme_override")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
@@ -132,4 +139,21 @@ model CollectionProduct {
 
   @@id([collectionId, productId])
   @@map("collection_products")
+}
+
+model PaymentMethod {
+  id          String            @id @default(cuid())
+  tenantId    String            @map("tenant_id")
+  type        PaymentMethodType
+  label       String
+  details     Json
+  isEnabled   Boolean           @default(true) @map("is_enabled")
+  isPreferred Boolean           @default(false) @map("is_preferred")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("payment_methods")
 }

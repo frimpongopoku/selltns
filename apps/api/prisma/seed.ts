@@ -6,6 +6,7 @@ import {
   teamMembers,
   products,
   collections,
+  paymentMethods,
 } from '../src/common/seed-data';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -79,19 +80,23 @@ async function main() {
   }
 
   for (const collection of collections) {
+    const collectionData = {
+      title: collection.title,
+      slug: collection.slug,
+      description: collection.description,
+      coverImage: collection.coverImage,
+      seoTitle: collection.seoTitle,
+      seoDescription: collection.seoDescription,
+      tags: collection.tags,
+      themeOverride: collection.themeOverride as object | undefined,
+    };
     await prisma.collection.upsert({
       where: { id: collection.id },
-      update: {},
+      update: collectionData,
       create: {
         id: collection.id,
         tenantId: seededTenant.id,
-        title: collection.title,
-        slug: collection.slug,
-        description: collection.description,
-        coverImage: collection.coverImage,
-        seoTitle: collection.seoTitle,
-        seoDescription: collection.seoDescription,
-        themeOverride: collection.themeOverride as object | undefined,
+        ...collectionData,
       },
     });
 
@@ -106,11 +111,30 @@ async function main() {
     }
   }
 
+  for (const method of paymentMethods) {
+    const methodData = {
+      type: method.type,
+      label: method.label,
+      details: method.details,
+      isEnabled: method.isEnabled,
+      isPreferred: method.isPreferred,
+    };
+    await prisma.paymentMethod.upsert({
+      where: { id: method.id },
+      update: methodData,
+      create: {
+        id: method.id,
+        tenantId: seededTenant.id,
+        ...methodData,
+      },
+    });
+  }
+
   console.log(
     `Seeded tenant "${seededTenant.name}" (${seededTenant.slug}) with ${teamMembers.length} members.`,
   );
   console.log(
-    `Seeded ${products.length} products and ${collections.length} collections.`,
+    `Seeded ${products.length} products, ${collections.length} collections, and ${paymentMethods.length} payment methods.`,
   );
   console.log(
     'NOTE: seeded member emails are fake *.test addresses and cannot sign in with a real Google account. ' +
