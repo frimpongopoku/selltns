@@ -1,8 +1,38 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { slugify } from '../common/slugify';
+import { normalizeTags } from '../common/normalize-tags';
+import { decodeCursor, encodeCursor } from './products.utils';
+import {
+  MAX_TAG_LENGTH,
+  MAX_TAGS_PER_PRODUCT,
+  PRODUCTS_PAGE_SIZE,
+  PRODUCTS_PAGE_SIZE_MAX,
+} from './products.constants';
 import type { Product } from '../common/types';
 import type { Product as PrismaProduct } from '@prisma/client';
+
+export interface FindAllPaginatedParams {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  status?: 'active' | 'inactive' | 'all';
+  tag?: string;
+}
+
+export interface FindAllPaginatedResult {
+  items: PrismaProduct[];
+  nextCursor: string | null;
+}
+
+function tagsOf(input: Partial<Product>) {
+  return normalizeTags(input.tags, {
+    maxTags: MAX_TAGS_PER_PRODUCT,
+    maxTagLength: MAX_TAG_LENGTH,
+    noun: 'product',
+  });
+}
 
 @Injectable()
 export class ProductsService {
@@ -13,6 +43,68 @@ export class ProductsService {
       where: { tenantId },
       orderBy: { displayOrder: 'asc' },
     });
+  }
+
+  async findAllPaginated(
+    tenantId: string,
+    params: FindAllPaginatedParams,
+  ): Promise<FindAllPaginatedResult> {
+    const limit = Math.min(
+      Math.max(params.limit ?? PRODUCTS_PAGE_SIZE, 1),
+      PRODUCTS_PAGE_SIZE_MAX,
+    );
+    const cursor = decodeCursor(params.cursor);
+    const q = params.q?.trim();
+
+    const searchClause = q
+      ? Prisma.sql`AND (title ILIKE ${'%' + q + '%'} OR EXISTS (SELECT 1 FROM unnest(tags) AS tag WHERE tag ILIKE ${'%' + q + '%'}))`
+      : Prisma.empty;
+    const statusClause =
+      params.status === 'active'
+        ? Prisma.sql`AND is_active = true`
+        : params.status === 'inactive'
+          ? Prisma.sql`AND is_active = false`
+          : Prisma.empty;
+    const tagClause = params.tag
+      ? Prisma.sql`AND ${params.tag} = ANY(tags)`
+      : Prisma.empty;
+    const cursorClause = cursor
+      ? Prisma.sql`AND (display_order, id) > (${cursor.displayOrder}, ${cursor.id})`
+      : Prisma.empty;
+
+    const rows = await this.prisma.$queryRaw<PrismaProduct[]>`
+      SELECT id, tenant_id AS "tenantId", title, slug, description, price, sku, stock,
+             is_active AS "isActive", images, tags, display_order AS "displayOrder",
+             created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM products
+      WHERE tenant_id = ${tenantId}
+      ${searchClause}
+      ${statusClause}
+      ${tagClause}
+      ${cursorClause}
+      ORDER BY display_order ASC, id ASC
+      LIMIT ${limit + 1}
+    `;
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const last = items[items.length - 1];
+    const nextCursor =
+      hasMore && last
+        ? encodeCursor({ displayOrder: last.displayOrder, id: last.id })
+        : null;
+
+    return { items, nextCursor };
+  }
+
+  async findDistinctTags(tenantId: string): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<{ tag: string }[]>`
+      SELECT DISTINCT unnest(tags) AS tag
+      FROM products
+      WHERE tenant_id = ${tenantId}
+      ORDER BY tag ASC
+    `;
+    return rows.map((r) => r.tag);
   }
 
   async findOne(idOrSlug: string, tenantId: string): Promise<PrismaProduct> {
@@ -46,6 +138,7 @@ export class ProductsService {
         stock: input.stock ?? 0,
         isActive: input.isActive ?? true,
         images: input.images ?? [],
+        tags: tagsOf(input),
         displayOrder:
           input.displayOrder ?? (maxOrder._max.displayOrder ?? -1) + 1,
       },
@@ -76,6 +169,7 @@ export class ProductsService {
         stock: input.stock ?? existing.stock,
         isActive: input.isActive ?? existing.isActive,
         images: input.images ?? existing.images,
+        tags: input.tags !== undefined ? tagsOf(input) : existing.tags,
         displayOrder: input.displayOrder ?? existing.displayOrder,
       },
     });

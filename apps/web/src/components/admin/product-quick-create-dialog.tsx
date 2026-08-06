@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ProductForm } from "@/components/admin/product-form";
+import { emitProductCreated } from "@/lib/product-events";
 
 export function ProductQuickCreateDialog({ tenantId }: { tenantId: string }) {
   const [open, setOpen] = useState(false);
@@ -25,7 +26,15 @@ export function ProductQuickCreateDialog({ tenantId }: { tenantId: string }) {
         <DialogHeader>
           <DialogTitle>New product</DialogTitle>
         </DialogHeader>
-        {open && <ProductForm tenantId={tenantId} onSaved={() => setOpen(false)} />}
+        {open && (
+          <ProductForm
+            tenantId={tenantId}
+            onSaved={(created) => {
+              setOpen(false);
+              emitProductCreated(created);
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

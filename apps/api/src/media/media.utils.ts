@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { normalizeTags as normalizeTagsShared } from '../common/normalize-tags';
 import {
   MAX_TAG_LENGTH,
   MAX_TAGS_PER_ASSET,
@@ -18,49 +19,12 @@ export function normalizeTitle(
   return trimmed;
 }
 
-// Tags are lowercased + deduped so search/filtering is predictable — the
-// same UX as GitHub labels or Notion tags, just case-insensitive.
 export function normalizeTags(raw: unknown): string[] {
-  if (raw === undefined || raw === null || raw === '') return [];
-
-  let values: unknown[];
-  if (Array.isArray(raw)) {
-    values = raw;
-  } else if (typeof raw === 'string') {
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      values = Array.isArray(parsed) ? parsed : [raw];
-    } catch {
-      values = raw.split(',');
-    }
-  } else {
-    throw new BadRequestException(
-      'tags must be an array or JSON-encoded array of strings.',
-    );
-  }
-
-  const seen = new Set<string>();
-  const tags: string[] = [];
-  for (const value of values) {
-    if (typeof value !== 'string') continue;
-    const tag = value.trim().toLowerCase();
-    if (!tag) continue;
-    if (tag.length > MAX_TAG_LENGTH) {
-      throw new BadRequestException(
-        `Tags must be ${MAX_TAG_LENGTH} characters or fewer.`,
-      );
-    }
-    if (seen.has(tag)) continue;
-    seen.add(tag);
-    tags.push(tag);
-  }
-
-  if (tags.length > MAX_TAGS_PER_ASSET) {
-    throw new BadRequestException(
-      `A photo can have at most ${MAX_TAGS_PER_ASSET} tags.`,
-    );
-  }
-  return tags;
+  return normalizeTagsShared(raw, {
+    maxTags: MAX_TAGS_PER_ASSET,
+    maxTagLength: MAX_TAG_LENGTH,
+    noun: 'photo',
+  });
 }
 
 export interface MediaCursor {

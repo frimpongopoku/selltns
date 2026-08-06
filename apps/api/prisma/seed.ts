@@ -1,7 +1,12 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
-import { tenant, teamMembers, products, collections } from '../src/common/seed-data';
+import {
+  tenant,
+  teamMembers,
+  products,
+  collections,
+} from '../src/common/seed-data';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -34,7 +39,9 @@ async function main() {
     });
 
     await prisma.tenantMembership.upsert({
-      where: { tenantId_userId: { tenantId: seededTenant.id, userId: user.id } },
+      where: {
+        tenantId_userId: { tenantId: seededTenant.id, userId: user.id },
+      },
       update: {},
       create: {
         tenantId: seededTenant.id,
@@ -47,21 +54,25 @@ async function main() {
   }
 
   for (const product of products) {
+    const data = {
+      title: product.title,
+      slug: product.slug,
+      description: product.description,
+      price: product.price,
+      sku: product.sku,
+      stock: product.stock,
+      isActive: product.isActive,
+      images: product.images,
+      tags: product.tags,
+      displayOrder: product.displayOrder,
+    };
     await prisma.product.upsert({
       where: { id: product.id },
-      update: {},
+      update: data,
       create: {
         id: product.id,
         tenantId: seededTenant.id,
-        title: product.title,
-        slug: product.slug,
-        description: product.description,
-        price: product.price,
-        sku: product.sku,
-        stock: product.stock,
-        isActive: product.isActive,
-        images: product.images,
-        displayOrder: product.displayOrder,
+        ...data,
         createdAt: new Date(product.createdAt),
       },
     });
@@ -86,22 +97,28 @@ async function main() {
 
     for (const [position, productId] of collection.productIds.entries()) {
       await prisma.collectionProduct.upsert({
-        where: { collectionId_productId: { collectionId: collection.id, productId } },
+        where: {
+          collectionId_productId: { collectionId: collection.id, productId },
+        },
         update: { position },
         create: { collectionId: collection.id, productId, position },
       });
     }
   }
 
-  console.log(`Seeded tenant "${seededTenant.name}" (${seededTenant.slug}) with ${teamMembers.length} members.`);
-  console.log(`Seeded ${products.length} products and ${collections.length} collections.`);
+  console.log(
+    `Seeded tenant "${seededTenant.name}" (${seededTenant.slug}) with ${teamMembers.length} members.`,
+  );
+  console.log(
+    `Seeded ${products.length} products and ${collections.length} collections.`,
+  );
   console.log(
     'NOTE: seeded member emails are fake *.test addresses and cannot sign in with a real Google account. ' +
-      'To test the allowlist-hit login path end to end, update one membership\'s user email in Postgres ' +
+      "To test the allowlist-hit login path end to end, update one membership's user email in Postgres " +
       'to a real Gmail address you control, e.g.:\n' +
-      '  UPDATE users SET email = \'you@gmail.com\' WHERE email = \'' +
+      "  UPDATE users SET email = 'you@gmail.com' WHERE email = '" +
       teamMembers[0].email.toLowerCase() +
-      '\';',
+      "';",
   );
 }
 

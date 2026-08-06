@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { GalleryPicker } from "@/components/admin/gallery-picker";
+import { TagInput } from "@/components/admin/tag-input";
 import { createProduct, deleteProduct, updateProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
 
@@ -20,7 +21,7 @@ export function ProductForm({
   tenantId: string;
   product?: Product;
   /** When provided, called instead of navigating to the products list on success. */
-  onSaved?: () => void;
+  onSaved?: (saved: Product) => void;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(product?.title ?? "");
@@ -30,6 +31,7 @@ export function ProductForm({
   const [stock, setStock] = useState(String(product?.stock ?? ""));
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [images, setImages] = useState<string[]>(product?.images ?? []);
+  const [tags, setTags] = useState<string[]>(product?.tags ?? []);
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -43,17 +45,15 @@ export function ProductForm({
       stock: Number(stock) || 0,
       isActive,
       images,
+      tags,
     };
     try {
-      if (product) {
-        await updateProduct(product.id, tenantId, payload);
-        toast.success("Product updated");
-      } else {
-        await createProduct(tenantId, payload);
-        toast.success("Product created");
-      }
+      const saved = product
+        ? await updateProduct(product.id, tenantId, payload)
+        : await createProduct(tenantId, payload);
+      toast.success(product ? "Product updated" : "Product created");
       if (onSaved) {
-        onSaved();
+        onSaved(saved);
       } else {
         router.push("/admin/products");
       }
@@ -95,6 +95,16 @@ export function ProductForm({
           onChange={(e) => setDescription(e.target.value)}
           className="mt-1.5"
         />
+      </div>
+
+      <div>
+        <Label>Tags</Label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Helps you find this product later — search by tag in the products list.
+        </p>
+        <div className="mt-1.5">
+          <TagInput tags={tags} onChange={setTags} placeholder="Add a tag…" />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">

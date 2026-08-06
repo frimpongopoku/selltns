@@ -10,6 +10,7 @@ import type {
   OrderStatus,
   PaymentMethod,
   Product,
+  ProductPage,
   Tenant,
   TeamMember,
   ThemeTokens,
@@ -47,6 +48,24 @@ export const updateTenantTheme = (tenantId: string, themeTokens: ThemeTokens) =>
 // Products
 export const getProducts = (tenantId: string) =>
   request<Product[]>(`/products?tenantId=${tenantId}`);
+export interface GetProductsPageParams {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  status?: "active" | "inactive" | "all";
+  tag?: string;
+}
+export const getProductsPage = (tenantId: string, params: GetProductsPageParams = {}) => {
+  const search = new URLSearchParams({ tenantId, paginate: "true" });
+  if (params.cursor) search.set("cursor", params.cursor);
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.q) search.set("q", params.q);
+  if (params.status) search.set("status", params.status);
+  if (params.tag) search.set("tag", params.tag);
+  return request<ProductPage>(`/products?${search.toString()}`);
+};
+export const getProductTags = (tenantId: string) =>
+  request<string[]>(`/products/tags?tenantId=${tenantId}`);
 export const getProduct = (idOrSlug: string, tenantId: string) =>
   request<Product>(`/products/${idOrSlug}?tenantId=${tenantId}`);
 export const createProduct = (tenantId: string, input: Partial<Product>) =>

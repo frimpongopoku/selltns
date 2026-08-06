@@ -1,11 +1,7 @@
 export type Role = 'OWNER' | 'MANAGER' | 'STAFF';
 
 export type OrderStatus =
-  | 'PENDING'
-  | 'CONFIRMED'
-  | 'MODIFIED'
-  | 'CANCELLED'
-  | 'COMPLETED';
+  'PENDING' | 'CONFIRMED' | 'MODIFIED' | 'CANCELLED' | 'COMPLETED';
 
 export type ThemeTemplate = 'FASHION' | 'GENERAL' | 'CLEAN';
 
@@ -52,6 +48,7 @@ export interface Product {
   stock: number;
   isActive: boolean;
   images: string[];
+  tags: string[];
   displayOrder: number;
   createdAt: string;
 }

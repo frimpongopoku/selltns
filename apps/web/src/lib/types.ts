@@ -71,8 +71,14 @@ export interface Product {
   stock: number;
   isActive: boolean;
   images: string[];
+  tags: string[];
   displayOrder: number;
   createdAt: string;
+}
+
+export interface ProductPage {
+  items: Product[];
+  nextCursor: string | null;
 }
 
 export interface Collection {

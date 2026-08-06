@@ -9,10 +9,13 @@ export function ProductActiveToggle({
   productId,
   tenantId,
   initialActive,
+  onToggled,
 }: {
   productId: string;
   tenantId: string;
   initialActive: boolean;
+  /** Called after a successful toggle — for client-driven lists that aren't refetched via router.refresh(). */
+  onToggled?: (isActive: boolean) => void;
 }) {
   const [active, setActive] = useState(initialActive);
   const [isPending, startTransition] = useTransition();
@@ -26,6 +29,7 @@ export function ProductActiveToggle({
         setActive(checked);
         startTransition(async () => {
           await updateProduct(productId, tenantId, { isActive: checked });
+          onToggled?.(checked);
           router.refresh();
         });
       }}
