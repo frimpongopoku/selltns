@@ -154,8 +154,8 @@ export function MediaDropzone({
         <UploadCloud className={compact ? "h-5 w-5 text-muted-foreground" : "h-6 w-6 text-muted-foreground"} />
         <p className="text-sm font-medium">Drop photos here, or click to browse</p>
         <p className="text-xs text-muted-foreground">
-          JPEG, PNG, WebP or GIF — up to {formatBytes(MAX_UPLOAD_BYTES)} each. You&apos;ll get a
-          chance to review before anything uploads.
+          JPEG, PNG, WebP or GIF — up to {formatBytes(MAX_UPLOAD_BYTES)}
+          {" "}each. You&apos;ll get a chance to review before anything uploads.
         </p>
         <input
           ref={inputRef}

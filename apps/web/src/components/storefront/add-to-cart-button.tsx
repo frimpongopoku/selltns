@@ -38,7 +38,7 @@ export function AddToCartButton({
         ) : (
           <ShoppingBag className="h-4 w-4" />
         )}
-        {outOfStock ? "Out of stock" : added ? "Added" : "Add to cart"}
+        {outOfStock ? "Out of stock" : added ? "Added" : size === "sm" ? "Add" : "Add to cart"}
       </span>
     </Button>
   );
