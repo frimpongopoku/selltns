@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getProduct, getTenantBySlug } from "@/lib/api";
+import { getCollections, getProduct, getProducts, getTenantBySlug } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
 import { ProductGallery } from "@/components/storefront/product-gallery";
+import { ProductCard } from "@/components/storefront/product-card";
 
 export async function generateMetadata({
   params,
@@ -38,6 +40,17 @@ export default async function ProductPage({
   const product = await getProduct(productSlug, tenant.id).catch(() => null);
   if (!product) notFound();
 
+  const [allProducts, allCollections] = await Promise.all([
+    getProducts(tenant.id).catch(() => []),
+    getCollections(tenant.id).catch(() => []),
+  ]);
+  const otherProducts = allProducts
+    .filter((p) => p.id !== product.id && p.isActive)
+    .slice(0, 4);
+  const featuredIn = allCollections.filter((c) =>
+    c.productIds.includes(product.id),
+  );
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <div className="grid animate-in fade-in-0 slide-in-from-bottom-2 grid-cols-1 gap-10 duration-500 lg:grid-cols-2 lg:gap-14">
@@ -68,6 +81,69 @@ export default async function ProductPage({
           </p>
         </div>
       </div>
+
+      {featuredIn.length > 0 && (
+        <section className="mt-16 border-t border-[var(--store-border)] pt-12 sm:mt-20 sm:pt-16">
+          <h2 className="store-heading text-xl font-semibold sm:text-2xl">
+            Featured in these collections
+          </h2>
+          <p className="store-muted mt-1.5 text-sm">
+            This piece also appears in {featuredIn.length === 1 ? "this curated set" : "these curated sets"}.
+          </p>
+          <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-3">
+            {featuredIn.map((collection, i) => (
+              <Link
+                key={collection.id}
+                href={`/${slug}/collections/${collection.slug}`}
+                style={{ animationDelay: `${i * 60}ms` }}
+                className="store-card group relative block aspect-[16/10] animate-in fade-in-0 slide-in-from-bottom-2 overflow-hidden fill-mode-both duration-500"
+              >
+                <div
+                  className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                  style={{ backgroundImage: `url(${collection.coverImage})` }}
+                />
+                <div className="absolute inset-0 bg-black/35 transition-colors group-hover:bg-black/50" />
+                <div className="absolute bottom-0 left-0 p-5">
+                  <p className="store-heading text-lg text-white">{collection.title}</p>
+                  <p className="text-xs text-white/80">
+                    {collection.products.filter((p) => p.isActive).length} pieces
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {otherProducts.length > 0 && (
+        <section className="mt-16 border-t border-[var(--store-border)] pt-12 sm:mt-20 sm:pt-16">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="store-heading text-xl font-semibold sm:text-2xl">
+                More from {tenant.name}
+              </h2>
+              <p className="store-muted mt-1.5 text-sm">Other pieces from this shop.</p>
+            </div>
+            <Link
+              href={`/${slug}/products`}
+              className="store-nav-link store-accent-text shrink-0 text-sm font-medium"
+            >
+              View all
+            </Link>
+          </div>
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-5">
+            {otherProducts.map((p, i) => (
+              <div
+                key={p.id}
+                style={{ animationDelay: `${i * 60}ms` }}
+                className="h-full animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-both duration-500"
+              >
+                <ProductCard product={p} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -12,13 +12,13 @@ export function ProductGallery({ images, alt }: { images: string[]; alt: string 
 
   return (
     <div className="grid grid-cols-1 gap-3">
-      <div className="store-card relative aspect-square overflow-hidden">
+      <div className="store-card relative aspect-square overflow-hidden bg-[var(--store-hover-bg)]">
         <Image
           src={images[selected]}
           alt={alt}
           fill
           sizes="(max-width: 1024px) 100vw, 50vw"
-          className="object-cover"
+          className="object-contain"
           priority
         />
       </div>
