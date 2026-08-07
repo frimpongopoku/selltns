@@ -12,7 +12,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) return { title: "Store not found" };
-  const description = `Small-batch, handmade pieces from ${tenant.name} — request your favorites and we'll confirm before arranging payment.`;
+  const description = `Small-batch, handmade pieces from ${tenant.name}. Request your favorites and we'll confirm before arranging payment.`;
   return {
     title: tenant.name,
     description,
@@ -46,7 +46,7 @@ export default async function StoreHomePage({
             {tenant.name}
           </h1>
           <p className="store-muted mt-5 max-w-lg text-base leading-relaxed sm:text-lg">
-            Small-batch, handmade pieces — request your favorites and
+            Small-batch, handmade pieces. Request your favorites and
             we&apos;ll confirm before arranging payment.
           </p>
           <Link
@@ -94,7 +94,7 @@ export default async function StoreHomePage({
           <span className="store-muted text-sm">{activeProducts.length} items</span>
         </div>
         {activeProducts.length === 0 ? (
-          <p className="store-muted mt-8">No products yet — check back soon.</p>
+          <p className="store-muted mt-8">No products yet. Check back soon.</p>
         ) : (
           <div className="mt-7 grid grid-cols-3 gap-3 sm:gap-5 lg:grid-cols-4">
             {activeProducts.map((product, i) => (

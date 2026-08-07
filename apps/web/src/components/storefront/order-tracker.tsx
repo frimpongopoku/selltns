@@ -51,7 +51,7 @@ export function TrackerActions({
     <div className="flex flex-wrap gap-3">
       <button
         type="button"
-        onClick={() => toast.info("PDF booklet generation is coming soon — this is a mock action.")}
+        onClick={() => toast.info("PDF booklet generation is coming soon. This is a mock action.")}
         className="store-btn-secondary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium"
       >
         <Download className="h-4 w-4" />

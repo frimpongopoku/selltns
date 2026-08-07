@@ -128,6 +128,17 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ==========================================================================
    Storefront theming — driven by ThemeTokens, see components/theme/theme-scope.tsx
 
@@ -152,19 +163,24 @@
 }
 
 [data-template="FASHION"] {
-  --store-bg: #faf6f1;
-  --store-fg: #1f1b16;
-  --store-secondary: #6b5b4d;
+  --store-bg: #fbfaf7;
+  --store-fg: #17140f;
+  --store-secondary: #5c5449;
 }
 .dark [data-template="FASHION"] {
-  --store-bg: #1c1714;
-  --store-fg: #f5ece2;
-  --store-secondary: #c9b8a8;
-  --store-primary-fg: #ffffff;
+  --store-bg: #15120e;
+  --store-fg: #f3ede3;
+  --store-secondary: #c7bbaa;
+  /* Fashion's primary is near-black in light mode (the button IS the dark
+     surface) — on a dark page that would disappear, so this is the one
+     light-mode-primary=near-black template where primary flips to the tan
+     accent instead of just swapping bg/fg, same idea as Clean's flip below. */
+  --store-primary: var(--store-accent-custom);
+  --store-primary-fg: #15120e;
 }
 
 [data-template="GENERAL"] {
-  --store-bg: #f7f5f1;
+  --store-bg: #f1f3ed;
   --store-fg: #1b2a27;
   --store-secondary: #5b6b66;
 }
@@ -176,7 +192,7 @@
 }
 
 [data-template="CLEAN"] {
-  --store-bg: #ffffff;
+  --store-bg: #fafafa;
   --store-fg: #111111;
   --store-secondary: #6b6b6b;
 }

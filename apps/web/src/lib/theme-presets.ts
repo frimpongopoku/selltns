@@ -3,12 +3,12 @@ import type { ThemeTemplate, ThemeTokens } from "./types";
 export const THEME_PRESETS: Record<ThemeTemplate, ThemeTokens> = {
   FASHION: {
     template: "FASHION",
-    primary: "#B8452F",
-    secondary: "#1F1B16",
-    accent: "#E8C468",
-    background: "#FAF6F1",
-    foreground: "#1F1B16",
-    fontHeading: "var(--font-fraunces)",
+    primary: "#17140F",
+    secondary: "#5C5449",
+    accent: "#C08A4E",
+    background: "#FBFAF7",
+    foreground: "#17140F",
+    fontHeading: "var(--font-cormorant)",
     fontBody: "var(--font-inter)",
     radius: "0.5rem",
   },
@@ -17,7 +17,7 @@ export const THEME_PRESETS: Record<ThemeTemplate, ThemeTokens> = {
     primary: "#2F5D50",
     secondary: "#1B2A27",
     accent: "#E0A458",
-    background: "#F7F5F1",
+    background: "#F1F3ED",
     foreground: "#1B2A27",
     fontHeading: "var(--font-manrope)",
     fontBody: "var(--font-inter)",
@@ -28,7 +28,7 @@ export const THEME_PRESETS: Record<ThemeTemplate, ThemeTokens> = {
     primary: "#111111",
     secondary: "#4A4A4A",
     accent: "#C9A227",
-    background: "#FFFFFF",
+    background: "#FAFAFA",
     foreground: "#111111",
     fontHeading: "var(--font-inter)",
     fontBody: "var(--font-inter)",
@@ -42,7 +42,7 @@ export const THEME_TEMPLATE_META: Record<
 > = {
   FASHION: {
     label: "Fashion",
-    description: "Warm, editorial — serif headings and a textured palette.",
+    description: "Warm, editorial. Serif headings and a textured palette.",
   },
   GENERAL: {
     label: "General Purpose",
@@ -59,9 +59,9 @@ export const PALETTE_SWATCHES: Record<
   { primary: string; accent: string }[]
 > = {
   FASHION: [
-    { primary: "#B8452F", accent: "#E8C468" },
-    { primary: "#7A3B69", accent: "#E8C468" },
-    { primary: "#1F5C4E", accent: "#D9B67F" },
+    { primary: "#17140F", accent: "#C08A4E" },
+    { primary: "#5C3A54", accent: "#C9A66B" },
+    { primary: "#1F5C4E", accent: "#8FA998" },
   ],
   GENERAL: [
     { primary: "#2F5D50", accent: "#E0A458" },

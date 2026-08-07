@@ -18,10 +18,10 @@ export default async function CollectionsIndexPage({
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
       <h1 className="store-heading text-3xl font-semibold">Collections</h1>
       <p className="store-muted mt-3 max-w-lg leading-relaxed">
-        Curated sets of pieces — each with its own look and story.
+        Curated sets of pieces, each with its own look and story.
       </p>
       {collections.length === 0 ? (
-        <p className="store-muted mt-8">No collections yet — check back soon.</p>
+        <p className="store-muted mt-8">No collections yet. Check back soon.</p>
       ) : (
       <div className="mt-9 grid grid-cols-1 gap-6 sm:grid-cols-2">
         {collections.map((collection, i) => (
