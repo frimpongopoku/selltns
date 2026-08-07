@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { TeamService } from './team.service';
 import type { Role } from '../common/types';
 
@@ -7,17 +15,19 @@ export class TeamController {
   constructor(private readonly teamService: TeamService) {}
 
   @Get()
-  findAll() {
-    return this.teamService.findAll();
+  findAll(@Query('tenantId') tenantId: string) {
+    return this.teamService.findAll(tenantId);
   }
 
   @Post('invite')
-  invite(@Body() body: { name: string; email: string; role: Role }) {
-    return this.teamService.invite(body);
+  invite(
+    @Body() body: { tenantId: string; name: string; email: string; role: Role },
+  ) {
+    return this.teamService.invite(body.tenantId, body);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.teamService.remove(id);
+  remove(@Param('id') id: string, @Query('tenantId') tenantId: string) {
+    return this.teamService.remove(id, tenantId);
   }
 }

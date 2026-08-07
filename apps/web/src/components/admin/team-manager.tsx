@@ -33,7 +33,13 @@ const ROLE_STYLES: Record<Role, string> = {
   STAFF: "bg-neutral-100 text-neutral-700",
 };
 
-export function TeamManager({ members }: { members: TeamMember[] }) {
+export function TeamManager({
+  tenantId,
+  members,
+}: {
+  tenantId: string;
+  members: TeamMember[];
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -45,20 +51,22 @@ export function TeamManager({ members }: { members: TeamMember[] }) {
     e.preventDefault();
     setSaving(true);
     try {
-      await inviteTeamMember({ name, email, role });
+      await inviteTeamMember(tenantId, { name, email, role });
       toast.success(`Invite sent to ${email}`);
       setOpen(false);
       setName("");
       setEmail("");
       setRole("STAFF");
       router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't send the invite.");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleRemove(id: string) {
-    await removeTeamMember(id);
+    await removeTeamMember(id, tenantId);
     router.refresh();
   }
 

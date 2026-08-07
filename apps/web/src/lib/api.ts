@@ -27,7 +27,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`API ${path} failed (${res.status}): ${body}`);
+    const parsedMessage = (() => {
+      try {
+        return (JSON.parse(body) as { message?: string }).message;
+      } catch {
+        return undefined;
+      }
+    })();
+    throw new Error(parsedMessage ?? `API ${path} failed (${res.status}): ${body}`);
   }
   return res.json() as Promise<T>;
 }
@@ -250,17 +257,18 @@ export const markOrderBalancePaid = (id: string, tenantId: string) =>
   });
 
 // Team
-export const getTeam = () => request<TeamMember[]>("/team");
-export const inviteTeamMember = (input: {
-  name: string;
-  email: string;
-  role: string;
-}) => request<TeamMember>("/team/invite", {
-  method: "POST",
-  body: JSON.stringify(input),
-});
-export const removeTeamMember = (id: string) =>
-  request<{ id: string }>(`/team/${id}`, { method: "DELETE" });
+export const getTeam = (tenantId: string) =>
+  request<TeamMember[]>(`/team?tenantId=${tenantId}`);
+export const inviteTeamMember = (
+  tenantId: string,
+  input: { name: string; email: string; role: string },
+) =>
+  request<TeamMember>("/team/invite", {
+    method: "POST",
+    body: JSON.stringify({ ...input, tenantId }),
+  });
+export const removeTeamMember = (id: string, tenantId: string) =>
+  request<{ id: string }>(`/team/${id}?tenantId=${tenantId}`, { method: "DELETE" });
 
 // Story page content blocks
 export const getStoryBlocks = (tenantId: string) =>

@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { getSessionToken } from "./session";
-import type { Role, Tenant } from "./types";
+import type { Role, Space, Tenant } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
 
@@ -8,6 +8,7 @@ export interface Me {
   user: { id: string; name: string; email: string };
   tenant: Tenant;
   role: Role;
+  spaces: Space[];
 }
 
 export const getMe = cache(async (): Promise<Me | null> => {

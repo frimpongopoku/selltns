@@ -1,5 +1,13 @@
 export type Role = "OWNER" | "MANAGER" | "STAFF";
 
+export interface Space {
+  tenantId: string;
+  name: string;
+  slug: string;
+  role: Role;
+  pending: boolean;
+}
+
 export type OrderStatus =
   | "PENDING"
   | "CONFIRMED"

@@ -61,11 +61,12 @@ model Tenant {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  googleSub String?  @unique @map("google_sub")
-  createdAt DateTime @default(now()) @map("created_at")
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  googleSub    String?  @unique @map("google_sub")
+  lastTenantId String?  @map("last_tenant_id")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   memberships TenantMembership[]
 

@@ -13,12 +13,6 @@ export default async function AdminDashboardLayout({
     redirect("/admin/login");
   }
 
-  // NOTE: tenant/user identity here is real (Postgres-backed, via /auth/me).
-  // Product/order/collection data elsewhere in the admin still reads the
-  // shared in-memory demo catalog (apps/api/src/common/seed-data.ts) — a
-  // freshly registered vendor will see their own store name here, but the
-  // same demo products/orders as everyone else, until that data layer is
-  // migrated too.
   const currentUser: TeamMember = {
     id: me.user.id,
     tenantId: me.tenant.id,
@@ -30,7 +24,7 @@ export default async function AdminDashboardLayout({
   };
 
   return (
-    <AdminShell tenant={me.tenant} user={currentUser}>
+    <AdminShell tenant={me.tenant} spaces={me.spaces} user={currentUser}>
       {children}
     </AdminShell>
   );

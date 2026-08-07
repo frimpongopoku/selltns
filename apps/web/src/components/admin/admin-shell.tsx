@@ -9,8 +9,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AdminNavLinks } from "./admin-nav-links";
+import { SpaceSwitcher } from "./space-switcher";
 import { signOut } from "@/lib/auth-actions";
-import type { Tenant, TeamMember } from "@/lib/types";
+import type { Space, Tenant, TeamMember } from "@/lib/types";
 
 function initials(name: string) {
   return name
@@ -21,14 +22,11 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function BrandBlock({ tenant }: { tenant: Tenant }) {
+function BrandBlock({ tenant, spaces }: { tenant: Tenant; spaces: Space[] }) {
   return (
-    <div className="flex items-center justify-between px-1">
-      <div>
-        <p className="text-lg font-semibold leading-none">{tenant.name}</p>
-        <p className="mt-1.5 text-xs text-muted-foreground">{tenant.slug}.selltns.com</p>
-      </div>
-      <ThemeToggle className="hover:bg-accent" />
+    <div className="flex items-center justify-between gap-2 px-1">
+      <SpaceSwitcher tenant={tenant} spaces={spaces} />
+      <ThemeToggle className="shrink-0 hover:bg-accent" />
     </div>
   );
 }
@@ -66,10 +64,12 @@ function UserBlock({ user }: { user: TeamMember }) {
 
 export function AdminShell({
   tenant,
+  spaces,
   user,
   children,
 }: {
   tenant: Tenant;
+  spaces: Space[];
   user: TeamMember;
   children: React.ReactNode;
 }) {
@@ -79,7 +79,7 @@ export function AdminShell({
     <div className="flex min-h-screen">
       {/* Desktop sidebar — flush against the viewport edge */}
       <aside className="hidden w-64 shrink-0 flex-col gap-6 border-r bg-background p-5 md:flex">
-        <BrandBlock tenant={tenant} />
+        <BrandBlock tenant={tenant} spaces={spaces} />
         <div className="flex-1 overflow-y-auto">
           <AdminNavLinks />
         </div>
@@ -104,7 +104,7 @@ export function AdminShell({
             </SheetTrigger>
             <SheetContent side="left" className="flex w-72 flex-col gap-6 p-5">
               <SheetTitle className="sr-only">Admin navigation</SheetTitle>
-              <BrandBlock tenant={tenant} />
+              <BrandBlock tenant={tenant} spaces={spaces} />
               <div className="flex-1 overflow-y-auto">
                 <AdminNavLinks onNavigate={() => setOpen(false)} />
               </div>
