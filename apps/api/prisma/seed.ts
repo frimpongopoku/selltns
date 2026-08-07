@@ -91,6 +91,10 @@ async function main() {
       seoDescription: collection.seoDescription,
       tags: collection.tags,
       themeOverride: collection.themeOverride as object | undefined,
+      type: collection.type,
+      depositType: collection.depositType,
+      depositPercentage: collection.depositPercentage,
+      fulfillmentNote: collection.fulfillmentNote,
     };
     await prisma.collection.upsert({
       where: { id: collection.id },
@@ -145,6 +149,18 @@ async function main() {
       history: order.history as unknown as Prisma.InputJsonValue,
       confirmedAt: order.confirmedAt ? new Date(order.confirmedAt) : null,
       seenByAdminAt: order.seenByAdminAt ? new Date(order.seenByAdminAt) : null,
+      type: order.type,
+      depositType: order.depositType,
+      depositPercentage: order.depositPercentage,
+      depositAmount: order.depositAmount,
+      balanceAmount: order.balanceAmount,
+      balancePaid: order.balancePaid,
+      balancePaidAt: order.balancePaidAt ? new Date(order.balancePaidAt) : null,
+      balanceRequestedAt: order.balanceRequestedAt
+        ? new Date(order.balanceRequestedAt)
+        : null,
+      whatsappNumber: order.whatsappNumber,
+      deliveryAddress: order.deliveryAddress,
     };
     await prisma.order.upsert({
       where: { id: order.id },

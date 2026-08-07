@@ -9,6 +9,10 @@ export type OrderStatus =
 
 export type ThemeTemplate = "FASHION" | "GENERAL" | "CLEAN";
 
+export type CollectionType = "STANDARD" | "PREORDER";
+export type OrderType = "STANDARD" | "PREORDER";
+export type DepositType = "FULL" | "PERCENTAGE";
+
 export interface ThemeTokens {
   template: ThemeTemplate;
   primary: string;
@@ -61,6 +65,14 @@ export interface MediaPage {
   nextCursor: string | null;
 }
 
+export interface PreorderInfo {
+  collectionId: string;
+  collectionTitle: string;
+  depositType: DepositType;
+  depositPercentage: number | null;
+  fulfillmentNote: string;
+}
+
 export interface Product {
   id: string;
   tenantId: string;
@@ -75,6 +87,7 @@ export interface Product {
   tags: string[];
   displayOrder: number;
   createdAt: string;
+  preorder?: PreorderInfo | null;
 }
 
 export interface ProductPage {
@@ -94,6 +107,10 @@ export interface Collection {
   productIds: string[];
   tags: string[];
   coverImage: string;
+  type: CollectionType;
+  depositType: DepositType | null;
+  depositPercentage: number | null;
+  fulfillmentNote: string;
 }
 
 export interface CollectionWithProducts extends Collection {
@@ -137,6 +154,16 @@ export interface Order {
   confirmedAt: string | null;
   seenByAdminAt: string | null;
   history: { status: OrderStatus; note: string; at: string }[];
+  type: OrderType;
+  depositType: DepositType | null;
+  depositPercentage: number | null;
+  depositAmount: number | null;
+  balanceAmount: number | null;
+  balancePaid: boolean;
+  balancePaidAt: string | null;
+  balanceRequestedAt: string | null;
+  whatsappNumber: string | null;
+  deliveryAddress: string | null;
 }
 
 export type ContentBlockType = "TEXT" | "VIDEO" | "PHOTOS";

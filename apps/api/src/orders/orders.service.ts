@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type {
   Order as PrismaOrder,
@@ -13,6 +19,8 @@ import {
   orderCompletedCustomerEmail,
   orderConfirmedCustomerEmail,
   orderPlacedCustomerEmail,
+  preorderBalanceDueEmail,
+  preorderUpdateEmail,
 } from '../email/templates';
 import {
   generatePaymentReference,
@@ -36,6 +44,16 @@ function mapOrder(row: PrismaOrder): Order {
     confirmedAt: row.confirmedAt?.toISOString() ?? null,
     seenByAdminAt: row.seenByAdminAt?.toISOString() ?? null,
     history: row.history as unknown as Order['history'],
+    type: row.type,
+    depositType: row.depositType,
+    depositPercentage: row.depositPercentage,
+    depositAmount: row.depositAmount,
+    balanceAmount: row.balanceAmount,
+    balancePaid: row.balancePaid,
+    balancePaidAt: row.balancePaidAt?.toISOString() ?? null,
+    balanceRequestedAt: row.balanceRequestedAt?.toISOString() ?? null,
+    whatsappNumber: row.whatsappNumber,
+    deliveryAddress: row.deliveryAddress,
   };
 }
 
@@ -116,31 +134,70 @@ export class OrdersService {
     customerName: string;
     customerContact: string;
     customerEmail: string;
+    whatsappNumber?: string;
+    deliveryAddress?: string;
     items: { productId: string; quantity: number }[];
   }): Promise<Order> {
-    const items: OrderItem[] = await Promise.all(
-      input.items.map(async ({ productId, quantity }) => {
-        const product = await this.productsService.findOne(
-          productId,
-          input.tenantId,
-        );
-        return {
-          productId: product.id,
-          title: product.title,
-          quantity,
-          priceAtOrder: product.price,
-        };
-      }),
+    const products = await Promise.all(
+      input.items.map(({ productId }) =>
+        this.productsService.findOne(productId, input.tenantId),
+      ),
     );
+    const items: OrderItem[] = products.map((product, i) => ({
+      productId: product.id,
+      title: product.title,
+      quantity: input.items[i].quantity,
+      priceAtOrder: product.price,
+    }));
+
+    // A pre-order's deposit rules come from exactly one PREORDER collection —
+    // reject anything that would make the deposit math ambiguous (mixing
+    // preorder items from two different collections, or mixing preorder
+    // items with regular in-stock ones in the same order).
+    const preorderCollectionIds = new Set(
+      products
+        .map((p) => p.preorder?.collectionId)
+        .filter((id): id is string => !!id),
+    );
+    if (preorderCollectionIds.size > 1) {
+      throw new BadRequestException(
+        'A pre-order can only include items from a single pre-order collection.',
+      );
+    }
+    const preorder = products.find((p) => p.preorder)?.preorder ?? null;
+    if (preorder && products.some((p) => !p.preorder)) {
+      throw new BadRequestException(
+        'Pre-order items cannot be mixed with regular items in the same order.',
+      );
+    }
+
     const total = items.reduce(
       (sum, item) => sum + item.priceAtOrder * item.quantity,
       0,
     );
+
+    let depositAmount: number | undefined;
+    let balanceAmount: number | undefined;
+    if (preorder) {
+      if (!input.whatsappNumber?.trim() || !input.deliveryAddress?.trim()) {
+        throw new BadRequestException(
+          'WhatsApp number and delivery address are required for pre-orders.',
+        );
+      }
+      depositAmount =
+        preorder.depositType === 'FULL'
+          ? total
+          : Math.round((total * (preorder.depositPercentage ?? 100)) / 100);
+      balanceAmount = total - depositAmount;
+    }
+
     const now = new Date();
     const history = [
       {
         status: 'PENDING' as OrderStatus,
-        note: 'Order request submitted by customer',
+        note: preorder
+          ? 'Pre-order request submitted by customer'
+          : 'Order request submitted by customer',
         at: now.toISOString(),
       },
     ];
@@ -161,6 +218,13 @@ export class OrdersService {
             trackingToken: generateTrackingToken(),
             paymentReference: generatePaymentReference(),
             history: history,
+            type: preorder ? 'PREORDER' : 'STANDARD',
+            depositType: preorder?.depositType,
+            depositPercentage: preorder?.depositPercentage ?? undefined,
+            depositAmount,
+            balanceAmount,
+            whatsappNumber: input.whatsappNumber?.trim() || undefined,
+            deliveryAddress: input.deliveryAddress?.trim() || undefined,
           },
         });
         const order = mapOrder(row);
@@ -296,6 +360,19 @@ export class OrdersService {
         at: now.toISOString(),
       },
     ];
+    // Preorder deposit/balance are a share of the total — if the vendor
+    // adjusts quantities, they need to move with it rather than staying
+    // pinned to the original total.
+    let depositAmount = existing.depositAmount ?? undefined;
+    let balanceAmount = existing.balanceAmount ?? undefined;
+    if (existing.type === 'PREORDER') {
+      depositAmount =
+        existing.depositType === 'FULL'
+          ? total
+          : Math.round((total * (existing.depositPercentage ?? 100)) / 100);
+      balanceAmount = total - depositAmount;
+    }
+
     const row = await this.prisma.order.update({
       where: { id: existing.id },
       data: {
@@ -304,6 +381,8 @@ export class OrdersService {
         status: 'MODIFIED',
         confirmedAt: existing.confirmedAt ? undefined : now,
         history: history,
+        depositAmount,
+        balanceAmount,
       },
     });
     const order = mapOrder(row);
@@ -314,5 +393,101 @@ export class OrdersService {
       this.logger.error('Failed to send order-confirmed email', err),
     );
     return order;
+  }
+
+  // Freeform pre-order engagement timeline — vendors post whatever update
+  // makes sense for their product ("Fabric sourced", "Shipped from
+  // supplier") without being constrained to a fixed set of stages. Each
+  // post emails the customer; it doesn't change order status.
+  async addOrderUpdate(
+    id: string,
+    tenantId: string,
+    note: string,
+  ): Promise<Order> {
+    const existing = await this.findOne(id, tenantId);
+    const now = new Date();
+    const history = [
+      ...existing.history,
+      { status: existing.status, note, at: now.toISOString() },
+    ];
+    const row = await this.prisma.order.update({
+      where: { id: existing.id },
+      data: { history: history },
+    });
+    const order = mapOrder(row);
+    void this.sendPreorderUpdateEmail(order, note).catch((err) =>
+      this.logger.error('Failed to send pre-order update email', err),
+    );
+    return order;
+  }
+
+  async requestBalance(id: string, tenantId: string): Promise<Order> {
+    const existing = await this.findOne(id, tenantId);
+    if (existing.type !== 'PREORDER') {
+      throw new BadRequestException('Only pre-orders have a balance due.');
+    }
+    if (existing.balancePaid) {
+      throw new BadRequestException('Balance has already been paid.');
+    }
+    const now = new Date();
+    const history = [
+      ...existing.history,
+      {
+        status: existing.status,
+        note: 'Balance payment requested',
+        at: now.toISOString(),
+      },
+    ];
+    const row = await this.prisma.order.update({
+      where: { id: existing.id },
+      data: { balanceRequestedAt: now, history: history },
+    });
+    const order = mapOrder(row);
+    void this.sendPreorderBalanceDueEmail(order).catch((err) =>
+      this.logger.error('Failed to send pre-order balance-due email', err),
+    );
+    return order;
+  }
+
+  async markBalancePaid(id: string, tenantId: string): Promise<Order> {
+    const existing = await this.findOne(id, tenantId);
+    if (existing.type !== 'PREORDER') {
+      throw new BadRequestException('Only pre-orders have a balance due.');
+    }
+    const now = new Date();
+    const history = [
+      ...existing.history,
+      {
+        status: existing.status,
+        note: 'Balance payment received',
+        at: now.toISOString(),
+      },
+    ];
+    const row = await this.prisma.order.update({
+      where: { id: existing.id },
+      data: { balancePaid: true, balancePaidAt: now, history: history },
+    });
+    return mapOrder(row);
+  }
+
+  private async sendPreorderUpdateEmail(
+    order: Order,
+    note: string,
+  ): Promise<void> {
+    const tenant = await this.getTenant(order.tenantId);
+    const { trackUrl } = this.urls(tenant, order);
+    await this.emailService.send({
+      to: order.customerEmail,
+      ...preorderUpdateEmail(order, tenant, trackUrl, note),
+    });
+  }
+
+  private async sendPreorderBalanceDueEmail(order: Order): Promise<void> {
+    const tenant = await this.getTenant(order.tenantId);
+    const { trackUrl, payUrl } = this.urls(tenant, order);
+    await this.emailService.send({
+      to: order.customerEmail,
+      ...preorderBalanceDueEmail(order, tenant, trackUrl, payUrl),
+    });
   }
 }

@@ -57,6 +57,11 @@ export default async function TrackOrderPage({
   );
   const showPayment = ["CONFIRMED", "MODIFIED", "COMPLETED"].includes(order.status);
   const enabledMethods = paymentMethods.filter((m) => m.isEnabled);
+  const isPreorder = order.type === "PREORDER";
+  const depositAmount = order.depositAmount ?? order.total;
+  const balanceAmount = order.balanceAmount ?? 0;
+  const balanceDue = isPreorder && !!order.balanceRequestedAt && !order.balancePaid;
+  const amountDueNow = balanceDue ? balanceAmount : depositAmount;
 
   return (
     <div className="mx-auto max-w-2xl animate-in fade-in-0 slide-in-from-bottom-2 px-4 py-12 duration-500 sm:px-6 sm:py-16 lg:px-8">
@@ -68,7 +73,9 @@ export default async function TrackOrderPage({
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <h1 className="store-heading text-2xl font-semibold">Order tracking</h1>
+        <h1 className="store-heading text-2xl font-semibold">
+          {isPreorder ? "Pre-order tracking" : "Order tracking"}
+        </h1>
         <StatusBadge status={order.status} />
       </div>
       <p className="store-muted mt-1.5 text-sm">Requested {formatDateTime(order.createdAt)}</p>
@@ -120,6 +127,26 @@ export default async function TrackOrderPage({
           <span>Total</span>
           <span>{formatMoney(order.total)}</span>
         </div>
+        {isPreorder && (
+          <div className="flex flex-col gap-1.5 pt-3 text-sm">
+            <div className="flex justify-between">
+              <span className="store-muted">
+                Deposit{order.depositType === "PERCENTAGE" ? ` (${order.depositPercentage}%)` : ""}
+              </span>
+              <span className="store-muted">{formatMoney(depositAmount)}</span>
+            </div>
+            {balanceAmount > 0 && (
+              <div className="flex justify-between">
+                <span className="store-muted">Balance</span>
+                <span className={balanceDue ? "store-accent-text font-medium" : "store-muted"}>
+                  {formatMoney(balanceAmount)}
+                  {order.balancePaid && " · paid"}
+                  {balanceDue && " · due now"}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mt-9">
@@ -135,21 +162,32 @@ export default async function TrackOrderPage({
         </ol>
       </div>
 
-      {showPayment && (
+      {showPayment && !(isPreorder && order.balancePaid && !balanceDue) && (
         <div className="mt-9 animate-in fade-in-0 slide-in-from-bottom-1 duration-500">
-          <h2 className="store-heading text-lg font-semibold">Payment options</h2>
+          <h2 className="store-heading text-lg font-semibold">
+            {balanceDue ? "Your pre-order is ready" : "Payment options"}
+          </h2>
           <p className="store-muted mt-1.5 text-sm">
-            Your order is confirmed. Pay using one of the options below.
+            {balanceDue
+              ? "Pay the remaining balance using one of the options below."
+              : isPreorder
+                ? "Your order is confirmed. Pay your deposit using one of the options below."
+                : "Your order is confirmed. Pay using one of the options below."}
           </p>
 
           <div className="store-card mt-4 flex items-center justify-between gap-3 p-4">
             <div>
-              <p className="store-muted text-xs">Payment reference</p>
-              <p className="font-medium">Include this note with your payment</p>
+              <p className="store-muted text-xs">
+                {isPreorder ? (balanceDue ? "Balance due" : "Deposit due") : "Amount due"}
+              </p>
+              <p className="store-heading text-lg font-semibold">{formatMoney(amountDueNow)}</p>
             </div>
-            <span className="store-accent-text font-mono text-sm font-semibold">
-              <CopyValue value={order.paymentReference} label="Reference" />
-            </span>
+            <div className="text-right">
+              <p className="store-muted text-xs">Reference</p>
+              <span className="store-accent-text font-mono text-sm font-semibold">
+                <CopyValue value={order.paymentReference} label="Reference" />
+              </span>
+            </div>
           </div>
 
           <Link

@@ -6,6 +6,7 @@ import { ExternalLink } from "lucide-react";
 import { formatMoney, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@/components/storefront/status-badge";
 import { OrderActions } from "@/components/admin/order-actions";
+import { PreorderActions } from "@/components/admin/preorder-actions";
 import { Card } from "@/components/ui/card";
 import { markOrderSeen } from "@/lib/api";
 import type { Order, Tenant } from "@/lib/types";
@@ -44,7 +45,14 @@ export function OrderDetailContent({
           <h1 className="text-2xl font-semibold">{order.customerName}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{order.customerContact}</p>
         </div>
-        <StatusBadge status={order.status} />
+        <div className="flex items-center gap-2">
+          {order.type === "PREORDER" && (
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+              Pre-order
+            </span>
+          )}
+          <StatusBadge status={order.status} />
+        </div>
       </div>
 
       {showOpenFullPage && (
@@ -75,6 +83,8 @@ export function OrderDetailContent({
       <div className="mt-6">
         <OrderActions tenantId={tenant.id} order={order} onUpdated={handleUpdated} />
       </div>
+
+      <PreorderActions tenantId={tenant.id} order={order} onUpdated={handleUpdated} />
 
       <div className="mt-8">
         <h2 className="font-medium">History</h2>

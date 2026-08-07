@@ -56,6 +56,11 @@ export default async function ProductPage({
       <div className="grid animate-in fade-in-0 slide-in-from-bottom-2 grid-cols-1 gap-10 duration-500 lg:grid-cols-2 lg:gap-14">
         <ProductGallery images={product.images} alt={product.title} />
         <div>
+          {product.preorder && (
+            <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+              Pre-order
+            </p>
+          )}
           <h1 className="store-heading text-3xl font-semibold">{product.title}</h1>
           <p className="store-accent-text mt-3 text-xl font-medium">
             {formatMoney(product.price)}
@@ -66,18 +71,41 @@ export default async function ProductPage({
           <dl className="store-muted mt-7 grid max-w-xs grid-cols-2 gap-y-3 text-sm">
             <dt>SKU</dt>
             <dd className="text-[var(--store-fg)]">{product.sku}</dd>
-            <dt>Availability</dt>
-            <dd className="text-[var(--store-fg)]">
-              {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
-            </dd>
+            {product.preorder ? (
+              <>
+                <dt>You pay now</dt>
+                <dd className="text-[var(--store-fg)]">
+                  {product.preorder.depositType === "FULL"
+                    ? "Full amount"
+                    : `${product.preorder.depositPercentage}% deposit`}
+                </dd>
+                {product.preorder.fulfillmentNote && (
+                  <>
+                    <dt>Timeline</dt>
+                    <dd className="text-[var(--store-fg)]">{product.preorder.fulfillmentNote}</dd>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <dt>Availability</dt>
+                <dd className="text-[var(--store-fg)]">
+                  {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+                </dd>
+              </>
+            )}
           </dl>
           <div className="mt-9">
             <AddToCartButton product={product} />
           </div>
           <p className="store-muted mt-5 max-w-sm text-xs leading-relaxed">
-            Adding to cart requests this item. You&apos;ll confirm details
-            at checkout and we&apos;ll reach out to arrange payment once your
-            order is confirmed.
+            {product.preorder
+              ? `This is a pre-order, made after you order it. You'll pay ${
+                  product.preorder.depositType === "FULL"
+                    ? "the full amount"
+                    : `a ${product.preorder.depositPercentage}% deposit`
+                } once we confirm, and we'll reach out for the rest (if any) when it's ready.`
+              : "Adding to cart requests this item. You'll confirm details at checkout and we'll reach out to arrange payment once your order is confirmed."}
           </p>
         </div>
       </div>
@@ -106,7 +134,8 @@ export default async function ProductPage({
                 <div className="absolute bottom-0 left-0 p-5">
                   <p className="store-heading text-lg text-white">{collection.title}</p>
                   <p className="text-xs text-white/80">
-                    {collection.products.filter((p) => p.isActive).length} pieces
+                    {collection.products.filter((p) => p.isActive).length} piece
+                    {collection.products.filter((p) => p.isActive).length === 1 ? "" : "s"}
                   </p>
                 </div>
               </Link>

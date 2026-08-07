@@ -204,6 +204,8 @@ export const createOrder = (input: {
   customerName: string;
   customerContact: string;
   customerEmail: string;
+  whatsappNumber?: string;
+  deliveryAddress?: string;
   items: { productId: string; quantity: number }[];
 }) => request<Order>("/orders", { method: "POST", body: JSON.stringify(input) });
 export const markOrderSeen = (id: string, tenantId: string) =>
@@ -230,6 +232,21 @@ export const modifyOrderItems = (
   request<Order>(`/orders/${id}/items`, {
     method: "PATCH",
     body: JSON.stringify({ tenantId, items, note }),
+  });
+export const addOrderUpdate = (id: string, tenantId: string, note: string) =>
+  request<Order>(`/orders/${id}/updates`, {
+    method: "PATCH",
+    body: JSON.stringify({ tenantId, note }),
+  });
+export const requestOrderBalance = (id: string, tenantId: string) =>
+  request<Order>(`/orders/${id}/request-balance`, {
+    method: "PATCH",
+    body: JSON.stringify({ tenantId }),
+  });
+export const markOrderBalancePaid = (id: string, tenantId: string) =>
+  request<Order>(`/orders/${id}/balance-paid`, {
+    method: "PATCH",
+    body: JSON.stringify({ tenantId }),
   });
 
 // Team

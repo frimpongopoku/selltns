@@ -10,12 +10,14 @@ import {
   Globe,
   BookOpen,
   Store,
+  PackageSearch,
 } from "lucide-react";
 
 export const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/collections", label: "Collections", icon: Layers },
+  { href: "/admin/preorders", label: "Pre-orders", icon: PackageSearch },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon },
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
   { href: "/admin/payments", label: "Payment methods", icon: Wallet },

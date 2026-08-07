@@ -3,6 +3,10 @@ export type Role = 'OWNER' | 'MANAGER' | 'STAFF';
 export type OrderStatus =
   'PENDING' | 'CONFIRMED' | 'MODIFIED' | 'CANCELLED' | 'COMPLETED';
 
+export type CollectionType = 'STANDARD' | 'PREORDER';
+export type OrderType = 'STANDARD' | 'PREORDER';
+export type DepositType = 'FULL' | 'PERCENTAGE';
+
 export type ThemeTemplate = 'FASHION' | 'GENERAL' | 'CLEAN';
 
 export interface ThemeTokens {
@@ -38,6 +42,14 @@ export interface TeamMember {
   acceptedAt: string | null;
 }
 
+export interface PreorderInfo {
+  collectionId: string;
+  collectionTitle: string;
+  depositType: DepositType;
+  depositPercentage: number | null;
+  fulfillmentNote: string;
+}
+
 export interface Product {
   id: string;
   tenantId: string;
@@ -52,6 +64,7 @@ export interface Product {
   tags: string[];
   displayOrder: number;
   createdAt: string;
+  preorder?: PreorderInfo | null;
 }
 
 export interface Collection {
@@ -66,6 +79,10 @@ export interface Collection {
   productIds: string[];
   tags: string[];
   coverImage: string;
+  type: CollectionType;
+  depositType: DepositType | null;
+  depositPercentage: number | null;
+  fulfillmentNote: string;
 }
 
 export interface PaymentMethod {
@@ -100,6 +117,16 @@ export interface Order {
   confirmedAt: string | null;
   seenByAdminAt: string | null;
   history: { status: OrderStatus; note: string; at: string }[];
+  type: OrderType;
+  depositType: DepositType | null;
+  depositPercentage: number | null;
+  depositAmount: number | null;
+  balanceAmount: number | null;
+  balancePaid: boolean;
+  balancePaidAt: string | null;
+  balanceRequestedAt: string | null;
+  whatsappNumber: string | null;
+  deliveryAddress: string | null;
 }
 
 export type ContentBlockType = 'TEXT' | 'VIDEO' | 'PHOTOS';

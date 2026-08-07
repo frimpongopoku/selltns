@@ -25,6 +25,21 @@ enum OrderStatus {
   COMPLETED
 }
 
+enum CollectionType {
+  STANDARD
+  PREORDER
+}
+
+enum OrderType {
+  STANDARD
+  PREORDER
+}
+
+enum DepositType {
+  FULL
+  PERCENTAGE
+}
+
 model Tenant {
   id             String   @id @default(cuid())
   name           String
@@ -118,18 +133,22 @@ model Product {
 }
 
 model Collection {
-  id             String   @id @default(cuid())
-  tenantId       String   @map("tenant_id")
-  title          String
-  slug           String
-  description    String   @default("")
-  coverImage     String   @default("") @map("cover_image")
-  seoTitle       String   @default("") @map("seo_title")
-  seoDescription String   @default("") @map("seo_description")
-  tags           String[] @default([])
-  themeOverride  Json?    @map("theme_override")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                String         @id @default(cuid())
+  tenantId          String         @map("tenant_id")
+  title             String
+  slug              String
+  description       String         @default("")
+  coverImage        String         @default("") @map("cover_image")
+  seoTitle          String         @default("") @map("seo_title")
+  seoDescription    String         @default("") @map("seo_description")
+  tags              String[]       @default([])
+  themeOverride     Json?          @map("theme_override")
+  type              CollectionType @default(STANDARD)
+  depositType       DepositType?   @map("deposit_type")
+  depositPercentage Int?           @map("deposit_percentage")
+  fulfillmentNote   String         @default("") @map("fulfillment_note")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
 
   tenant   Tenant              @relation(fields: [tenantId], references: [id])
   products CollectionProduct[]
@@ -169,20 +188,30 @@ model PaymentMethod {
 }
 
 model Order {
-  id               String      @id @default(cuid())
-  tenantId         String      @map("tenant_id")
-  customerName     String      @map("customer_name")
-  customerContact  String      @map("customer_contact")
-  customerEmail    String      @map("customer_email")
-  status           OrderStatus @default(PENDING)
-  items            Json
-  total            Int
-  trackingToken    String      @unique @map("tracking_token")
-  paymentReference String      @unique @map("payment_reference")
-  history          Json
-  createdAt        DateTime    @default(now()) @map("created_at")
-  confirmedAt      DateTime?   @map("confirmed_at")
-  seenByAdminAt    DateTime?   @map("seen_by_admin_at")
+  id                 String       @id @default(cuid())
+  tenantId           String       @map("tenant_id")
+  customerName       String       @map("customer_name")
+  customerContact    String       @map("customer_contact")
+  customerEmail      String       @map("customer_email")
+  status             OrderStatus  @default(PENDING)
+  items              Json
+  total              Int
+  trackingToken      String       @unique @map("tracking_token")
+  paymentReference   String       @unique @map("payment_reference")
+  history            Json
+  type               OrderType    @default(STANDARD)
+  depositType        DepositType? @map("deposit_type")
+  depositPercentage  Int?         @map("deposit_percentage")
+  depositAmount      Int?         @map("deposit_amount")
+  balanceAmount      Int?         @map("balance_amount")
+  balancePaid        Boolean      @default(false) @map("balance_paid")
+  balancePaidAt      DateTime?    @map("balance_paid_at")
+  balanceRequestedAt DateTime?    @map("balance_requested_at")
+  whatsappNumber     String?      @map("whatsapp_number")
+  deliveryAddress    String?      @map("delivery_address")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  confirmedAt        DateTime?    @map("confirmed_at")
+  seenByAdminAt      DateTime?    @map("seen_by_admin_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 

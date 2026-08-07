@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { getProducts } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
 import { CollectionQuickCreateDialog } from "@/components/admin/collection-quick-create-dialog";
 import { CollectionsExplorer } from "@/components/admin/collections-explorer";
@@ -9,7 +8,6 @@ export const metadata = { title: "Collections" };
 export default async function AdminCollectionsPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
-  const products = await getProducts(me.tenant.id);
 
   return (
     <div>
@@ -20,7 +18,7 @@ export default async function AdminCollectionsPage() {
             Curated sets of products — each can have its own theme and SEO.
           </p>
         </div>
-        <CollectionQuickCreateDialog tenantId={me.tenant.id} products={products} />
+        <CollectionQuickCreateDialog tenantId={me.tenant.id} />
       </div>
 
       <CollectionsExplorer tenantId={me.tenant.id} />

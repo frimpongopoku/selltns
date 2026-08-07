@@ -20,6 +20,15 @@ function itemsList(order: Order): string {
     .join('');
 }
 
+function preorderBanner(order: Order): string {
+  if (order.type !== 'PREORDER') return '';
+  return `
+    <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px 16px; margin: 0 0 20px;">
+      <p style="font-size: 13px; font-weight: 600; color: #9a3412; margin: 0;">This is a pre-order</p>
+      <p style="font-size: 13px; color: #9a3412; margin: 4px 0 0;">Made after ordering, not shipped from stock.</p>
+    </div>`;
+}
+
 function button(url: string, label: string): string {
   return `
     <a href="${url}" style="display: inline-block; margin-top: 24px; padding: 12px 24px; background: #1a1a1a; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">
@@ -46,14 +55,24 @@ export function orderPlacedCustomerEmail(
   trackUrl: string,
 ) {
   const subject = `Your order request to ${tenant.name} — ${formatGHS(order.total)}`;
+  const depositNote =
+    order.type === 'PREORDER' && order.depositAmount != null
+      ? `<p style="font-size: 13px; color: #9a3412; margin: 0 0 20px;">
+          Once ${tenant.name} confirms, you'll be asked for a deposit of
+          ${formatGHS(order.depositAmount)}${order.depositType === 'PERCENTAGE' ? ` (${order.depositPercentage}%)` : ''} —
+          the rest is due once your order is ready.
+        </p>`
+      : '';
   const html = layout(
     tenant.name,
     `
+    ${preorderBanner(order)}
     <h1 style="font-size: 20px; margin: 0 0 8px;">Thanks, ${order.customerName.split(' ')[0]}!</h1>
     <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
       Your order request has been sent to ${tenant.name}. No payment is needed yet —
       they'll review it and confirm shortly.
     </p>
+    ${depositNote}
     <table style="width: 100%; border-collapse: collapse;">
       ${itemsList(order)}
       <tr>
@@ -75,20 +94,43 @@ export function newOrderVendorEmail(
   tenant: Tenant,
   adminUrl: string,
 ) {
-  const subject = `New order request from ${order.customerName} — ${formatGHS(order.total)}`;
+  const subject =
+    order.type === 'PREORDER'
+      ? `New pre-order from ${order.customerName} — ${formatGHS(order.total)}`
+      : `New order request from ${order.customerName} — ${formatGHS(order.total)}`;
+  const contactLines = [
+    order.customerContact,
+    order.customerEmail,
+    order.whatsappNumber ? `WhatsApp: ${order.whatsappNumber}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const deliveryLine = order.deliveryAddress
+    ? `<p style="font-size: 13px; color: #666; margin: 4px 0 0;">Delivery address: ${order.deliveryAddress}</p>`
+    : '';
   const html = layout(
     tenant.name,
     `
-    <h1 style="font-size: 20px; margin: 0 0 8px;">New order request</h1>
-    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
-      ${order.customerName} (${order.customerContact} · ${order.customerEmail}) just requested an order.
+    ${preorderBanner(order)}
+    <h1 style="font-size: 20px; margin: 0 0 8px;">${order.type === 'PREORDER' ? 'New pre-order request' : 'New order request'}</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 4px;">
+      ${order.customerName} (${contactLines}) just requested an order.
     </p>
-    <table style="width: 100%; border-collapse: collapse;">
+    ${deliveryLine}
+    <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
       ${itemsList(order)}
       <tr>
         <td style="padding: 12px 0 0; font-weight: 600; border-top: 1px solid #eee;">Total</td>
         <td style="padding: 12px 0 0; font-weight: 600; text-align: right; border-top: 1px solid #eee;">${formatGHS(order.total)}</td>
       </tr>
+      ${
+        order.type === 'PREORDER' && order.depositAmount != null
+          ? `<tr>
+              <td style="padding: 4px 0 0; font-size: 13px; color: #9a3412;">Deposit due on confirm</td>
+              <td style="padding: 4px 0 0; font-size: 13px; color: #9a3412; text-align: right;">${formatGHS(order.depositAmount)}</td>
+            </tr>`
+          : ''
+      }
     </table>
     ${button(adminUrl, 'Review order')}`,
   );
@@ -102,14 +144,32 @@ export function orderConfirmedCustomerEmail(
   trackUrl: string,
   payUrl: string,
 ) {
-  const subject = `Your order is confirmed — pay ${tenant.name}`;
+  const isPreorder = order.type === 'PREORDER' && order.depositAmount != null;
+  const amountDueNow = isPreorder ? order.depositAmount! : order.total;
+  const subject = isPreorder
+    ? `Your pre-order is confirmed — pay your deposit to ${tenant.name}`
+    : `Your order is confirmed — pay ${tenant.name}`;
+  const preorderRows = isPreorder
+    ? `<tr>
+        <td style="padding: 12px 0 0; font-weight: 600; border-top: 1px solid #eee;">Deposit due now${order.depositType === 'PERCENTAGE' ? ` (${order.depositPercentage}%)` : ''}</td>
+        <td style="padding: 12px 0 0; font-weight: 600; text-align: right; border-top: 1px solid #eee;">${formatGHS(amountDueNow)}</td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 0 0; font-size: 13px; color: #888;">Balance due later</td>
+        <td style="padding: 4px 0 0; font-size: 13px; color: #888; text-align: right;">${formatGHS(order.balanceAmount ?? 0)}</td>
+      </tr>`
+    : `<tr>
+        <td style="padding: 12px 0 0; font-weight: 600; border-top: 1px solid #eee;">Total to pay</td>
+        <td style="padding: 12px 0 0; font-weight: 600; text-align: right; border-top: 1px solid #eee;">${formatGHS(order.total)}</td>
+      </tr>`;
   const html = layout(
     tenant.name,
     `
+    ${preorderBanner(order)}
     <h1 style="font-size: 20px; margin: 0 0 8px;">Good news — your order's confirmed!</h1>
     <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
-      ${tenant.name} has confirmed your order. You can pay now using any of their
-      payment options — just include your reference below.
+      ${tenant.name} has confirmed your order. You can pay ${isPreorder ? 'your deposit' : 'now'} using any of their
+      payment options — just include your reference below.${isPreorder ? ` ${tenant.name} will reach out for the remaining balance once your order is ready.` : ''}
     </p>
     <div style="background: #f5f5f4; border-radius: 8px; padding: 16px; text-align: center; margin: 20px 0;">
       <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 4px;">
@@ -121,17 +181,16 @@ export function orderConfirmedCustomerEmail(
     </div>
     <table style="width: 100%; border-collapse: collapse;">
       ${itemsList(order)}
-      <tr>
-        <td style="padding: 12px 0 0; font-weight: 600; border-top: 1px solid #eee;">Total to pay</td>
-        <td style="padding: 12px 0 0; font-weight: 600; text-align: right; border-top: 1px solid #eee;">${formatGHS(order.total)}</td>
-      </tr>
+      ${preorderRows}
     </table>
-    ${button(payUrl, 'Pay now')}
+    ${button(payUrl, isPreorder ? 'Pay deposit now' : 'Pay now')}
     <p style="font-size: 12px; color: #888; margin-top: 20px;">
       Prefer to check the full order first? <a href="${trackUrl}" style="color: #1a1a1a;">View your order</a>.
     </p>`,
   );
-  const text = `Your order from ${tenant.name} is confirmed. Pay ${formatGHS(order.total)} using reference ${order.paymentReference}: ${payUrl}`;
+  const text = isPreorder
+    ? `Your pre-order from ${tenant.name} is confirmed. Pay your deposit of ${formatGHS(amountDueNow)} using reference ${order.paymentReference}: ${payUrl}`
+    : `Your order from ${tenant.name} is confirmed. Pay ${formatGHS(order.total)} using reference ${order.paymentReference}: ${payUrl}`;
   return { subject, html, text };
 }
 
@@ -185,5 +244,66 @@ export function orderCancelledCustomerEmail(
     ${button(trackUrl, 'View your order')}`,
   );
   const text = `Your order from ${tenant.name} (${formatGHS(order.total)}) was cancelled. View it: ${trackUrl}`;
+  return { subject, html, text };
+}
+
+export function preorderUpdateEmail(
+  order: Order,
+  tenant: Tenant,
+  trackUrl: string,
+  note: string,
+) {
+  const subject = `Update on your pre-order from ${tenant.name}`;
+  const html = layout(
+    tenant.name,
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">New update on your pre-order</h1>
+    <div style="background: #f5f5f4; border-radius: 8px; padding: 16px; margin: 0 0 20px;">
+      <p style="font-size: 14px; line-height: 1.6; color: #1a1a1a; margin: 0;">${note}</p>
+    </div>
+    <p style="font-size: 13px; color: #888; margin: 0 0 20px;">
+      Reference ${order.paymentReference}
+    </p>
+    ${button(trackUrl, 'View your order')}`,
+  );
+  const text = `Update on your pre-order from ${tenant.name}: ${note}. View it: ${trackUrl}`;
+  return { subject, html, text };
+}
+
+export function preorderBalanceDueEmail(
+  order: Order,
+  tenant: Tenant,
+  trackUrl: string,
+  payUrl: string,
+) {
+  const balance = order.balanceAmount ?? 0;
+  const subject = `Your pre-order is ready — pay the balance to ${tenant.name}`;
+  const html = layout(
+    tenant.name,
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">Your pre-order is ready!</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
+      ${tenant.name} says your order is ready. Pay the remaining balance below to complete it.
+    </p>
+    <div style="background: #f5f5f4; border-radius: 8px; padding: 16px; text-align: center; margin: 20px 0;">
+      <p style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin: 0 0 4px;">
+        Payment reference
+      </p>
+      <p style="font-size: 20px; font-weight: 700; font-family: monospace; margin: 0;">
+        ${order.paymentReference}
+      </p>
+    </div>
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="padding: 8px 0; font-weight: 600;">Balance due</td>
+        <td style="padding: 8px 0; font-weight: 600; text-align: right;">${formatGHS(balance)}</td>
+      </tr>
+    </table>
+    ${button(payUrl, 'Pay balance now')}
+    <p style="font-size: 12px; color: #888; margin-top: 20px;">
+      Prefer to check the full order first? <a href="${trackUrl}" style="color: #1a1a1a;">View your order</a>.
+    </p>`,
+  );
+  const text = `Your pre-order from ${tenant.name} is ready. Pay the balance of ${formatGHS(balance)} using reference ${order.paymentReference}: ${payUrl}`;
   return { subject, html, text };
 }

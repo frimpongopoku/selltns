@@ -32,6 +32,10 @@ interface CollectionRow {
   tags: string[];
   createdAt: Date;
   themeOverride: Prisma.JsonValue | null;
+  type: 'STANDARD' | 'PREORDER';
+  depositType: 'FULL' | 'PERCENTAGE' | null;
+  depositPercentage: number | null;
+  fulfillmentNote: string;
   products: { productId: string; product: PrismaProduct }[];
 }
 
@@ -47,6 +51,10 @@ function mapCollection(row: CollectionRow) {
     seoDescription: row.seoDescription,
     tags: row.tags,
     themeOverride: row.themeOverride as ThemeTokens | null,
+    type: row.type,
+    depositType: row.depositType,
+    depositPercentage: row.depositPercentage,
+    fulfillmentNote: row.fulfillmentNote,
     productIds: row.products.map((cp) => cp.productId),
     products: row.products.map((cp) => cp.product),
   };
@@ -58,6 +66,48 @@ function tagsOf(input: Partial<Collection>) {
     maxTagLength: MAX_TAG_LENGTH,
     noun: 'collection',
   });
+}
+
+// PREORDER collections need a deposit rule; STANDARD ones must not carry
+// stale deposit config from a previous edit, so this always resolves the
+// full set together rather than patching fields independently.
+function preorderFieldsOf(
+  input: Pick<
+    Partial<Collection>,
+    'type' | 'depositType' | 'depositPercentage' | 'fulfillmentNote'
+  >,
+  existing?: {
+    type: 'STANDARD' | 'PREORDER';
+    depositType: 'FULL' | 'PERCENTAGE' | null;
+    depositPercentage: number | null;
+    fulfillmentNote: string;
+  },
+) {
+  const type = input.type ?? existing?.type ?? 'STANDARD';
+  if (type === 'STANDARD') {
+    return {
+      type,
+      depositType: null,
+      depositPercentage: null,
+      fulfillmentNote: '',
+    };
+  }
+  const depositType = input.depositType ?? existing?.depositType ?? 'FULL';
+  const depositPercentage =
+    depositType === 'PERCENTAGE'
+      ? Math.min(
+          99,
+          Math.max(
+            1,
+            Math.round(
+              input.depositPercentage ?? existing?.depositPercentage ?? 50,
+            ),
+          ),
+        )
+      : null;
+  const fulfillmentNote =
+    input.fulfillmentNote ?? existing?.fulfillmentNote ?? '';
+  return { type, depositType, depositPercentage, fulfillmentNote };
 }
 
 export interface FindAllPaginatedParams {
@@ -165,6 +215,7 @@ export class CollectionsService {
       input.slug || input.title || 'collection',
     );
     const productIds = input.productIds ?? [];
+    const preorder = preorderFieldsOf(input);
 
     const collection = await this.prisma.collection.create({
       data: {
@@ -179,6 +230,10 @@ export class CollectionsService {
         themeOverride: input.themeOverride
           ? (input.themeOverride as unknown as Prisma.InputJsonValue)
           : undefined,
+        type: preorder.type,
+        depositType: preorder.depositType,
+        depositPercentage: preorder.depositPercentage,
+        fulfillmentNote: preorder.fulfillmentNote,
         products: {
           create: productIds.map((productId, position) => ({
             productId,
@@ -216,6 +271,7 @@ export class CollectionsService {
           });
         }
       }
+      const preorder = preorderFieldsOf(input, existing);
       const data: Prisma.CollectionUpdateInput = {
         title: input.title ?? existing.title,
         slug,
@@ -224,6 +280,10 @@ export class CollectionsService {
         seoTitle: input.seoTitle ?? existing.seoTitle,
         seoDescription: input.seoDescription ?? existing.seoDescription,
         tags: input.tags !== undefined ? tagsOf(input) : existing.tags,
+        type: preorder.type,
+        depositType: preorder.depositType,
+        depositPercentage: preorder.depositPercentage,
+        fulfillmentNote: preorder.fulfillmentNote,
       };
       if (input.themeOverride !== undefined) {
         data.themeOverride =

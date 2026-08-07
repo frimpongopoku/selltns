@@ -42,6 +42,8 @@ export class OrdersController {
       customerName: string;
       customerContact: string;
       customerEmail: string;
+      whatsappNumber?: string;
+      deliveryAddress?: string;
       items: CreateOrderItemInput[];
     },
   ) {
@@ -77,5 +79,23 @@ export class OrdersController {
       body.items,
       body.note,
     );
+  }
+
+  @Patch(':id/updates')
+  addOrderUpdate(
+    @Param('id') id: string,
+    @Body() body: { tenantId: string; note: string },
+  ) {
+    return this.ordersService.addOrderUpdate(id, body.tenantId, body.note);
+  }
+
+  @Patch(':id/request-balance')
+  requestBalance(@Param('id') id: string, @Body() body: { tenantId: string }) {
+    return this.ordersService.requestBalance(id, body.tenantId);
+  }
+
+  @Patch(':id/balance-paid')
+  markBalancePaid(@Param('id') id: string, @Body() body: { tenantId: string }) {
+    return this.ordersService.markBalancePaid(id, body.tenantId);
   }
 }

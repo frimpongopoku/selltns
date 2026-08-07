@@ -17,13 +17,26 @@ export interface CartLine {
   price: number;
   image: string | null;
   quantity: number;
+  preorderCollectionId: string | null;
+  preorderCollectionTitle: string | null;
+  preorderDepositType: "FULL" | "PERCENTAGE" | null;
+  preorderDepositPercentage: number | null;
+  preorderFulfillmentNote: string | null;
 }
 
 interface CartContextValue {
   lines: CartLine[];
   count: number;
   total: number;
-  addItem: (product: Product, quantity?: number) => void;
+  /** The pre-order collection this cart is locked to, or null for a regular cart. */
+  preorderCollectionId: string | null;
+  /**
+   * Adds a product to the cart. Returns false (without changing the cart) when
+   * it would mix regular items with pre-order items, or pre-order items from
+   * two different collections — the deposit math only makes sense when a
+   * cart is either all-regular or all-from-one pre-order collection.
+   */
+  addItem: (product: Product, quantity?: number) => boolean;
   updateQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
   clear: () => void;
@@ -59,6 +72,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [lines, hydrated, storageKey]);
 
   const addItem = useCallback((product: Product, quantity = 1) => {
+    let ok = true;
     setLines((prev) => {
       const existing = prev.find((l) => l.productId === product.id);
       if (existing) {
@@ -68,6 +82,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             : l,
         );
       }
+      const cartCollectionId = prev.find((l) => l.preorderCollectionId)
+        ?.preorderCollectionId;
+      const cartHasRegularItems = prev.some((l) => !l.preorderCollectionId);
+      const newIsPreorder = !!product.preorder;
+      const mixesRegularAndPreorder =
+        (cartCollectionId && !newIsPreorder) ||
+        (cartHasRegularItems && newIsPreorder);
+      const mixesDifferentPreorders =
+        cartCollectionId &&
+        newIsPreorder &&
+        product.preorder!.collectionId !== cartCollectionId;
+      if (prev.length > 0 && (mixesRegularAndPreorder || mixesDifferentPreorders)) {
+        ok = false;
+        return prev;
+      }
       return [
         ...prev,
         {
@@ -76,9 +105,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           price: product.price,
           image: product.images[0] ?? null,
           quantity,
+          preorderCollectionId: product.preorder?.collectionId ?? null,
+          preorderCollectionTitle: product.preorder?.collectionTitle ?? null,
+          preorderDepositType: product.preorder?.depositType ?? null,
+          preorderDepositPercentage: product.preorder?.depositPercentage ?? null,
+          preorderFulfillmentNote: product.preorder?.fulfillmentNote ?? null,
         },
       ];
     });
+    return ok;
   }, []);
 
   const updateQuantity = useCallback((productId: string, quantity: number) => {
@@ -98,7 +133,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<CartContextValue>(() => {
     const count = lines.reduce((sum, l) => sum + l.quantity, 0);
     const total = lines.reduce((sum, l) => sum + l.quantity * l.price, 0);
-    return { lines, count, total, addItem, updateQuantity, removeItem, clear };
+    const preorderCollectionId =
+      lines.find((l) => l.preorderCollectionId)?.preorderCollectionId ?? null;
+    return {
+      lines,
+      count,
+      total,
+      preorderCollectionId,
+      addItem,
+      updateQuantity,
+      removeItem,
+      clear,
+    };
   }, [lines, addItem, updateQuantity, removeItem, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

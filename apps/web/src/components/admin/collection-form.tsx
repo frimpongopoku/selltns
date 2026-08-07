@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -18,19 +17,26 @@ import {
 } from "@/components/ui/select";
 import { GalleryPicker } from "@/components/admin/gallery-picker";
 import { TagInput } from "@/components/admin/tag-input";
+import { ProductPicker } from "@/components/admin/product-picker";
 import { createCollection, deleteCollection, updateCollection } from "@/lib/api";
 import { THEME_PRESETS, THEME_TEMPLATE_META } from "@/lib/theme-presets";
-import type { Collection, CollectionWithProducts, Product, ThemeTemplate } from "@/lib/types";
+import type {
+  CollectionWithProducts,
+  DepositType,
+  Product,
+  ThemeTemplate,
+} from "@/lib/types";
 
 export function CollectionForm({
   tenantId,
   collection,
-  products,
+  defaultPreorder = false,
   onSaved,
 }: {
   tenantId: string;
-  collection?: Collection;
-  products: Product[];
+  collection?: CollectionWithProducts;
+  /** Pre-checks the "Pre-order collection" toggle for new collections started from the Pre-orders section. */
+  defaultPreorder?: boolean;
   /** When provided, called instead of navigating to the collections list on success. */
   onSaved?: (saved: CollectionWithProducts) => void;
 }) {
@@ -39,7 +45,9 @@ export function CollectionForm({
   const [description, setDescription] = useState(collection?.description ?? "");
   const [seoTitle, setSeoTitle] = useState(collection?.seoTitle ?? "");
   const [seoDescription, setSeoDescription] = useState(collection?.seoDescription ?? "");
-  const [productIds, setProductIds] = useState<string[]>(collection?.productIds ?? []);
+  const [selectedProducts, setSelectedProducts] = useState<Map<string, Product>>(
+    () => new Map((collection?.products ?? []).map((p) => [p.id, p])),
+  );
   const [tags, setTags] = useState<string[]>(collection?.tags ?? []);
   const [coverImage, setCoverImage] = useState<string[]>(
     collection?.coverImage ? [collection.coverImage] : [],
@@ -47,10 +55,28 @@ export function CollectionForm({
   const [themeChoice, setThemeChoice] = useState<ThemeTemplate | "none">(
     collection?.themeOverride?.template ?? "none",
   );
+  const [isPreorder, setIsPreorder] = useState(
+    collection ? collection.type === "PREORDER" : defaultPreorder,
+  );
+  const [depositType, setDepositType] = useState<DepositType>(
+    collection?.depositType ?? "PERCENTAGE",
+  );
+  const [depositPercentage, setDepositPercentage] = useState(
+    collection?.depositPercentage ?? 50,
+  );
+  const [fulfillmentNote, setFulfillmentNote] = useState(collection?.fulfillmentNote ?? "");
   const [saving, setSaving] = useState(false);
 
-  function toggleProduct(id: string) {
-    setProductIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
+  function handleToggleProduct(product: Product) {
+    setSelectedProducts((prev) => {
+      const next = new Map(prev);
+      if (next.has(product.id)) {
+        next.delete(product.id);
+      } else {
+        next.set(product.id, product);
+      }
+      return next;
+    });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -61,10 +87,14 @@ export function CollectionForm({
       description,
       seoTitle,
       seoDescription,
-      productIds,
+      productIds: Array.from(selectedProducts.keys()),
       tags,
       coverImage: coverImage[0] ?? "",
       themeOverride: themeChoice === "none" ? null : THEME_PRESETS[themeChoice],
+      type: isPreorder ? ("PREORDER" as const) : ("STANDARD" as const),
+      depositType: isPreorder ? depositType : null,
+      depositPercentage: isPreorder && depositType === "PERCENTAGE" ? depositPercentage : null,
+      fulfillmentNote: isPreorder ? fulfillmentNote : "",
     };
     try {
       const saved = collection
@@ -135,36 +165,65 @@ export function CollectionForm({
         <p className="mt-1 text-xs text-muted-foreground">
           Not-live products can&apos;t be newly added — turn a product live first.
         </p>
-        {products.length === 0 ? (
-          <p className="mt-2 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            No products yet — add one first, then come back to build this
-            collection.
-          </p>
-        ) : (
-        <div className="mt-2 grid max-h-64 grid-cols-1 gap-2 overflow-y-auto rounded-lg border p-3 sm:grid-cols-2">
-          {products.map((product) => {
-            const checked = productIds.includes(product.id);
-            const disabled = !product.isActive && !checked;
-            return (
-              <label
-                key={product.id}
-                className={`flex items-center gap-2 text-sm ${disabled ? "opacity-50" : ""}`}
-              >
-                <Checkbox
-                  checked={checked}
-                  disabled={disabled}
-                  onCheckedChange={() => toggleProduct(product.id)}
-                />
-                <span className="truncate">{product.title}</span>
-                {!product.isActive && (
-                  <Badge variant="outline" className="shrink-0 text-[10px]">
-                    Not live
-                  </Badge>
-                )}
-              </label>
-            );
-          })}
+        <div className="mt-2">
+          <ProductPicker tenantId={tenantId} selected={selectedProducts} onToggle={handleToggleProduct} />
         </div>
+      </div>
+
+      <div className="rounded-lg border p-4">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <Checkbox checked={isPreorder} onCheckedChange={(v) => setIsPreorder(v === true)} />
+          Pre-order collection
+        </label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Products added here go on pre-order: customers pay a deposit or the
+          full amount up front, and the rest (if any) once you tell them it&apos;s ready.
+        </p>
+        {isPreorder && (
+          <div className="mt-4 flex flex-col gap-4 border-t pt-4">
+            <div>
+              <Label>Customer pays</Label>
+              <Select value={depositType} onValueChange={(v) => setDepositType(v as DepositType)}>
+                <SelectTrigger className="mt-1.5 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PERCENTAGE">A deposit (percentage) now</SelectItem>
+                  <SelectItem value="FULL">The full amount now</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {depositType === "PERCENTAGE" && (
+              <div>
+                <Label htmlFor="depositPercentage">Deposit percentage</Label>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <Input
+                    id="depositPercentage"
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={depositPercentage}
+                    onChange={(e) => setDepositPercentage(Number(e.target.value))}
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">% of the order total, due when you confirm it</span>
+                </div>
+              </div>
+            )}
+            <div>
+              <Label htmlFor="fulfillmentNote">Fulfillment note</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Shown to customers so they know what to expect, e.g. &quot;Hand-woven to order. Ready in 4-6 weeks.&quot;
+              </p>
+              <Input
+                id="fulfillmentNote"
+                value={fulfillmentNote}
+                onChange={(e) => setFulfillmentNote(e.target.value)}
+                placeholder="Ready in 4-6 weeks"
+                className="mt-1.5"
+              />
+            </div>
+          </div>
         )}
       </div>
 

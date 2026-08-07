@@ -12,14 +12,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { CollectionForm } from "@/components/admin/collection-form";
 import { emitCollectionCreated } from "@/lib/collection-events";
-import type { Product } from "@/lib/types";
 
 export function CollectionQuickCreateDialog({
   tenantId,
-  products,
+  defaultPreorder = false,
+  triggerLabel = "New collection",
 }: {
   tenantId: string;
-  products: Product[];
+  defaultPreorder?: boolean;
+  triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -27,16 +28,16 @@ export function CollectionQuickCreateDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button className="gap-1.5" />}>
         <Plus className="h-4 w-4" />
-        New collection
+        {triggerLabel}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>New collection</DialogTitle>
+          <DialogTitle>{defaultPreorder ? "New pre-order collection" : "New collection"}</DialogTitle>
         </DialogHeader>
         {open && (
           <CollectionForm
             tenantId={tenantId}
-            products={products}
+            defaultPreorder={defaultPreorder}
             onSaved={(created) => {
               setOpen(false);
               emitCollectionCreated(created);

@@ -25,10 +25,16 @@ export function ProductCard({ product }: { product: Product }) {
         ) : (
           <div className="h-full w-full bg-[var(--store-hover-bg)]" />
         )}
-        {product.stock <= 0 && (
-          <span className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[0.65rem] text-white sm:px-2.5 sm:py-1 sm:text-xs">
-            Out of stock
+        {product.preorder ? (
+          <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[0.65rem] font-medium text-white sm:px-2.5 sm:py-1 sm:text-xs">
+            Pre-order
           </span>
+        ) : (
+          product.stock <= 0 && (
+            <span className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[0.65rem] text-white sm:px-2.5 sm:py-1 sm:text-xs">
+              Out of stock
+            </span>
+          )
         )}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-5">
