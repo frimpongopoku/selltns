@@ -3,18 +3,28 @@
 import { useState } from "react";
 import { Check, Copy, Landmark, Smartphone } from "lucide-react";
 import type { PaymentMethod } from "@/lib/types";
+import { useRevealedPhone } from "@/lib/use-revealed-phone";
 
 interface Row {
   label: string;
   value: string;
   copyable?: boolean;
+  isPhone?: boolean;
 }
 
+// `method` must already have its Number field obscured by
+// obscurePaymentMethodPhone() before it reaches this component — see
+// call sites in /pay and /track.
 function rowsFor(method: PaymentMethod): Row[] {
   if (method.type === "MOMO") {
     return [
       { label: "Network", value: method.details.network },
-      { label: "Number", value: method.details.number, copyable: true },
+      {
+        label: "Number",
+        value: method.details.number,
+        copyable: true,
+        isPhone: true,
+      },
       { label: "Name", value: method.details.name },
     ].filter((r) => r.value);
   }
@@ -25,6 +35,20 @@ function rowsFor(method: PaymentMethod): Row[] {
     { label: "Branch code", value: method.details.branchCode },
     { label: "Sort code", value: method.details.sortCode },
   ].filter((r) => r.value);
+}
+
+function ObscuredPhoneValue({ encoded }: { encoded: string }) {
+  const value = useRevealedPhone(encoded);
+
+  if (!value) {
+    return <span aria-hidden className="tracking-widest opacity-60">•••• •• ••••</span>;
+  }
+  return (
+    <>
+      <span>{value}</span>
+      <CopyButton value={value} />
+    </>
+  );
 }
 
 function CopyButton({ value }: { value: string }) {
@@ -76,8 +100,14 @@ export function PaymentMethodCard({ method }: { method: PaymentMethod }) {
           >
             <dt className="store-muted text-xs">{row.label}</dt>
             <dd className="flex items-center gap-1.5 text-sm font-medium">
-              <span>{row.value}</span>
-              {row.copyable && <CopyButton value={row.value} />}
+              {row.isPhone ? (
+                <ObscuredPhoneValue encoded={row.value} />
+              ) : (
+                <>
+                  <span>{row.value}</span>
+                  {row.copyable && <CopyButton value={row.value} />}
+                </>
+              )}
             </dd>
           </div>
         ))}

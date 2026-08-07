@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPaymentMethods, getTenantBySlug } from "@/lib/api";
 import { PaymentMethodCard } from "@/components/storefront/payment-method-card";
+import { obscurePaymentMethodPhone } from "@/lib/phone";
 
 export async function generateMetadata({
   params,
@@ -48,7 +49,7 @@ export default async function PayPage({
       ) : (
         <div className="mt-9 flex flex-col gap-4">
           {methods.map((method) => (
-            <PaymentMethodCard key={method.id} method={method} />
+            <PaymentMethodCard key={method.id} method={obscurePaymentMethodPhone(method)} />
           ))}
         </div>
       )}

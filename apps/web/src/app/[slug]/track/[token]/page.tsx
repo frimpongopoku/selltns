@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -8,6 +7,8 @@ import { formatMoney, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@/components/storefront/status-badge";
 import { TrackerActions } from "@/components/storefront/order-tracker";
 import { CopyValue } from "@/components/storefront/copy-value";
+import { PaymentMethodCard } from "@/components/storefront/payment-method-card";
+import { obscurePaymentMethodPhone, obscurePhone } from "@/lib/phone";
 import type { Product } from "@/lib/types";
 
 export async function generateMetadata({
@@ -160,34 +161,18 @@ export default async function TrackOrderPage({
 
           <div className="mt-4 flex flex-col gap-3">
             {enabledMethods.map((method) => (
-              <div
-                key={method.id}
-                className={`store-card p-4 ${method.isPreferred ? "ring-2 ring-[var(--store-accent)]" : ""}`}
-              >
-                <div className="flex items-center justify-between">
-                  <p className="font-medium">{method.label}</p>
-                  {method.isPreferred && (
-                    <span className="store-accent-text text-xs font-medium">Preferred</span>
-                  )}
-                </div>
-                <dl className="store-muted mt-2.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
-                  {Object.entries(method.details).map(([k, v]) => (
-                    <Fragment key={k}>
-                      <dt className="capitalize">{k}</dt>
-                      <dd className="text-[var(--store-fg)]">
-                        <CopyValue value={v} label={k} />
-                      </dd>
-                    </Fragment>
-                  ))}
-                </dl>
-              </div>
+              <PaymentMethodCard key={method.id} method={obscurePaymentMethodPhone(method)} />
             ))}
           </div>
         </div>
       )}
 
       <div className="mt-10">
-        <TrackerActions order={order} tenant={tenant} />
+        <TrackerActions
+          order={order}
+          tenant={{ ...tenant, whatsappNumber: null }}
+          whatsappNumberEncoded={tenant.whatsappNumber ? obscurePhone(tenant.whatsappNumber) : null}
+        />
       </div>
     </div>
   );

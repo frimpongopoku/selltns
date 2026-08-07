@@ -8,18 +8,29 @@ import { updateOrderStatus } from "@/lib/api";
 import type { Order, Tenant } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import { waLink } from "@/lib/phone";
+import { useRevealedPhone } from "@/lib/use-revealed-phone";
 
-export function TrackerActions({ order, tenant }: { order: Order; tenant: Tenant }) {
+export function TrackerActions({
+  order,
+  tenant,
+  whatsappNumberEncoded,
+}: {
+  order: Order;
+  tenant: Tenant;
+  whatsappNumberEncoded: string | null;
+}) {
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const whatsappNumber = useRevealedPhone(whatsappNumberEncoded);
+
   const shareText = `Hi ${tenant.name}, here's my order:\n${order.items
     .map((i) => `${i.quantity}x ${i.title}`)
     .join(", ")}\nTotal: ${formatMoney(order.total)}\nDetails: ${
     typeof window !== "undefined" ? window.location.href : ""
   }`;
-  const whatsappUrl = tenant.whatsappNumber
-    ? waLink(tenant.whatsappNumber, shareText)
+  const whatsappUrl = whatsappNumber
+    ? waLink(whatsappNumber, shareText)
     : `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
   async function handleCancel() {
@@ -52,7 +63,7 @@ export function TrackerActions({ order, tenant }: { order: Order; tenant: Tenant
         className="store-btn-secondary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium"
       >
         <Share2 className="h-4 w-4" />
-        {tenant.whatsappNumber ? `Send to ${tenant.name} on WhatsApp` : "Share to WhatsApp"}
+        {whatsappNumber ? `Send to ${tenant.name} on WhatsApp` : "Share to WhatsApp"}
       </button>
       {order.status === "PENDING" && (
         <>

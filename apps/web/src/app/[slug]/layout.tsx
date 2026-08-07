@@ -17,13 +17,20 @@ export default async function StorefrontLayout({
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
 
+  // SiteHeader/SiteFooter are Client Components rendered on every storefront
+  // page — neither needs the vendor's phone number, so it's stripped before
+  // the tenant object is handed to them. Otherwise it would be serialized
+  // into the RSC payload of every single page under this layout, not just
+  // the ones that actually display it.
+  const publicTenant = { ...tenant, whatsappNumber: null };
+
   return (
     <StoreProvider slug={slug}>
       <ThemeScope tokens={tenant.themeTokens} className="flex min-h-full flex-col">
         <CartProvider>
-          <SiteHeader tenant={tenant} />
+          <SiteHeader tenant={publicTenant} />
           <main className="flex-1">{children}</main>
-          <SiteFooter tenant={tenant} />
+          <SiteFooter tenant={publicTenant} />
         </CartProvider>
       </ThemeScope>
     </StoreProvider>
