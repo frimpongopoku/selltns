@@ -29,7 +29,7 @@ export default function CartPage() {
         {lines.map((line) => (
           <div key={line.productId} className="flex gap-4 py-5">
             <div
-              className="store-card h-20 w-20 shrink-0 bg-cover bg-center"
+              className="store-card h-20 w-20 shrink-0 bg-cover bg-top"
               style={line.image ? { backgroundImage: `url(${line.image})` } : undefined}
             />
 

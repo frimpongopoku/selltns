@@ -95,7 +95,7 @@ export default async function TrackOrderPage({
                     alt={item.title}
                     width={56}
                     height={56}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover object-top"
                   />
                 )}
               </div>

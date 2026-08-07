@@ -45,7 +45,7 @@ export function GalleryPicker({
       <div className="flex flex-wrap gap-3">
         {selected.map((url, i) => (
           <div key={`${url}-${i}`} className="group relative h-20 w-20 overflow-hidden rounded-lg border">
-            <Image src={url} alt="" fill sizes="80px" className="object-cover" />
+            <Image src={url} alt="" fill sizes="80px" className="object-cover object-top" />
             <button
               type="button"
               onClick={() => toggle(url)}
@@ -108,7 +108,7 @@ export function GalleryPicker({
                         isSelected ? "border-primary" : "border-transparent"
                       }`}
                     >
-                      <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="150px" className="object-cover" />
+                      <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="150px" className="object-cover object-top" />
                       {isSelected && (
                         <span className="absolute top-1.5 right-1.5 animate-in zoom-in-50 rounded-full bg-primary p-1 text-primary-foreground duration-150">
                           <Check className="h-3 w-3" />

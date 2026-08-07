@@ -127,7 +127,7 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
                 onKeyDown={(e) => e.key === "Enter" && setSelected(asset)}
                 className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg border text-left"
               >
-                <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="200px" className="object-cover" />
+                <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="200px" className="object-cover object-top" />
                 <div className="absolute inset-x-0 bottom-0 translate-y-full bg-black/60 px-2 py-1 text-[10px] text-white transition-transform group-hover:translate-y-0">
                   <p className="truncate">{asset.title || "Untitled"}</p>
                   <p className="text-white/80">

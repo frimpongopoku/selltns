@@ -178,7 +178,7 @@ export function MediaDropzone({
             {staged.map((item) => (
               <div key={item.key} className="flex gap-3 rounded-lg border p-3">
                 <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
-                  <Image src={item.previewUrl} alt="" fill sizes="64px" className="object-cover" unoptimized />
+                  <Image src={item.previewUrl} alt="" fill sizes="64px" className="object-cover object-top" unoptimized />
                   {item.status === "uploading" && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <span className="text-[10px] font-medium text-white">

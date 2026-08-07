@@ -115,7 +115,7 @@ export function CollectionsExplorer({ tenantId }: { tenantId: string }) {
                 <Card className="overflow-hidden p-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                   <div className="relative aspect-video overflow-hidden">
                     <div
-                      className="h-full w-full bg-cover bg-center transition-transform duration-300 hover:scale-105"
+                      className="h-full w-full bg-cover bg-top transition-transform duration-300 hover:scale-105"
                       style={{ backgroundImage: `url(${collection.coverImage})` }}
                     />
                     {collection.type === "PREORDER" && (

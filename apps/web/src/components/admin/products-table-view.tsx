@@ -43,7 +43,7 @@ export function ProductsTableView({
                     className="flex items-center gap-3 hover:underline"
                   >
                     <div
-                      className="h-10 w-10 shrink-0 rounded-md bg-cover bg-center"
+                      className="h-10 w-10 shrink-0 rounded-md bg-cover bg-top"
                       style={
                         product.images[0]
                           ? { backgroundImage: `url(${product.images[0]})` }

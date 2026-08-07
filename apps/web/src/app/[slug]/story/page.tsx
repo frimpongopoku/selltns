@@ -105,7 +105,7 @@ export default async function StoryPage({
                     alt=""
                     fill
                     sizes="(max-width: 768px) 33vw, 20vw"
-                    className="object-cover"
+                    className="object-cover object-top"
                   />
                 </div>
               ))}

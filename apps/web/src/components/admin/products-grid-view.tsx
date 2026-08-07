@@ -20,7 +20,7 @@ export function ProductsGridView({
         <Card key={product.id} className="overflow-hidden p-0 transition-shadow hover:shadow-md">
           <Link href={`/admin/products/${product.id}`} className="block">
             <div
-              className="aspect-square bg-cover bg-center"
+              className="aspect-square bg-cover bg-top"
               style={
                 product.images[0]
                   ? { backgroundImage: `url(${product.images[0]})` }

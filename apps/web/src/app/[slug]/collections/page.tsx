@@ -32,7 +32,7 @@ export default async function CollectionsIndexPage({
             className="store-card group relative block aspect-[16/9] animate-in fade-in-0 slide-in-from-bottom-2 overflow-hidden fill-mode-both duration-500"
           >
             <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+              className="absolute inset-0 bg-cover bg-top transition-transform duration-300 group-hover:scale-105"
               style={{ backgroundImage: `url(${collection.coverImage})` }}
             />
             <div className="absolute inset-0 bg-black/35 transition-colors group-hover:bg-black/50" />

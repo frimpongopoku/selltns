@@ -35,7 +35,7 @@ export function ProductGallery({ images, alt }: { images: string[]; alt: string 
                 i === selected ? "opacity-100 ring-2 ring-[var(--store-primary)]" : "opacity-80 hover:opacity-100"
               }`}
             >
-              <Image src={img} alt="" fill sizes="120px" className="object-cover" />
+              <Image src={img} alt="" fill sizes="120px" className="object-cover object-top" />
             </button>
           ))}
         </div>
