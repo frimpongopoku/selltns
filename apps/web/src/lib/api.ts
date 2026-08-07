@@ -4,6 +4,7 @@ import type {
   CollectionPage,
   CollectionWithProducts,
   ContentBlock,
+  DomainStatus,
   MediaAsset,
   MediaPage,
   Order,
@@ -60,6 +61,15 @@ export const updateTenantProfile = (
     method: "PATCH",
     body: JSON.stringify(input),
   });
+export const getDomainStatus = (tenantId: string) =>
+  request<DomainStatus>(`/tenants/${tenantId}/domain`);
+export const setDomain = (tenantId: string, domain: string) =>
+  request<DomainStatus>(`/tenants/${tenantId}/domain`, {
+    method: "POST",
+    body: JSON.stringify({ domain }),
+  });
+export const removeDomain = (tenantId: string) =>
+  request<void>(`/tenants/${tenantId}/domain`, { method: "DELETE" });
 
 // Products
 export const getProducts = (tenantId: string) =>

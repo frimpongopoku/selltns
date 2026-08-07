@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS, SETTINGS_NAV_ITEMS } from "./nav-items";
+import { NAV_ITEMS, SETTINGS_NAV_ITEMS, ADVANCED_NAV_ITEMS } from "./nav-items";
 
 export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -35,6 +35,19 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
         Settings
       </p>
       {SETTINGS_NAV_ITEMS.map((item) => {
+        const active = isActive(item.href);
+        return (
+          <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        );
+      })}
+
+      <p className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-muted-foreground/70 uppercase">
+        Advanced
+      </p>
+      {ADVANCED_NAV_ITEMS.map((item) => {
         const active = isActive(item.href);
         return (
           <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>

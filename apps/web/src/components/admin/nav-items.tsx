@@ -28,5 +28,11 @@ export const SETTINGS_NAV_ITEMS = [
   { href: "/admin/settings/store", label: "Store profile", icon: Store },
   { href: "/admin/settings/theme", label: "Storefront theme", icon: Palette },
   { href: "/admin/settings/team", label: "Team & roles", icon: Users },
-  { href: "/admin/settings/domain", label: "Domain", icon: Globe },
+] as const;
+
+// Kept separate from SETTINGS_NAV_ITEMS and rendered under its own "Advanced"
+// heading — custom domains involve DNS and aren't something most vendors
+// need to touch, so they shouldn't sit alongside the everyday settings.
+export const ADVANCED_NAV_ITEMS = [
+  { href: "/admin/settings/domain", label: "Custom domain", icon: Globe },
 ] as const;

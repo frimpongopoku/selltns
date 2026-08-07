@@ -44,6 +44,18 @@ export interface Tenant {
   createdAt: string;
 }
 
+export interface DnsInstruction {
+  type: "A" | "CNAME";
+  host: string;
+  value: string;
+}
+
+export interface DomainStatus {
+  domain: string | null;
+  verified: boolean;
+  instructions: DnsInstruction[];
+}
+
 export interface TeamMember {
   id: string;
   tenantId: string;
