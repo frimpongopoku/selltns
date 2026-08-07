@@ -9,6 +9,8 @@ import { ProductsService } from '../products/products.service';
 import { EMAIL_SERVICE, type EmailService } from '../email/email.service';
 import {
   newOrderVendorEmail,
+  orderCancelledCustomerEmail,
+  orderCompletedCustomerEmail,
   orderConfirmedCustomerEmail,
   orderPlacedCustomerEmail,
 } from '../email/templates';
@@ -203,6 +205,24 @@ export class OrdersService {
     });
   }
 
+  private async sendOrderCompletedEmail(order: Order): Promise<void> {
+    const tenant = await this.getTenant(order.tenantId);
+    const { trackUrl } = this.urls(tenant, order);
+    await this.emailService.send({
+      to: order.customerEmail,
+      ...orderCompletedCustomerEmail(order, tenant, trackUrl),
+    });
+  }
+
+  private async sendOrderCancelledEmail(order: Order): Promise<void> {
+    const tenant = await this.getTenant(order.tenantId);
+    const { trackUrl } = this.urls(tenant, order);
+    await this.emailService.send({
+      to: order.customerEmail,
+      ...orderCancelledCustomerEmail(order, tenant, trackUrl),
+    });
+  }
+
   async updateStatus(
     id: string,
     tenantId: string,
@@ -228,10 +248,20 @@ export class OrdersService {
       },
     });
     const order = mapOrder(row);
-    if (status === 'CONFIRMED' && existing.status !== 'CONFIRMED') {
-      void this.sendOrderConfirmedEmail(order).catch((err) =>
-        this.logger.error('Failed to send order-confirmed email', err),
-      );
+    if (status !== existing.status) {
+      if (status === 'CONFIRMED') {
+        void this.sendOrderConfirmedEmail(order).catch((err) =>
+          this.logger.error('Failed to send order-confirmed email', err),
+        );
+      } else if (status === 'COMPLETED') {
+        void this.sendOrderCompletedEmail(order).catch((err) =>
+          this.logger.error('Failed to send order-completed email', err),
+        );
+      } else if (status === 'CANCELLED') {
+        void this.sendOrderCancelledEmail(order).catch((err) =>
+          this.logger.error('Failed to send order-cancelled email', err),
+        );
+      }
     }
     return order;
   }
@@ -272,9 +302,17 @@ export class OrdersService {
         items: items as unknown as Prisma.InputJsonValue,
         total,
         status: 'MODIFIED',
+        confirmedAt: existing.confirmedAt ? undefined : now,
         history: history,
       },
     });
-    return mapOrder(row);
+    const order = mapOrder(row);
+    // Modifying items also confirms the order (it unlocks the customer's
+    // payment page, same as an explicit "Confirm order"), so it always
+    // gets the same confirmed-with-updated-total email.
+    void this.sendOrderConfirmedEmail(order).catch((err) =>
+      this.logger.error('Failed to send order-confirmed email', err),
+    );
+    return order;
   }
 }

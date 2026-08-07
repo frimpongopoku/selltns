@@ -120,9 +120,10 @@ export function orderConfirmedCustomerEmail(
       </p>
     </div>
     <table style="width: 100%; border-collapse: collapse;">
+      ${itemsList(order)}
       <tr>
-        <td style="padding: 8px 0; font-weight: 600;">Total to pay</td>
-        <td style="padding: 8px 0; font-weight: 600; text-align: right;">${formatGHS(order.total)}</td>
+        <td style="padding: 12px 0 0; font-weight: 600; border-top: 1px solid #eee;">Total to pay</td>
+        <td style="padding: 12px 0 0; font-weight: 600; text-align: right; border-top: 1px solid #eee;">${formatGHS(order.total)}</td>
       </tr>
     </table>
     ${button(payUrl, 'Pay now')}
@@ -131,5 +132,58 @@ export function orderConfirmedCustomerEmail(
     </p>`,
   );
   const text = `Your order from ${tenant.name} is confirmed. Pay ${formatGHS(order.total)} using reference ${order.paymentReference}: ${payUrl}`;
+  return { subject, html, text };
+}
+
+export function orderCompletedCustomerEmail(
+  order: Order,
+  tenant: Tenant,
+  trackUrl: string,
+) {
+  const subject = `Your order from ${tenant.name} is complete`;
+  const html = layout(
+    tenant.name,
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">All done — thanks for shopping with ${tenant.name}!</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
+      Your order has been marked complete. We hope you love what you got.
+    </p>
+    <table style="width: 100%; border-collapse: collapse;">
+      ${itemsList(order)}
+      <tr>
+        <td style="padding: 12px 0 0; font-weight: 600; border-top: 1px solid #eee;">Total</td>
+        <td style="padding: 12px 0 0; font-weight: 600; text-align: right; border-top: 1px solid #eee;">${formatGHS(order.total)}</td>
+      </tr>
+    </table>
+    ${button(trackUrl, 'View your order')}`,
+  );
+  const text = `Your order from ${tenant.name} (${formatGHS(order.total)}) is complete. View it: ${trackUrl}`;
+  return { subject, html, text };
+}
+
+export function orderCancelledCustomerEmail(
+  order: Order,
+  tenant: Tenant,
+  trackUrl: string,
+) {
+  const subject = `Your order from ${tenant.name} was cancelled`;
+  const html = layout(
+    tenant.name,
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">Your order has been cancelled</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
+      This order from ${tenant.name} has been cancelled. No payment is needed.
+      If this wasn't expected, reach out to ${tenant.name} directly.
+    </p>
+    <table style="width: 100%; border-collapse: collapse;">
+      ${itemsList(order)}
+      <tr>
+        <td style="padding: 12px 0 0; font-weight: 600; border-top: 1px solid #eee;">Total</td>
+        <td style="padding: 12px 0 0; font-weight: 600; text-align: right; border-top: 1px solid #eee;">${formatGHS(order.total)}</td>
+      </tr>
+    </table>
+    ${button(trackUrl, 'View your order')}`,
+  );
+  const text = `Your order from ${tenant.name} (${formatGHS(order.total)}) was cancelled. View it: ${trackUrl}`;
   return { subject, html, text };
 }

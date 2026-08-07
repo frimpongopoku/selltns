@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { modifyOrderItems, updateOrderStatus } from "@/lib/api";
@@ -44,12 +45,18 @@ export function OrderActions({
     }
   }
 
+  const willNewlyConfirm = order.status === "PENDING";
+
   async function submitModification() {
     setBusy(true);
     try {
       const items = order.items.map((i) => ({ ...i, quantity: quantities[i.productId] }));
       const updated = await modifyOrderItems(order.id, tenantId, items, "Quantities updated by admin");
-      toast.success("Order modified");
+      toast.success(
+        willNewlyConfirm
+          ? "Order modified and confirmed — customer notified"
+          : "Order modified — customer notified",
+      );
       onUpdated?.(updated);
       setModifyOpen(false);
       router.refresh();
@@ -91,6 +98,11 @@ export function OrderActions({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Modify order quantities</DialogTitle>
+            <DialogDescription>
+              {willNewlyConfirm
+                ? "Saving will also confirm this order — the customer will be emailed and their payment page unlocked."
+                : "The customer will be emailed the updated items and total."}
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             {order.items.map((item) => (
@@ -111,7 +123,7 @@ export function OrderActions({
           <DialogFooter>
             <Button disabled={busy} className="gap-2" onClick={submitModification}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              Save changes
+              {willNewlyConfirm ? "Save & confirm order" : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
