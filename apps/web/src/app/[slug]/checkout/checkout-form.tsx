@@ -57,7 +57,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
     <div className="mx-auto max-w-2xl animate-in fade-in-0 slide-in-from-bottom-2 px-4 py-12 duration-500 sm:px-6 sm:py-16 lg:px-8">
       <h1 className="store-heading text-3xl font-semibold">Review your order request</h1>
       <p className="store-muted mt-3 max-w-md leading-relaxed">
-        No payment yet — confirm your details and we&apos;ll review your
+        No payment yet. Confirm your details and we&apos;ll review your
         order. You&apos;ll get a link to track its status and pay once it&apos;s
         confirmed.
       </p>
@@ -112,7 +112,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
             className="store-input mt-1.5"
           />
           <p className="store-muted mt-1.5 text-xs">
-            We&apos;ll email you a link to track your order — no account needed.
+            We&apos;ll email you a link to track your order. No account needed.
           </p>
         </div>
         <button

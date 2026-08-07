@@ -10,7 +10,7 @@ const STYLES: Record<OrderStatus, string> = {
 
 const LABELS: Record<OrderStatus, string> = {
   PENDING: "Pending review",
-  CONFIRMED: "Confirmed — ready for payment",
+  CONFIRMED: "Confirmed, ready for payment",
   MODIFIED: "Modified",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",

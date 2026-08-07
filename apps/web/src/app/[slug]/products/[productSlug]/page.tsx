@@ -75,7 +75,7 @@ export default async function ProductPage({
             <AddToCartButton product={product} />
           </div>
           <p className="store-muted mt-5 max-w-sm text-xs leading-relaxed">
-            Adding to cart requests this item — you&apos;ll confirm details
+            Adding to cart requests this item. You&apos;ll confirm details
             at checkout and we&apos;ll reach out to arrange payment once your
             order is confirmed.
           </p>

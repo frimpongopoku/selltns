@@ -21,7 +21,7 @@ export async function generateMetadata({
   if (!order) return { title: "Order not found" };
   const summary = order.items.map((i) => `${i.quantity}x ${i.title}`).join(", ");
   return {
-    title: `Order for ${order.customerName} — ${formatMoney(order.total)}`,
+    title: `Order for ${order.customerName}, ${formatMoney(order.total)}`,
     description: `${summary} · Total ${formatMoney(order.total)}`,
     openGraph: {
       title: `Order for ${order.customerName}`,
@@ -62,7 +62,7 @@ export default async function TrackOrderPage({
     <div className="mx-auto max-w-2xl animate-in fade-in-0 slide-in-from-bottom-2 px-4 py-12 duration-500 sm:px-6 sm:py-16 lg:px-8">
       {isNew === "1" && (
         <div className="store-card mb-7 animate-in zoom-in-95 bg-[color-mix(in_oklab,var(--store-accent)_15%,var(--store-bg))] p-4 text-sm duration-300">
-          Order request submitted! Save this link — it&apos;s the only way to
+          Order request submitted! Save this link. It&apos;s the only way to
           check your order status.
         </div>
       )}
@@ -139,7 +139,7 @@ export default async function TrackOrderPage({
         <div className="mt-9 animate-in fade-in-0 slide-in-from-bottom-1 duration-500">
           <h2 className="store-heading text-lg font-semibold">Payment options</h2>
           <p className="store-muted mt-1.5 text-sm">
-            Your order is confirmed — pay using one of the options below.
+            Your order is confirmed. Pay using one of the options below.
           </p>
 
           <div className="store-card mt-4 flex items-center justify-between gap-3 p-4">

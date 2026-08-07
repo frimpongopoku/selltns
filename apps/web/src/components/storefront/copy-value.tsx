@@ -14,7 +14,7 @@ export function CopyValue({ value, label }: { value: string; label?: string }) {
       toast.success(label ? `${label} copied` : "Copied");
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      toast.error("Couldn't copy — try selecting the text manually.");
+      toast.error("Couldn't copy. Try selecting the text manually.");
     }
   }
 
