@@ -113,16 +113,28 @@ export function CollectionsExplorer({ tenantId }: { tenantId: string }) {
                 className="animate-in fade-in-0 slide-in-from-bottom-1 fill-mode-both duration-300"
               >
                 <Card className="overflow-hidden p-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <div className="aspect-video overflow-hidden">
+                  <div className="relative aspect-video overflow-hidden">
                     <div
                       className="h-full w-full bg-cover bg-center transition-transform duration-300 hover:scale-105"
                       style={{ backgroundImage: `url(${collection.coverImage})` }}
                     />
+                    {collection.type === "PREORDER" && (
+                      <span className="absolute left-2.5 top-2.5 rounded-full bg-amber-500/90 px-2 py-0.5 text-[11px] font-medium text-white">
+                        Pre-order
+                      </span>
+                    )}
                   </div>
                   <div className="p-5">
                     <p className="font-medium">{collection.title}</p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {collection.products.length} products
+                      {collection.type === "PREORDER"
+                        ? ` · ${
+                            collection.depositType === "FULL"
+                              ? "full payment"
+                              : `${collection.depositPercentage}% deposit`
+                          }`
+                        : ""}
                       {collection.themeOverride ? " · custom theme" : ""}
                     </p>
                   </div>
