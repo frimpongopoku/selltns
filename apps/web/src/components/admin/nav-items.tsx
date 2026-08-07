@@ -9,6 +9,7 @@ import {
   Users,
   Globe,
   BookOpen,
+  Store,
 } from "lucide-react";
 
 export const NAV_ITEMS = [
@@ -22,6 +23,7 @@ export const NAV_ITEMS = [
 ] as const;
 
 export const SETTINGS_NAV_ITEMS = [
+  { href: "/admin/settings/store", label: "Store profile", icon: Store },
   { href: "/admin/settings/theme", label: "Storefront theme", icon: Palette },
   { href: "/admin/settings/team", label: "Team & roles", icon: Users },
   { href: "/admin/settings/domain", label: "Domain", icon: Globe },

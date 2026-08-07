@@ -16,6 +16,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
+  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   if (lines.length === 0) {
@@ -38,6 +39,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
         tenantId,
         customerName: name,
         customerContact: contact,
+        customerEmail: email,
         items: lines.map((l) => ({
           productId: l.productId,
           quantity: l.quantity,
@@ -97,6 +99,21 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
             placeholder="055 234 1122"
             className="store-input mt-1.5"
           />
+        </div>
+        <div>
+          <label htmlFor="email" className="store-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="store-input mt-1.5"
+          />
+          <p className="store-muted mt-1.5 text-xs">
+            We&apos;ll email you a link to track your order — no account needed.
+          </p>
         </div>
         <button
           type="submit"

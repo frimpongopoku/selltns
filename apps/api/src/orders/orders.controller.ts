@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import type { OrderItem, OrderStatus } from '../common/types';
 
@@ -33,6 +41,7 @@ export class OrdersController {
       tenantId: string;
       customerName: string;
       customerContact: string;
+      customerEmail: string;
       items: CreateOrderItemInput[];
     },
   ) {
@@ -49,7 +58,12 @@ export class OrdersController {
     @Param('id') id: string,
     @Body() body: { tenantId: string; status: OrderStatus; note?: string },
   ) {
-    return this.ordersService.updateStatus(id, body.tenantId, body.status, body.note);
+    return this.ordersService.updateStatus(
+      id,
+      body.tenantId,
+      body.status,
+      body.note,
+    );
   }
 
   @Patch(':id/items')
@@ -57,6 +71,11 @@ export class OrdersController {
     @Param('id') id: string,
     @Body() body: { tenantId: string; items: OrderItem[]; note?: string },
   ) {
-    return this.ordersService.modifyItems(id, body.tenantId, body.items, body.note);
+    return this.ordersService.modifyItems(
+      id,
+      body.tenantId,
+      body.items,
+      body.note,
+    );
   }
 }

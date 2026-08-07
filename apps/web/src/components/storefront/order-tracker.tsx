@@ -7,18 +7,20 @@ import { Download, Loader2, Share2, XCircle } from "lucide-react";
 import { updateOrderStatus } from "@/lib/api";
 import type { Order, Tenant } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
+import { waLink } from "@/lib/phone";
 
 export function TrackerActions({ order, tenant }: { order: Order; tenant: Tenant }) {
   const router = useRouter();
   const [cancelling, setCancelling] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
-  const shareText = encodeURIComponent(
-    `${tenant.name} — Order for ${order.customerName}\n${order.items
-      .map((i) => `${i.quantity}x ${i.title}`)
-      .join(", ")}\nTotal: ${formatMoney(order.total)}\nTrack it: ${
-      typeof window !== "undefined" ? window.location.href : ""
-    }`,
-  );
+  const shareText = `Hi ${tenant.name}, here's my order:\n${order.items
+    .map((i) => `${i.quantity}x ${i.title}`)
+    .join(", ")}\nTotal: ${formatMoney(order.total)}\nDetails: ${
+    typeof window !== "undefined" ? window.location.href : ""
+  }`;
+  const whatsappUrl = tenant.whatsappNumber
+    ? waLink(tenant.whatsappNumber, shareText)
+    : `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 
   async function handleCancel() {
     setCancelling(true);
@@ -46,11 +48,11 @@ export function TrackerActions({ order, tenant }: { order: Order; tenant: Tenant
       </button>
       <button
         type="button"
-        onClick={() => window.open(`https://wa.me/?text=${shareText}`, "_blank")}
+        onClick={() => window.open(whatsappUrl, "_blank")}
         className="store-btn-secondary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium"
       >
         <Share2 className="h-4 w-4" />
-        Share to WhatsApp
+        {tenant.whatsappNumber ? `Send to ${tenant.name} on WhatsApp` : "Share to WhatsApp"}
       </button>
       {order.status === "PENDING" && (
         <>

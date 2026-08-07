@@ -20,4 +20,12 @@ export class TenantsController {
   updateTheme(@Param('id') id: string, @Body() themeTokens: ThemeTokens) {
     return this.tenantsService.updateTheme(id, themeTokens);
   }
+
+  @Patch(':id/profile')
+  updateProfile(
+    @Param('id') id: string,
+    @Body() body: { whatsappNumber?: string | null },
+  ) {
+    return this.tenantsService.updateProfile(id, body);
+  }
 }

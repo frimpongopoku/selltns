@@ -1,12 +1,13 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import {
   tenant,
   teamMembers,
   products,
   collections,
   paymentMethods,
+  orders,
 } from '../src/common/seed-data';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -15,13 +16,14 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   const seededTenant = await prisma.tenant.upsert({
     where: { id: tenant.id },
-    update: {},
+    update: { whatsappNumber: tenant.whatsappNumber },
     create: {
       id: tenant.id,
       name: tenant.name,
       slug: tenant.slug,
       customDomain: tenant.customDomain,
       domainVerified: tenant.domainVerified,
+      whatsappNumber: tenant.whatsappNumber,
       themeTokens: tenant.themeTokens as object,
       createdAt: new Date(tenant.createdAt),
     },
@@ -130,11 +132,37 @@ async function main() {
     });
   }
 
+  for (const order of orders) {
+    const orderData = {
+      customerName: order.customerName,
+      customerContact: order.customerContact,
+      customerEmail: order.customerEmail,
+      status: order.status,
+      items: order.items as unknown as Prisma.InputJsonValue,
+      total: order.total,
+      trackingToken: order.trackingToken,
+      paymentReference: order.paymentReference,
+      history: order.history as unknown as Prisma.InputJsonValue,
+      confirmedAt: order.confirmedAt ? new Date(order.confirmedAt) : null,
+      seenByAdminAt: order.seenByAdminAt ? new Date(order.seenByAdminAt) : null,
+    };
+    await prisma.order.upsert({
+      where: { id: order.id },
+      update: orderData,
+      create: {
+        id: order.id,
+        tenantId: seededTenant.id,
+        ...orderData,
+        createdAt: new Date(order.createdAt),
+      },
+    });
+  }
+
   console.log(
     `Seeded tenant "${seededTenant.name}" (${seededTenant.slug}) with ${teamMembers.length} members.`,
   );
   console.log(
-    `Seeded ${products.length} products, ${collections.length} collections, and ${paymentMethods.length} payment methods.`,
+    `Seeded ${products.length} products, ${collections.length} collections, ${paymentMethods.length} payment methods, and ${orders.length} orders.`,
   );
   console.log(
     'NOTE: seeded member emails are fake *.test addresses and cannot sign in with a real Google account. ' +

@@ -23,6 +23,7 @@ export interface Tenant {
   slug: string;
   customDomain: string | null;
   domainVerified: boolean;
+  whatsappNumber: string | null;
   themeTokens: ThemeTokens;
   createdAt: string;
 }
@@ -89,10 +90,12 @@ export interface Order {
   tenantId: string;
   customerName: string;
   customerContact: string;
+  customerEmail: string;
   status: OrderStatus;
   items: OrderItem[];
   total: number;
   trackingToken: string;
+  paymentReference: string;
   createdAt: string;
   confirmedAt: string | null;
   seenByAdminAt: string | null;

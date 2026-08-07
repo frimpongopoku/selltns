@@ -45,6 +45,14 @@ export const updateTenantTheme = (tenantId: string, themeTokens: ThemeTokens) =>
     method: "PATCH",
     body: JSON.stringify(themeTokens),
   });
+export const updateTenantProfile = (
+  tenantId: string,
+  input: { whatsappNumber?: string | null },
+) =>
+  request<Tenant>(`/tenants/${tenantId}/profile`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 
 // Products
 export const getProducts = (tenantId: string) =>
@@ -195,6 +203,7 @@ export const createOrder = (input: {
   tenantId: string;
   customerName: string;
   customerContact: string;
+  customerEmail: string;
   items: { productId: string; quantity: number }[];
 }) => request<Order>("/orders", { method: "POST", body: JSON.stringify(input) });
 export const markOrderSeen = (id: string, tenantId: string) =>

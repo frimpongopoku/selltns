@@ -42,4 +42,19 @@ export class TenantsService {
       });
     return tenant as unknown as Tenant;
   }
+
+  async updateProfile(
+    tenantId: string,
+    input: { whatsappNumber?: string | null },
+  ): Promise<Tenant> {
+    const tenant = await this.prisma.tenant
+      .update({
+        where: { id: tenantId },
+        data: { whatsappNumber: input.whatsappNumber },
+      })
+      .catch(() => {
+        throw new NotFoundException(`Tenant ${tenantId} not found`);
+      });
+    return tenant as unknown as Tenant;
+  }
 }

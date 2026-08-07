@@ -17,12 +17,21 @@ enum PaymentMethodType {
   BANK
 }
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  MODIFIED
+  CANCELLED
+  COMPLETED
+}
+
 model Tenant {
   id             String   @id @default(cuid())
   name           String
   slug           String   @unique
   customDomain   String?  @map("custom_domain")
   domainVerified Boolean  @default(false) @map("domain_verified")
+  whatsappNumber String?  @map("whatsapp_number")
   themeTokens    Json     @map("theme_tokens")
   createdAt      DateTime @default(now()) @map("created_at")
 
@@ -31,6 +40,7 @@ model Tenant {
   products       Product[]
   collections    Collection[]
   paymentMethods PaymentMethod[]
+  orders         Order[]
 
   @@map("tenants")
 }
@@ -156,4 +166,26 @@ model PaymentMethod {
 
   @@index([tenantId])
   @@map("payment_methods")
+}
+
+model Order {
+  id               String      @id @default(cuid())
+  tenantId         String      @map("tenant_id")
+  customerName     String      @map("customer_name")
+  customerContact  String      @map("customer_contact")
+  customerEmail    String      @map("customer_email")
+  status           OrderStatus @default(PENDING)
+  items            Json
+  total            Int
+  trackingToken    String      @unique @map("tracking_token")
+  paymentReference String      @unique @map("payment_reference")
+  history          Json
+  createdAt        DateTime    @default(now()) @map("created_at")
+  confirmedAt      DateTime?   @map("confirmed_at")
+  seenByAdminAt    DateTime?   @map("seen_by_admin_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("orders")
 }

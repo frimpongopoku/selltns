@@ -147,12 +147,16 @@ export default async function TrackOrderPage({
               <p className="font-medium">Include this note with your payment</p>
             </div>
             <span className="store-accent-text font-mono text-sm font-semibold">
-              <CopyValue
-                value={order.trackingToken.replace(/^trk_/, "").toUpperCase()}
-                label="Reference"
-              />
+              <CopyValue value={order.paymentReference} label="Reference" />
             </span>
           </div>
+
+          <Link
+            href={`/${slug}/pay`}
+            className="store-btn-primary mt-4 flex items-center justify-center py-3.5 text-sm font-medium"
+          >
+            Pay now on {tenant.name}&apos;s payment page
+          </Link>
 
           <div className="mt-4 flex flex-col gap-3">
             {enabledMethods.map((method) => (

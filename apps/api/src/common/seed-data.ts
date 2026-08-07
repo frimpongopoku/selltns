@@ -16,6 +16,7 @@ export const tenant: Tenant = {
   slug: 'akosua',
   customDomain: null,
   domainVerified: false,
+  whatsappNumber: '233245550134',
   themeTokens: {
     template: 'FASHION',
     primary: '#B8452F',
@@ -251,7 +252,11 @@ export const paymentMethods: PaymentMethod[] = [
     tenantId: TENANT_ID,
     type: 'MOMO',
     label: 'Telecel Cash',
-    details: { network: 'Telecel', number: '020 111 8842', name: 'Akosua Boateng' },
+    details: {
+      network: 'Telecel',
+      number: '020 111 8842',
+      name: 'Akosua Boateng',
+    },
     isEnabled: true,
     isPreferred: false,
   },
@@ -278,6 +283,7 @@ export const orders: Order[] = [
     tenantId: TENANT_ID,
     customerName: 'Naa Adjeley',
     customerContact: '055 234 1122',
+    customerEmail: 'naa.adjeley@example.test',
     status: 'PENDING',
     items: [
       {
@@ -295,6 +301,7 @@ export const orders: Order[] = [
     ],
     total: 710,
     trackingToken: 'trk_naa8842',
+    paymentReference: 'NAA8-8842',
     createdAt: '2026-07-20T08:12:00.000Z',
     confirmedAt: null,
     seenByAdminAt: null,
@@ -311,6 +318,7 @@ export const orders: Order[] = [
     tenantId: TENANT_ID,
     customerName: 'Kwabena Owusu',
     customerContact: '024 887 3310',
+    customerEmail: 'kwabena.owusu@example.test',
     status: 'CONFIRMED',
     items: [
       {
@@ -322,6 +330,7 @@ export const orders: Order[] = [
     ],
     total: 260,
     trackingToken: 'trk_kwab3310',
+    paymentReference: 'KWAB-3310',
     createdAt: '2026-07-18T14:40:00.000Z',
     confirmedAt: '2026-07-18T16:05:00.000Z',
     seenByAdminAt: '2026-07-18T16:00:00.000Z',
@@ -343,6 +352,7 @@ export const orders: Order[] = [
     tenantId: TENANT_ID,
     customerName: 'Efua Danso',
     customerContact: '050 776 2201',
+    customerEmail: 'efua.danso@example.test',
     status: 'MODIFIED',
     items: [
       {
@@ -360,6 +370,7 @@ export const orders: Order[] = [
     ],
     total: 430,
     trackingToken: 'trk_efua2201',
+    paymentReference: 'EFUA-2201',
     createdAt: '2026-07-15T09:22:00.000Z',
     confirmedAt: '2026-07-15T11:00:00.000Z',
     seenByAdminAt: '2026-07-15T10:50:00.000Z',
@@ -386,6 +397,7 @@ export const orders: Order[] = [
     tenantId: TENANT_ID,
     customerName: 'Yaw Boadi',
     customerContact: '027 445 9981',
+    customerEmail: 'yaw.boadi@example.test',
     status: 'COMPLETED',
     items: [
       {
@@ -397,6 +409,7 @@ export const orders: Order[] = [
     ],
     total: 420,
     trackingToken: 'trk_yaw9981',
+    paymentReference: 'YAWB-9981',
     createdAt: '2026-07-02T12:00:00.000Z',
     confirmedAt: '2026-07-02T13:00:00.000Z',
     seenByAdminAt: '2026-07-02T12:45:00.000Z',
@@ -423,6 +436,7 @@ export const orders: Order[] = [
     tenantId: TENANT_ID,
     customerName: 'Abena Serwaa',
     customerContact: '059 002 7765',
+    customerEmail: 'abena.serwaa@example.test',
     status: 'CANCELLED',
     items: [
       {
@@ -434,6 +448,7 @@ export const orders: Order[] = [
     ],
     total: 610,
     trackingToken: 'trk_aben7765',
+    paymentReference: 'ABEN-7765',
     createdAt: '2026-06-28T15:30:00.000Z',
     confirmedAt: null,
     seenByAdminAt: '2026-06-28T15:45:00.000Z',
