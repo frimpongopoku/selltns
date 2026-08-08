@@ -7,6 +7,7 @@ import { decodeCursor, encodeCursor } from './products.utils';
 import {
   MAX_TAG_LENGTH,
   MAX_TAGS_PER_PRODUCT,
+  MAX_VIDEOS_PER_PRODUCT,
   PRODUCTS_PAGE_SIZE,
   PRODUCTS_PAGE_SIZE_MAX,
 } from './products.constants';
@@ -37,6 +38,31 @@ function tagsOf(input: Partial<Product>) {
     maxTagLength: MAX_TAG_LENGTH,
     noun: 'product',
   });
+}
+
+// Only YouTube/TikTok links are accepted — the storefront only knows how to
+// embed those two. Trusting the client's own validation isn't enough since
+// this is a public write endpoint.
+const SUPPORTED_VIDEO_HOSTS = [
+  'youtube.com',
+  'www.youtube.com',
+  'youtu.be',
+  'tiktok.com',
+  'www.tiktok.com',
+  'vm.tiktok.com',
+  'vt.tiktok.com',
+];
+
+function videoUrlsOf(input: Partial<Product>): string[] {
+  const raw = input.videoUrls ?? [];
+  const valid = raw.filter((url) => {
+    try {
+      return SUPPORTED_VIDEO_HOSTS.includes(new URL(url).hostname);
+    } catch {
+      return false;
+    }
+  });
+  return [...new Set(valid)].slice(0, MAX_VIDEOS_PER_PRODUCT);
 }
 
 @Injectable()
@@ -80,7 +106,8 @@ export class ProductsService {
 
     const rows = await this.prisma.$queryRaw<PrismaProduct[]>`
       SELECT id, tenant_id AS "tenantId", title, slug, description, price, sku, stock,
-             is_active AS "isActive", images, tags, display_order AS "displayOrder",
+             is_active AS "isActive", images, video_urls AS "videoUrls", tags,
+             display_order AS "displayOrder",
              created_at AS "createdAt", updated_at AS "updatedAt"
       FROM products
       WHERE tenant_id = ${tenantId}
@@ -151,6 +178,7 @@ export class ProductsService {
         stock: input.stock ?? 0,
         isActive: input.isActive ?? true,
         images: input.images ?? [],
+        videoUrls: videoUrlsOf(input),
         tags: tagsOf(input),
         displayOrder:
           input.displayOrder ?? (maxOrder._max.displayOrder ?? -1) + 1,
@@ -182,6 +210,10 @@ export class ProductsService {
         stock: input.stock ?? existing.stock,
         isActive: input.isActive ?? existing.isActive,
         images: input.images ?? existing.images,
+        videoUrls:
+          input.videoUrls !== undefined
+            ? videoUrlsOf(input)
+            : existing.videoUrls,
         tags: input.tags !== undefined ? tagsOf(input) : existing.tags,
         displayOrder: input.displayOrder ?? existing.displayOrder,
       },

@@ -18,6 +18,8 @@ function remotePatternFor(rawUrl: string | undefined): RemotePattern | null {
 
 const remotePatterns: RemotePattern[] = [
   { protocol: "https", hostname: "images.unsplash.com" },
+  // YouTube video thumbnails, shown for product videos.
+  { protocol: "https", hostname: "img.youtube.com" },
   // Cloudflare R2 in production.
   remotePatternFor(process.env.NEXT_PUBLIC_MEDIA_BASE_URL),
   // The API's local-disk storage fallback, used when R2 isn't configured —

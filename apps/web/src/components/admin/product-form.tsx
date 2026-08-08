@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { GalleryPicker } from "@/components/admin/gallery-picker";
 import { TagInput } from "@/components/admin/tag-input";
+import { VideoLinksInput } from "@/components/admin/video-links-input";
 import { createProduct, deleteProduct, updateProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
 
@@ -31,6 +32,7 @@ export function ProductForm({
   const [stock, setStock] = useState(String(product?.stock ?? ""));
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [images, setImages] = useState<string[]>(product?.images ?? []);
+  const [videoUrls, setVideoUrls] = useState<string[]>(product?.videoUrls ?? []);
   const [tags, setTags] = useState<string[]>(product?.tags ?? []);
   const [saving, setSaving] = useState(false);
 
@@ -45,6 +47,7 @@ export function ProductForm({
       stock: Number(stock) || 0,
       isActive,
       images,
+      videoUrls,
       tags,
     };
     try {
@@ -78,6 +81,17 @@ export function ProductForm({
         <Label>Images</Label>
         <div className="mt-1.5">
           <GalleryPicker tenantId={tenantId} selected={images} onChange={setImages} />
+        </div>
+      </div>
+
+      <div>
+        <Label>Videos</Label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Add YouTube or TikTok links to show alongside your photos — great for fit,
+          styling, or a quick demo.
+        </p>
+        <div className="mt-1.5">
+          <VideoLinksInput videos={videoUrls} onChange={setVideoUrls} />
         </div>
       </div>
 

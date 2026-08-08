@@ -55,7 +55,7 @@ export default async function ProductPage({
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <div className="grid animate-in fade-in-0 slide-in-from-bottom-2 grid-cols-1 gap-10 duration-500 lg:grid-cols-2 lg:gap-14">
-        <ProductGallery images={product.images} alt={product.title} />
+        <ProductGallery images={product.images} videoUrls={product.videoUrls} alt={product.title} />
         <div>
           {product.preorder && (
             <p className="animate-in fade-in-0 zoom-in-95 mb-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-700 duration-300 dark:text-amber-400">

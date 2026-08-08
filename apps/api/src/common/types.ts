@@ -61,6 +61,7 @@ export interface Product {
   stock: number;
   isActive: boolean;
   images: string[];
+  videoUrls: string[];
   tags: string[];
   displayOrder: number;
   createdAt: string;
