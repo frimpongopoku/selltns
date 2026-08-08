@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ClipboardList, Package, Wallet, TrendingUp } from "lucide-react";
-import { getOrders, getProducts } from "@/lib/api";
+import { getProducts } from "@/lib/api";
+import { getOrders } from "@/lib/api-server";
 import { getMe } from "@/lib/get-me";
 import { StatCard } from "@/components/admin/stat-card";
 import { StatusBadge } from "@/components/storefront/status-badge";

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { CollectionQuickCreateDialog } from "@/components/admin/collection-quick-create-dialog";
 import { CollectionsExplorer } from "@/components/admin/collections-explorer";
 
@@ -8,6 +9,7 @@ export const metadata = { title: "Collections" };
 export default async function AdminCollectionsPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER", "MANAGER"]);
 
   return (
     <div>

@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS, SETTINGS_NAV_ITEMS, ADVANCED_NAV_ITEMS } from "./nav-items";
+import type { Role } from "@/lib/types";
 
-export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function visibleTo(roles: readonly Role[] | undefined, role: Role) {
+  return !roles || roles.includes(role);
+}
+
+export function AdminNavLinks({ role, onNavigate }: { role: Role; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   function isActive(href: string, exact?: boolean) {
@@ -19,9 +24,17 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
     }`;
   }
 
+  const navItems = NAV_ITEMS.filter((item) => visibleTo("roles" in item ? item.roles : undefined, role));
+  const settingsItems = SETTINGS_NAV_ITEMS.filter((item) =>
+    visibleTo("roles" in item ? item.roles : undefined, role),
+  );
+  const advancedItems = ADVANCED_NAV_ITEMS.filter((item) =>
+    visibleTo("roles" in item ? item.roles : undefined, role),
+  );
+
   return (
     <nav className="flex flex-col gap-1">
-      {NAV_ITEMS.map((item) => {
+      {navItems.map((item) => {
         const active = isActive(item.href, "exact" in item && item.exact);
         return (
           <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>
@@ -31,31 +44,39 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
         );
       })}
 
-      <p className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-muted-foreground/70 uppercase">
-        Settings
-      </p>
-      {SETTINGS_NAV_ITEMS.map((item) => {
-        const active = isActive(item.href);
-        return (
-          <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>
-            <item.icon className="h-4 w-4" />
-            {item.label}
-          </Link>
-        );
-      })}
+      {settingsItems.length > 0 && (
+        <>
+          <p className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-muted-foreground/70 uppercase">
+            Settings
+          </p>
+          {settingsItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </>
+      )}
 
-      <p className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-muted-foreground/70 uppercase">
-        Advanced
-      </p>
-      {ADVANCED_NAV_ITEMS.map((item) => {
-        const active = isActive(item.href);
-        return (
-          <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>
-            <item.icon className="h-4 w-4" />
-            {item.label}
-          </Link>
-        );
-      })}
+      {advancedItems.length > 0 && (
+        <>
+          <p className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-muted-foreground/70 uppercase">
+            Advanced
+          </p>
+          {advancedItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </>
+      )}
     </nav>
   );
 }

@@ -17,6 +17,10 @@ export const tenant: Tenant = {
   customDomain: null,
   domainVerified: false,
   whatsappNumber: '233245550134',
+  ownerDisplayName: 'Akosua Mensah',
+  ownerTitle: 'Founder & Designer',
+  ownerBio: 'Handcrafted in Accra, one piece at a time.',
+  ownerInfoVisible: false,
   themeTokens: {
     template: 'FASHION',
     primary: '#17140F',

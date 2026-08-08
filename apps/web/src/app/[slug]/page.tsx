@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCollections, getProducts, getTenantBySlug } from "@/lib/api";
 import { ProductCard } from "@/components/storefront/product-card";
+import { getCanonicalUrl } from "@/lib/canonical";
+import { jsonLdScriptProps, storeJsonLd } from "@/lib/structured-data";
 
 export async function generateMetadata({
   params,
@@ -13,10 +15,12 @@ export async function generateMetadata({
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) return { title: "Store not found" };
   const description = `Small-batch, handmade pieces from ${tenant.name}. Request your favorites and we'll confirm before arranging payment.`;
+  const canonical = getCanonicalUrl(tenant);
   return {
     title: tenant.name,
     description,
-    openGraph: { title: tenant.name, description },
+    alternates: { canonical },
+    openGraph: { title: tenant.name, description, url: canonical, type: "website" },
   };
 }
 
@@ -38,6 +42,10 @@ export default async function StoreHomePage({
 
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScriptProps(storeJsonLd(tenant))}
+      />
       <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
         <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
           <p className="store-nav-link store-accent-text text-sm font-semibold">

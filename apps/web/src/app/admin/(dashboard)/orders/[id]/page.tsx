@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getOrder } from "@/lib/api";
+import { getOrder } from "@/lib/api-server";
 import { getMe } from "@/lib/get-me";
 import { OrderDetailContent } from "@/components/admin/order-detail-content";
 

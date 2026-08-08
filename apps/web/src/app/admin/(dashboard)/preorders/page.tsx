@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getMe } from "@/lib/get-me";
-import { getCollections, getOrders } from "@/lib/api";
+import { requireRole } from "@/lib/require-role";
+import { getCollections } from "@/lib/api";
+import { getOrders } from "@/lib/api-server";
 import { OrdersTable } from "@/components/admin/orders-table";
 import { CollectionQuickCreateDialog } from "@/components/admin/collection-quick-create-dialog";
 
@@ -10,6 +12,7 @@ export const metadata = { title: "Pre-orders" };
 export default async function AdminPreordersPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER", "MANAGER"]);
 
   const [collections, orders] = await Promise.all([
     getCollections(me.tenant.id),

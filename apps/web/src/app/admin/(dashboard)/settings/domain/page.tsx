@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { DomainSettings } from "@/components/admin/domain-settings";
 
 export const metadata = { title: "Domain" };
@@ -7,6 +8,7 @@ export const metadata = { title: "Domain" };
 export default async function AdminDomainSettingsPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER"]);
 
   return (
     <div>

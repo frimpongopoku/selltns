@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { GalleryGrid } from "@/components/admin/gallery-grid";
 
 export const metadata = { title: "Gallery" };
@@ -7,6 +8,7 @@ export const metadata = { title: "Gallery" };
 export default async function AdminGalleryPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER", "MANAGER"]);
 
   return (
     <div>

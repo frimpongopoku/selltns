@@ -7,6 +7,8 @@ import { formatMoney } from "@/lib/format";
 import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { ProductCard } from "@/components/storefront/product-card";
+import { getCanonicalUrl } from "@/lib/canonical";
+import { jsonLdScriptProps, productJsonLd } from "@/lib/structured-data";
 
 export async function generateMetadata({
   params,
@@ -19,12 +21,16 @@ export async function generateMetadata({
   const product = await getProduct(productSlug, tenant.id).catch(() => null);
   if (!product) return { title: "Product not found" };
   const description = product.description.slice(0, 160);
+  const canonical = getCanonicalUrl(tenant, `/products/${product.slug}`);
   return {
     title: product.title,
     description,
+    alternates: { canonical },
     openGraph: {
       title: product.title,
       description,
+      url: canonical,
+      type: "website",
       images: product.images[0] ? [{ url: product.images[0] }] : undefined,
     },
   };
@@ -54,6 +60,10 @@ export default async function ProductPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScriptProps(productJsonLd(tenant, product))}
+      />
       <div className="grid animate-in fade-in-0 slide-in-from-bottom-2 grid-cols-1 gap-10 duration-500 lg:grid-cols-2 lg:gap-14">
         <ProductGallery images={product.images} videoUrls={product.videoUrls} alt={product.title} />
         <div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Menu, ExternalLink, LogOut, Store } from "lucide-react";
+import { Menu, ExternalLink, LogOut, Store, LifeBuoy } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,19 @@ function StorefrontLink({ tenant }: { tenant: Tenant }) {
       </span>
       <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
     </a>
+  );
+}
+
+function HelpLink() {
+  return (
+    <Link
+      href="/help"
+      target="_blank"
+      className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+    >
+      <LifeBuoy className="h-3.5 w-3.5" />
+      Help & support
+    </Link>
   );
 }
 
@@ -131,9 +144,10 @@ export function AdminShell({
       <aside className="hidden w-64 shrink-0 flex-col gap-6 border-r bg-background p-5 md:flex">
         <BrandBlock tenant={tenant} spaces={spaces} />
         <div className="flex-1 overflow-y-auto">
-          <AdminNavLinks />
+          <AdminNavLinks role={user.role} />
         </div>
         <StorefrontLink tenant={tenant} />
+        <HelpLink />
         <UserBlock user={user} />
         <BiibisoftCredit />
       </aside>
@@ -149,9 +163,10 @@ export function AdminShell({
               <SheetTitle className="sr-only">Admin navigation</SheetTitle>
               <BrandBlock tenant={tenant} spaces={spaces} />
               <div className="flex-1 overflow-y-auto">
-                <AdminNavLinks onNavigate={() => setOpen(false)} />
+                <AdminNavLinks role={user.role} onNavigate={() => setOpen(false)} />
               </div>
               <StorefrontLink tenant={tenant} />
+              <HelpLink />
               <UserBlock user={user} />
               <BiibisoftCredit />
             </SheetContent>

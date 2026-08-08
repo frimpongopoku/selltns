@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPaymentMethods, getTenantBySlug } from "@/lib/api";
 import { PaymentMethodCard } from "@/components/storefront/payment-method-card";
+import { OwnershipCredit } from "@/components/storefront/ownership-credit";
 import { obscurePaymentMethodPhone } from "@/lib/phone";
 
 export async function generateMetadata({
@@ -63,6 +64,12 @@ export default async function PayPage({
       <p className="store-muted mt-10 animate-in fade-in-0 text-center text-xs leading-relaxed duration-700 [animation-delay:250ms] fill-mode-both">
         Always confirm the recipient name matches {tenant.name} before sending a payment.
       </p>
+
+      {tenant.ownerInfoVisible && (
+        <div className="mt-5 animate-in fade-in-0 duration-700 [animation-delay:300ms] fill-mode-both">
+          <OwnershipCredit tenant={tenant} variant="card" />
+        </div>
+      )}
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { getCollection, getTenantBySlug } from "@/lib/api";
 import { ThemeScope } from "@/components/theme/theme-scope";
 import { ProductCard } from "@/components/storefront/product-card";
 import { PreorderBanner } from "@/components/storefront/preorder-banner";
+import { getCanonicalUrl } from "@/lib/canonical";
+import { collectionJsonLd, jsonLdScriptProps } from "@/lib/structured-data";
 
 export async function generateMetadata({
   params,
@@ -15,10 +17,21 @@ export async function generateMetadata({
   if (!tenant) return { title: "Store not found" };
   const collection = await getCollection(collectionSlug, tenant.id).catch(() => null);
   if (!collection) return { title: "Collection not found" };
+  const title = collection.seoTitle || `${collection.title} — ${tenant.name}`;
+  const description =
+    collection.seoDescription || collection.description || `${collection.title}, from ${tenant.name}.`;
+  const canonical = getCanonicalUrl(tenant, `/collections/${collection.slug}`);
   return {
-    title: collection.seoTitle,
-    description: collection.seoDescription,
-    openGraph: { title: collection.seoTitle, description: collection.seoDescription },
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "website",
+      images: collection.coverImage ? [{ url: collection.coverImage }] : undefined,
+    },
   };
 }
 
@@ -38,6 +51,10 @@ export default async function CollectionPage({
 
   return (
     <ThemeScope tokens={tokens} className="min-h-0">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdScriptProps(collectionJsonLd(tenant, collection))}
+      />
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
         {collection.themeOverride && (
           <p className="store-accent-text mb-3 text-xs font-semibold tracking-wide uppercase">

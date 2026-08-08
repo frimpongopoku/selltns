@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Tenant } from "@/lib/types";
 import { useStoreSlug } from "./store-context";
+import { OwnershipCredit } from "./ownership-credit";
 
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
 
@@ -37,6 +38,9 @@ export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boo
                   Our Story
                 </Link>
               )}
+              <Link href={`/${slug}/help`} className="transition-colors hover:text-[var(--store-primary)]">
+                Help
+              </Link>
               <span className="store-muted">
                 {tenant.customDomain && tenant.domainVerified
                   ? tenant.customDomain
@@ -45,7 +49,10 @@ export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boo
             </div>
           </div>
         </div>
-        <p className="store-muted mt-10 text-xs">
+        <div className="mt-10">
+          <OwnershipCredit tenant={tenant} />
+        </div>
+        <p className="store-muted mt-3 text-xs">
           © {new Date().getFullYear()} {tenant.name}. Built on Selltns, by the{" "}
           <a
             href="https://biibisoft.com"

@@ -1,23 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ADMIN_SESSION_COOKIE } from "@/lib/auth-constants";
+import { isPlatformHost } from "@/lib/is-platform-host";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
-const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
-
-// Hosts that are always the platform itself, never a vendor's custom
-// domain. Checked before any network call so local dev and previews never
-// pay for (or depend on) the custom-domain lookup below.
-function isPlatformHost(host: string): boolean {
-  const hostname = host.split(":")[0];
-  return (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname.endsWith(".vercel.app") ||
-    hostname === APP_DOMAIN ||
-    hostname.endsWith(`.${APP_DOMAIN}`)
-  );
-}
 
 function handleAdminAuth(request: NextRequest) {
   const isLoggedIn = request.cookies.has(ADMIN_SESSION_COOKIE);

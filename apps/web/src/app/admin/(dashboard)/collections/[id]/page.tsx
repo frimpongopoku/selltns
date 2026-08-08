@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getCollection } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { CollectionForm } from "@/components/admin/collection-form";
 
 export default async function EditCollectionPage({
@@ -11,6 +12,7 @@ export default async function EditCollectionPage({
   const { id } = await params;
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER", "MANAGER"]);
   const collection = await getCollection(id, me.tenant.id).catch(() => null);
   if (!collection) notFound();
 

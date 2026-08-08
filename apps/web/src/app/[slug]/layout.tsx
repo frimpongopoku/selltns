@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 import { getStoryBlocks, getTenantBySlug } from "@/lib/api";
 import { hasStoryContent } from "@/lib/story";
 import { ThemeScope } from "@/components/theme/theme-scope";
@@ -6,6 +7,7 @@ import { StoreProvider } from "@/components/storefront/store-context";
 import { CartProvider } from "@/components/storefront/cart-provider";
 import { SiteHeader } from "@/components/storefront/site-header";
 import { SiteFooter } from "@/components/storefront/site-footer";
+import { SentryUserContext } from "@/components/sentry-context";
 
 export default async function StorefrontLayout({
   children,
@@ -18,6 +20,7 @@ export default async function StorefrontLayout({
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
   const hasStory = hasStoryContent(await getStoryBlocks(tenant.id).catch(() => []));
+  Sentry.setTag("tenant", slug);
 
   // SiteHeader/SiteFooter are Client Components rendered on every storefront
   // page — neither needs the vendor's phone number, so it's stripped before
@@ -30,6 +33,7 @@ export default async function StorefrontLayout({
     <StoreProvider slug={slug}>
       <ThemeScope tokens={tenant.themeTokens} className="flex min-h-full flex-col">
         <CartProvider>
+          <SentryUserContext tenantId={tenant.id} tenantSlug={slug} />
           <SiteHeader tenant={publicTenant} hasStory={hasStory} />
           <main className="flex-1">{children}</main>
           <SiteFooter tenant={publicTenant} hasStory={hasStory} />

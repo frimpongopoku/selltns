@@ -40,6 +40,10 @@ export interface Tenant {
   customDomain: string | null;
   domainVerified: boolean;
   whatsappNumber: string | null;
+  ownerDisplayName: string;
+  ownerTitle: string;
+  ownerBio: string;
+  ownerInfoVisible: boolean;
   themeTokens: ThemeTokens;
   createdAt: string;
 }

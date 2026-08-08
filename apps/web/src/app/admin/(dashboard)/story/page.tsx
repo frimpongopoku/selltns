@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getStoryBlocks } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { StoryEditor } from "@/components/admin/story-editor";
 
 export const metadata = { title: "Story page" };
@@ -8,6 +9,7 @@ export const metadata = { title: "Story page" };
 export default async function AdminStoryPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER", "MANAGER"]);
   const blocks = await getStoryBlocks(me.tenant.id);
 
   return (

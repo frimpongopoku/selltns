@@ -7,14 +7,21 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CollectionsService } from './collections.service';
 import type { Collection } from '../common/types';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { CurrentUser } from '../auth/current-user.decorator';
+import type { SessionPayload } from '../auth/jwt-auth.guard';
 
 @Controller('collections')
 export class CollectionsController {
   constructor(private readonly collectionsService: CollectionsService) {}
 
+  // Public — the storefront reads collections straight from these GETs.
   @Get()
   findAll(
     @Query('tenantId') tenantId: string,
@@ -46,21 +53,28 @@ export class CollectionsController {
     return this.collectionsService.findOne(id, tenantId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
   @Post()
-  create(@Body() body: Partial<Collection> & { tenantId: string }) {
-    return this.collectionsService.create(body);
+  create(@CurrentUser() user: SessionPayload, @Body() body: Partial<Collection>) {
+    return this.collectionsService.create({ ...body, tenantId: user.tenantId });
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() body: Partial<Collection> & { tenantId: string },
+    @CurrentUser() user: SessionPayload,
+    @Body() body: Partial<Collection>,
   ) {
-    return this.collectionsService.update(id, body.tenantId, body);
+    return this.collectionsService.update(id, user.tenantId, body);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
   @Delete(':id')
-  remove(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.collectionsService.remove(id, tenantId);
+  remove(@Param('id') id: string, @CurrentUser() user: SessionPayload) {
+    return this.collectionsService.remove(id, user.tenantId);
   }
 }

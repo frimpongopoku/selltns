@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { CollectionForm } from "@/components/admin/collection-form";
 
 export const metadata = { title: "New collection" };
@@ -7,6 +8,7 @@ export const metadata = { title: "New collection" };
 export default async function NewCollectionPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER", "MANAGER"]);
 
   return (
     <div>

@@ -1,8 +1,27 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { getCollections, getTenantBySlug } from "@/lib/api";
+import { getCanonicalUrl } from "@/lib/canonical";
 
-export const metadata = { title: "Collections" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const tenant = await getTenantBySlug(slug).catch(() => null);
+  if (!tenant) return { title: "Store not found" };
+  const title = `Collections — ${tenant.name}`;
+  const description = `Curated sets of pieces from ${tenant.name}, each with its own look and story.`;
+  const canonical = getCanonicalUrl(tenant, "/collections");
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { title, description, url: canonical, type: "website" },
+  };
+}
 
 export default async function CollectionsIndexPage({
   params,

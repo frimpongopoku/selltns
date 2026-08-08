@@ -72,6 +72,10 @@ function mapTenant(row: PrismaTenant): Tenant {
     customDomain: row.customDomain,
     domainVerified: row.domainVerified,
     whatsappNumber: row.whatsappNumber,
+    ownerDisplayName: row.ownerDisplayName,
+    ownerTitle: row.ownerTitle,
+    ownerBio: row.ownerBio,
+    ownerInfoVisible: row.ownerInfoVisible,
     themeTokens: row.themeTokens as unknown as Tenant['themeTokens'],
     createdAt: row.createdAt.toISOString(),
   };

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { getTeam } from "@/lib/api";
+import { getTeam } from "@/lib/api-server";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { TeamManager } from "@/components/admin/team-manager";
 
 export const metadata = { title: "Team & roles" };
@@ -8,6 +9,7 @@ export const metadata = { title: "Team & roles" };
 export default async function AdminTeamSettingsPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER"]);
   const members = await getTeam(me.tenant.id);
 
   return (

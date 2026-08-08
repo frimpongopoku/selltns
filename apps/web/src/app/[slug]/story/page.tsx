@@ -1,11 +1,31 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { Play } from "lucide-react";
 import { getStoryBlocks, getTenantBySlug } from "@/lib/api";
 import { getYouTubeEmbedUrl } from "@/lib/video";
 import { meaningfulStoryBlocks } from "@/lib/story";
+import { OwnershipCredit } from "@/components/storefront/ownership-credit";
+import { getCanonicalUrl } from "@/lib/canonical";
 
-export const metadata = { title: "Our Story" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const tenant = await getTenantBySlug(slug).catch(() => null);
+  if (!tenant) return { title: "Store not found" };
+  const title = `Our Story — ${tenant.name}`;
+  const description = `The story behind ${tenant.name}.`;
+  const canonical = getCanonicalUrl(tenant, "/story");
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: { title, description, url: canonical, type: "website" },
+  };
+}
 
 export default async function StoryPage({
   params,
@@ -19,6 +39,11 @@ export default async function StoryPage({
 
   return (
     <div className="pb-24">
+      {tenant.ownerInfoVisible && (
+        <div className="mx-auto max-w-3xl px-4 pt-16 sm:px-6 sm:pt-20 lg:px-8">
+          <OwnershipCredit tenant={tenant} variant="card" />
+        </div>
+      )}
       {blocks.map((block, i) => {
         const delay = `${Math.min(i, 6) * 60}ms`;
 

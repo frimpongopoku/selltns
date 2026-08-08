@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { ThemePicker } from "@/components/admin/theme-picker";
 
 export const metadata = { title: "Storefront theme" };
@@ -7,6 +8,7 @@ export const metadata = { title: "Storefront theme" };
 export default async function AdminThemeSettingsPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER"]);
 
   return (
     <div>

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 import { getMe } from "@/lib/get-me";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { SentryUserContext } from "@/components/sentry-context";
 import type { TeamMember } from "@/lib/types";
 
 export default async function AdminDashboardLayout({
@@ -12,6 +14,10 @@ export default async function AdminDashboardLayout({
   if (!me) {
     redirect("/admin/login");
   }
+
+  Sentry.setUser({ id: me.user.id, email: me.user.email });
+  Sentry.setTag("tenantId", me.tenant.id);
+  Sentry.setTag("role", me.role);
 
   const currentUser: TeamMember = {
     id: me.user.id,
@@ -25,6 +31,13 @@ export default async function AdminDashboardLayout({
 
   return (
     <AdminShell tenant={me.tenant} spaces={me.spaces} user={currentUser}>
+      <SentryUserContext
+        userId={me.user.id}
+        email={me.user.email}
+        tenantId={me.tenant.id}
+        tenantSlug={me.tenant.slug}
+        role={me.role}
+      />
       {children}
     </AdminShell>
   );

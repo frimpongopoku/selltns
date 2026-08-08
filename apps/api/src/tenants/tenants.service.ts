@@ -78,6 +78,26 @@ export class TenantsService {
     return tenant as unknown as Tenant;
   }
 
+  async updateOwnershipInfo(
+    tenantId: string,
+    input: {
+      ownerDisplayName?: string;
+      ownerTitle?: string;
+      ownerBio?: string;
+      ownerInfoVisible?: boolean;
+    },
+  ): Promise<Tenant> {
+    const tenant = await this.prisma.tenant
+      .update({
+        where: { id: tenantId },
+        data: input,
+      })
+      .catch(() => {
+        throw new NotFoundException(`Tenant ${tenantId} not found`);
+      });
+    return tenant as unknown as Tenant;
+  }
+
   async getDomainStatus(tenantId: string): Promise<CustomDomainInfo> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
@@ -147,6 +167,17 @@ export class TenantsService {
       where: { id: tenantId },
       data: { customDomain: null, domainVerified: false },
     });
+  }
+
+  // Public, unauthenticated — feeds the platform's sitemap.ts. Excludes
+  // tenants on a verified custom domain: their canonical home is now that
+  // domain, which generates its own scoped sitemap, so listing them here
+  // too would just be duplicate/non-canonical content.
+  async listPublicDirectory(): Promise<Tenant[]> {
+    const tenants = await this.prisma.tenant.findMany({
+      where: { NOT: { AND: [{ customDomain: { not: null } }, { domainVerified: true }] } },
+    });
+    return tenants as unknown as Tenant[];
   }
 
   async findByCustomDomain(host: string): Promise<{ slug: string }> {

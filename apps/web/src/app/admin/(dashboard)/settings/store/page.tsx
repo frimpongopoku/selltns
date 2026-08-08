@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { StoreProfileSettings } from "@/components/admin/store-profile-settings";
 
 export const metadata = { title: "Store profile" };
@@ -7,6 +8,7 @@ export const metadata = { title: "Store profile" };
 export default async function AdminStoreSettingsPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER"]);
 
   return (
     <div>

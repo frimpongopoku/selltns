@@ -47,6 +47,10 @@ model Tenant {
   customDomain   String?  @map("custom_domain")
   domainVerified Boolean  @default(false) @map("domain_verified")
   whatsappNumber String?  @map("whatsapp_number")
+  ownerDisplayName String @default("") @map("owner_display_name")
+  ownerTitle       String @default("") @map("owner_title")
+  ownerBio         String @default("") @map("owner_bio")
+  ownerInfoVisible Boolean @default(false) @map("owner_info_visible")
   themeTokens    Json     @map("theme_tokens")
   createdAt      DateTime @default(now()) @map("created_at")
 
@@ -222,4 +226,19 @@ model Order {
 
   @@index([tenantId])
   @@map("orders")
+}
+
+// Submissions from the platform-level help/contact page (apps/web's
+// /help and /[slug]/help) — not tenant-scoped admin data, so no relation
+// back to Tenant; tenantId is just optional context for triage.
+model SupportMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  pageUrl   String   @default("") @map("page_url")
+  tenantId  String?  @map("tenant_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("support_messages")
 }

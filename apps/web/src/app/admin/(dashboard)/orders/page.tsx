@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getOrders } from "@/lib/api";
+import { getOrders } from "@/lib/api-server";
 import { getMe } from "@/lib/get-me";
 import { OrdersTable } from "@/components/admin/orders-table";
 

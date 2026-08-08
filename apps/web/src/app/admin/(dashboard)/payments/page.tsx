@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getPaymentMethods } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
+import { requireRole } from "@/lib/require-role";
 import { PaymentMethodsManager } from "@/components/admin/payment-methods-manager";
 import { PaymentPageLinkCard } from "@/components/admin/payment-page-link-card";
 
@@ -9,6 +10,7 @@ export const metadata = { title: "Payment methods" };
 export default async function AdminPaymentsPage() {
   const me = await getMe();
   if (!me) redirect("/admin/login");
+  requireRole(me.role, ["OWNER", "MANAGER"]);
   const methods = await getPaymentMethods(me.tenant.id);
 
   return (

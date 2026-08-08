@@ -20,23 +20,44 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
 
+async function parseFailure(path: string, res: Response): Promise<never> {
+  const body = await res.text();
+  const parsedMessage = (() => {
+    try {
+      return (JSON.parse(body) as { message?: string }).message;
+    } catch {
+      return undefined;
+    }
+  })();
+  throw new Error(parsedMessage ?? `API ${path} failed (${res.status}): ${body}`);
+}
+
+// For public, unauthenticated reads/writes the storefront makes directly
+// against the Nest API (product/collection listings, checkout, tracking).
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     cache: "no-store",
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
-  if (!res.ok) {
-    const body = await res.text();
-    const parsedMessage = (() => {
-      try {
-        return (JSON.parse(body) as { message?: string }).message;
-      } catch {
-        return undefined;
-      }
-    })();
-    throw new Error(parsedMessage ?? `API ${path} failed (${res.status}): ${body}`);
-  }
+  if (!res.ok) return parseFailure(path, res);
+  return res.json() as Promise<T>;
+}
+
+// For admin-only calls. Goes through the same-origin /api/admin/* proxy
+// (app/api/admin/[...path]/route.ts) instead of hitting the Nest API
+// directly, so the httpOnly session cookie can be attached as a Bearer
+// token server-side — this function is called from both server and
+// "use client" admin components, and client JS can never read that cookie
+// itself. The Nest API enforces the actual role check; this is just how
+// the token gets there.
+async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`/api/admin${path}`, {
+    ...init,
+    cache: "no-store",
+    headers: { "Content-Type": "application/json", ...init?.headers },
+  });
+  if (!res.ok) return parseFailure(path, res);
   return res.json() as Promise<T>;
 }
 
@@ -48,8 +69,10 @@ export const checkSlugAvailability = (slug: string) =>
   request<{ available: boolean; reason?: "invalid" | "reserved" | "taken" }>(
     `/tenants/check-slug/${slug}`,
   );
+export const getPublicTenantDirectory = () =>
+  request<Tenant[]>("/tenants/public-directory");
 export const updateTenantTheme = (tenantId: string, themeTokens: ThemeTokens) =>
-  request<Tenant>(`/tenants/${tenantId}/theme`, {
+  adminRequest<Tenant>(`/tenants/${tenantId}/theme`, {
     method: "PATCH",
     body: JSON.stringify(themeTokens),
   });
@@ -57,19 +80,32 @@ export const updateTenantProfile = (
   tenantId: string,
   input: { whatsappNumber?: string | null },
 ) =>
-  request<Tenant>(`/tenants/${tenantId}/profile`, {
+  adminRequest<Tenant>(`/tenants/${tenantId}/profile`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+export const updateTenantOwnershipInfo = (
+  tenantId: string,
+  input: {
+    ownerDisplayName?: string;
+    ownerTitle?: string;
+    ownerBio?: string;
+    ownerInfoVisible?: boolean;
+  },
+) =>
+  adminRequest<Tenant>(`/tenants/${tenantId}/ownership-info`, {
     method: "PATCH",
     body: JSON.stringify(input),
   });
 export const getDomainStatus = (tenantId: string) =>
-  request<DomainStatus>(`/tenants/${tenantId}/domain`);
+  adminRequest<DomainStatus>(`/tenants/${tenantId}/domain`);
 export const setDomain = (tenantId: string, domain: string) =>
-  request<DomainStatus>(`/tenants/${tenantId}/domain`, {
+  adminRequest<DomainStatus>(`/tenants/${tenantId}/domain`, {
     method: "POST",
     body: JSON.stringify({ domain }),
   });
 export const removeDomain = (tenantId: string) =>
-  request<void>(`/tenants/${tenantId}/domain`, { method: "DELETE" });
+  adminRequest<void>(`/tenants/${tenantId}/domain`, { method: "DELETE" });
 
 // Products
 export const getProducts = (tenantId: string) =>
@@ -95,7 +131,7 @@ export const getProductTags = (tenantId: string) =>
 export const getProduct = (idOrSlug: string, tenantId: string) =>
   request<Product>(`/products/${idOrSlug}?tenantId=${tenantId}`);
 export const createProduct = (tenantId: string, input: Partial<Product>) =>
-  request<Product>("/products", {
+  adminRequest<Product>("/products", {
     method: "POST",
     body: JSON.stringify({ ...input, tenantId }),
   });
@@ -104,12 +140,12 @@ export const updateProduct = (
   tenantId: string,
   input: Partial<Product>,
 ) =>
-  request<Product>(`/products/${id}`, {
+  adminRequest<Product>(`/products/${id}`, {
     method: "PATCH",
     body: JSON.stringify({ ...input, tenantId }),
   });
 export const deleteProduct = (id: string, tenantId: string) =>
-  request<{ id: string }>(`/products/${id}?tenantId=${tenantId}`, {
+  adminRequest<{ id: string }>(`/products/${id}?tenantId=${tenantId}`, {
     method: "DELETE",
   });
 
@@ -135,7 +171,7 @@ export const getCollectionTags = (tenantId: string) =>
 export const getCollection = (idOrSlug: string, tenantId: string) =>
   request<CollectionWithProducts>(`/collections/${idOrSlug}?tenantId=${tenantId}`);
 export const createCollection = (tenantId: string, input: Partial<Collection>) =>
-  request<CollectionWithProducts>("/collections", {
+  adminRequest<CollectionWithProducts>("/collections", {
     method: "POST",
     body: JSON.stringify({ ...input, tenantId }),
   });
@@ -144,16 +180,16 @@ export const updateCollection = (
   tenantId: string,
   input: Partial<Collection>,
 ) =>
-  request<CollectionWithProducts>(`/collections/${id}`, {
+  adminRequest<CollectionWithProducts>(`/collections/${id}`, {
     method: "PATCH",
     body: JSON.stringify({ ...input, tenantId }),
   });
 export const deleteCollection = (id: string, tenantId: string) =>
-  request<{ id: string }>(`/collections/${id}?tenantId=${tenantId}`, {
+  adminRequest<{ id: string }>(`/collections/${id}?tenantId=${tenantId}`, {
     method: "DELETE",
   });
 
-// Gallery — uploading goes through lib/upload.ts (multipart, not JSON)
+// Gallery — admin-only; uploading goes through lib/upload.ts (multipart, not JSON)
 export interface GetGalleryParams {
   cursor?: string;
   limit?: number;
@@ -168,19 +204,19 @@ export const getGallery = (tenantId: string, params: GetGalleryParams = {}) => {
   if (params.q) search.set("q", params.q);
   if (params.from) search.set("from", params.from);
   if (params.to) search.set("to", params.to);
-  return request<MediaPage>(`/media?${search.toString()}`);
+  return adminRequest<MediaPage>(`/media?${search.toString()}`);
 };
 export const updateMedia = (
   id: string,
   tenantId: string,
   input: { title?: string | null; tags?: string[] },
 ) =>
-  request<MediaAsset>(`/media/${id}`, {
+  adminRequest<MediaAsset>(`/media/${id}`, {
     method: "PATCH",
     body: JSON.stringify({ ...input, tenantId }),
   });
 export const deleteMedia = (id: string, tenantId: string) =>
-  request<{ id: string }>(`/media/${id}?tenantId=${tenantId}`, {
+  adminRequest<{ id: string }>(`/media/${id}?tenantId=${tenantId}`, {
     method: "DELETE",
   });
 
@@ -191,7 +227,7 @@ export const createPaymentMethod = (
   tenantId: string,
   input: Partial<PaymentMethod>,
 ) =>
-  request<PaymentMethod>("/payment-methods", {
+  adminRequest<PaymentMethod>("/payment-methods", {
     method: "POST",
     body: JSON.stringify({ ...input, tenantId }),
   });
@@ -200,20 +236,20 @@ export const updatePaymentMethod = (
   tenantId: string,
   input: Partial<PaymentMethod>,
 ) =>
-  request<PaymentMethod>(`/payment-methods/${id}`, {
+  adminRequest<PaymentMethod>(`/payment-methods/${id}`, {
     method: "PATCH",
     body: JSON.stringify({ ...input, tenantId }),
   });
 export const deletePaymentMethod = (id: string, tenantId: string) =>
-  request<{ id: string }>(`/payment-methods/${id}?tenantId=${tenantId}`, {
+  adminRequest<{ id: string }>(`/payment-methods/${id}?tenantId=${tenantId}`, {
     method: "DELETE",
   });
 
-// Orders
+// Orders — list/detail/admin actions are admin-only; track/create are public
 export const getOrders = (tenantId: string) =>
-  request<Order[]>(`/orders?tenantId=${tenantId}`);
+  adminRequest<Order[]>(`/orders?tenantId=${tenantId}`);
 export const getOrder = (id: string, tenantId: string) =>
-  request<Order>(`/orders/${id}?tenantId=${tenantId}`);
+  adminRequest<Order>(`/orders/${id}?tenantId=${tenantId}`);
 export const getOrderByToken = (token: string) =>
   request<Order>(`/orders/track/${token}`);
 export const createOrder = (input: {
@@ -226,7 +262,7 @@ export const createOrder = (input: {
   items: { productId: string; quantity: number }[];
 }) => request<Order>("/orders", { method: "POST", body: JSON.stringify(input) });
 export const markOrderSeen = (id: string, tenantId: string) =>
-  request<Order>(`/orders/${id}/seen`, {
+  adminRequest<Order>(`/orders/${id}/seen`, {
     method: "PATCH",
     body: JSON.stringify({ tenantId }),
   });
@@ -236,12 +272,12 @@ export const updateOrderStatus = (
   status: OrderStatus,
   note?: string,
 ) =>
-  request<Order>(`/orders/${id}/status`, {
+  adminRequest<Order>(`/orders/${id}/status`, {
     method: "PATCH",
     body: JSON.stringify({ tenantId, status, note }),
   });
 export const reopenOrder = (id: string, tenantId: string) =>
-  request<Order>(`/orders/${id}/reopen`, {
+  adminRequest<Order>(`/orders/${id}/reopen`, {
     method: "PATCH",
     body: JSON.stringify({ tenantId }),
   });
@@ -251,45 +287,60 @@ export const modifyOrderItems = (
   items: OrderItem[],
   note?: string,
 ) =>
-  request<Order>(`/orders/${id}/items`, {
+  adminRequest<Order>(`/orders/${id}/items`, {
     method: "PATCH",
     body: JSON.stringify({ tenantId, items, note }),
   });
 export const addOrderUpdate = (id: string, tenantId: string, note: string) =>
-  request<Order>(`/orders/${id}/updates`, {
+  adminRequest<Order>(`/orders/${id}/updates`, {
     method: "PATCH",
     body: JSON.stringify({ tenantId, note }),
   });
 export const requestOrderBalance = (id: string, tenantId: string) =>
-  request<Order>(`/orders/${id}/request-balance`, {
+  adminRequest<Order>(`/orders/${id}/request-balance`, {
     method: "PATCH",
     body: JSON.stringify({ tenantId }),
   });
 export const markOrderBalancePaid = (id: string, tenantId: string) =>
-  request<Order>(`/orders/${id}/balance-paid`, {
+  adminRequest<Order>(`/orders/${id}/balance-paid`, {
     method: "PATCH",
     body: JSON.stringify({ tenantId }),
   });
 
-// Team
+// Team — entirely admin-only (OWNER)
 export const getTeam = (tenantId: string) =>
-  request<TeamMember[]>(`/team?tenantId=${tenantId}`);
+  adminRequest<TeamMember[]>(`/team?tenantId=${tenantId}`);
 export const inviteTeamMember = (
   tenantId: string,
   input: { name: string; email: string; role: string },
 ) =>
-  request<TeamMember>("/team/invite", {
+  adminRequest<TeamMember>("/team/invite", {
     method: "POST",
     body: JSON.stringify({ ...input, tenantId }),
   });
 export const removeTeamMember = (id: string, tenantId: string) =>
-  request<{ id: string }>(`/team/${id}?tenantId=${tenantId}`, { method: "DELETE" });
+  adminRequest<{ id: string }>(`/team/${id}?tenantId=${tenantId}`, { method: "DELETE" });
 
-// Story page content blocks
+// Support — the help/contact form (public, platform-level, not tenant-scoped)
+export const submitSupportMessage = (input: {
+  name: string;
+  email: string;
+  message: string;
+  pageUrl?: string;
+  tenantId?: string;
+  honeypot?: string;
+  formRenderedAt?: number;
+}) =>
+  request<{ id: string }>("/support/contact", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+// Story page content blocks — public read, admin-only write
 export const getStoryBlocks = (tenantId: string) =>
   request<ContentBlock[]>(`/story?tenantId=${tenantId}`);
 export const updateStoryBlocks = (tenantId: string, blocks: ContentBlock[]) =>
-  request<ContentBlock[]>("/story", {
+  adminRequest<ContentBlock[]>("/story", {
     method: "PATCH",
     body: JSON.stringify({ tenantId, blocks }),
   });

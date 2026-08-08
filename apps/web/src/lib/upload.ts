@@ -1,11 +1,12 @@
 import type { MediaAsset } from "./types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
-
 // Plain fetch has no upload-progress event, so a real progress bar needs
 // XHR. Kept separate from lib/api.ts's JSON `request()` helper since this is
 // multipart and must NOT set a Content-Type header — the browser fills in
-// the multipart boundary itself.
+// the multipart boundary itself. Posts through the same-origin admin proxy
+// (app/api/admin/[...path]/route.ts) rather than straight to the Nest API,
+// since media upload now requires the session's Bearer token, which only
+// that proxy can attach (it reads the httpOnly session cookie server-side).
 export interface UploadMediaOptions {
   title?: string;
   tags?: string[];
@@ -25,7 +26,7 @@ export function uploadMedia(
     if (options.tags?.length) form.append("tags", JSON.stringify(options.tags));
 
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${API_URL}/media`);
+    xhr.open("POST", "/api/admin/media");
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress?.(event.loaded / event.total);
