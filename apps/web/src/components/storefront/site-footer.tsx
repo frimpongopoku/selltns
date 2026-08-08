@@ -4,6 +4,8 @@ import Link from "next/link";
 import type { Tenant } from "@/lib/types";
 import { useStoreSlug } from "./store-context";
 
+const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
+
 export function SiteFooter({ tenant }: { tenant: Tenant }) {
   const slug = useStoreSlug();
 
@@ -33,7 +35,11 @@ export function SiteFooter({ tenant }: { tenant: Tenant }) {
               <Link href={`/${slug}/story`} className="transition-colors hover:text-[var(--store-primary)]">
                 Our Story
               </Link>
-              <span className="store-muted">{tenant.slug}.selltns.com</span>
+              <span className="store-muted">
+                {tenant.customDomain && tenant.domainVerified
+                  ? tenant.customDomain
+                  : `${APP_DOMAIN}/${slug}`}
+              </span>
             </div>
           </div>
         </div>

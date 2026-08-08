@@ -1,11 +1,50 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, Copy, MessageCircle } from "lucide-react";
+import {
+  ArrowRight,
+  Copy,
+  MessageCircle,
+  Layers,
+  LayoutDashboard,
+  Users,
+  Globe,
+  Palette,
+  Store,
+} from "lucide-react";
+import { Logo } from "@/components/logo";
+import { DashboardPreview } from "@/components/marketing/dashboard-preview";
+import { StorefrontPreview } from "@/components/marketing/storefront-preview";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4310";
+const TITLE = "Selltns: Sell Online in Ghana, Get Paid Your Way";
+const DESCRIPTION =
+  "Set up a store, share one link, and get paid by Mobile Money or bank. Track every order from request to delivery — no card fees, no developer needed.";
 
 export const metadata: Metadata = {
-  title: "Selltns: Sell online, get paid your way",
-  description:
-    "Set up a store, share the link, get paid by Mobile Money or bank. No card fees, no developer needed.",
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+};
+
+const ORGANIZATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Selltns",
+  url: SITE_URL,
+  logo: `${SITE_URL}/icon`,
+  description: DESCRIPTION,
+  areaServed: "GH",
 };
 
 const VALUE_PROPS = [
@@ -23,13 +62,53 @@ const VALUE_PROPS = [
   },
 ];
 
+const FEATURES = [
+  {
+    icon: LayoutDashboard,
+    label: "A dashboard that tells you what matters",
+    body: "Pending requests, confirmed sales, and revenue at a glance — from your phone or laptop.",
+  },
+  {
+    icon: Layers,
+    label: "Collections and pre-orders",
+    body: "Group pieces into collections, or open pre-orders with deposits for made-to-order work.",
+  },
+  {
+    icon: Users,
+    label: "Bring in your team",
+    body: "Add staff or managers with their own logins and permissions. No shared passwords.",
+  },
+  {
+    icon: Globe,
+    label: "Your own domain, when you're ready",
+    body: "Connect a domain you already own. Your selltns.com link keeps working either way, as a backup.",
+  },
+  {
+    icon: Palette,
+    label: "Make it look like your brand",
+    body: "Pick a theme, set your colors and fonts, tell your story. Not a template everyone else has too.",
+  },
+  {
+    icon: Store,
+    label: "Running more than one shop?",
+    body: "Switch between stores from the same account. No extra sign-ups, no separate logins.",
+  },
+];
+
 export default function LandingPage() {
   return (
     <div className="min-h-full bg-[#F8F8F6] text-[#141414] dark:bg-[#141414] dark:text-[#F2F1EE]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_JSON_LD) }}
+      />
       {/* Header */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
-        <span className="font-heading text-lg font-bold tracking-tight">
-          Selltns
+        <span className="flex items-center gap-2">
+          <Logo size={30} />
+          <span className="font-heading text-lg font-bold tracking-tight">
+            Selltns
+          </span>
         </span>
         <nav className="flex items-center gap-5 text-sm">
           <Link
@@ -120,6 +199,34 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* See it in action: the actual storefront and admin dashboard */}
+      <section className="border-t border-[#141414]/10 dark:border-[#F2F1EE]/10">
+        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
+          <p className="text-sm font-semibold tracking-wide text-[#0E9F6E] uppercase dark:text-[#34D399]">
+            See it in action
+          </p>
+          <h2 className="font-heading mt-3 max-w-lg text-3xl font-bold leading-tight sm:text-4xl">
+            A storefront for your customers. A dashboard for you.
+          </h2>
+          <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-700">
+              <StorefrontPreview />
+              <p className="mt-3 text-sm text-[#66605A] dark:text-[#A8A29B]">
+                Your customers browse, add to cart, and check out — no app to
+                download.
+              </p>
+            </div>
+            <div className="animate-in fade-in-0 slide-in-from-bottom-2 duration-700 [animation-delay:100ms] fill-mode-both">
+              <DashboardPreview />
+              <p className="mt-3 text-sm text-[#66605A] dark:text-[#A8A29B]">
+                You see every order, product, and cedi of revenue in one
+                place.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Value props: asymmetric 1+2 split rather than three equal cards */}
       <section className="border-t border-[#141414]/10 dark:border-[#F2F1EE]/10">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
@@ -144,6 +251,34 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature grid: everything else the platform does */}
+      <section className="border-t border-[#141414]/10 dark:border-[#F2F1EE]/10">
+        <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
+          <h2 className="font-heading text-2xl font-bold sm:text-3xl">
+            Everything you need to run the shop, not just list it.
+          </h2>
+          <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((feature, i) => (
+              <div
+                key={feature.label}
+                style={{ animationDelay: `${i * 50}ms` }}
+                className="animate-in fade-in-0 slide-in-from-bottom-1 fill-mode-both duration-500"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0E9F6E]/10 text-[#0E9F6E] dark:bg-[#34D399]/10 dark:text-[#34D399]">
+                  <feature.icon className="h-5 w-5" />
+                </span>
+                <h3 className="font-heading mt-4 text-base font-bold">
+                  {feature.label}
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-[#66605A] dark:text-[#A8A29B]">
+                  {feature.body}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { signInWithGooglePopup } from "@/lib/firebase-client";
 import { checkSlugAvailability } from "@/lib/api";
 
+const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
+
 function slugify(input: string) {
   return input
     .toLowerCase()
@@ -160,8 +162,8 @@ export default function RegisterPage() {
               {slugStatus === "unavailable"
                 ? slugMessage
                 : storeSlug
-                  ? `${storeSlug}.selltns.com`
-                  : "your-store.selltns.com"}
+                  ? `${APP_DOMAIN}/${storeSlug}`
+                  : `${APP_DOMAIN}/your-store`}
             </p>
           </div>
         </div>

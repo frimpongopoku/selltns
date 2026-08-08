@@ -28,6 +28,8 @@ import { checkSlugAvailability } from "@/lib/api";
 import { createSpace, switchSpace } from "@/lib/auth-client";
 import type { Space, Tenant } from "@/lib/types";
 
+const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
+
 function slugify(input: string) {
   return input
     .toLowerCase()
@@ -83,7 +85,11 @@ export function SpaceSwitcher({ tenant, spaces }: { tenant: Tenant; spaces: Spac
         >
           <div className="min-w-0">
             <p className="truncate text-lg font-semibold leading-none">{tenant.name}</p>
-            <p className="mt-1.5 truncate text-xs text-muted-foreground">{tenant.slug}.selltns.com</p>
+            <p className="mt-1.5 truncate text-xs text-muted-foreground">
+              {tenant.customDomain && tenant.domainVerified
+                ? tenant.customDomain
+                : `${APP_DOMAIN}/${tenant.slug}`}
+            </p>
           </div>
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
@@ -246,8 +252,8 @@ function CreateSpaceForm({ onDone }: { onDone: () => void }) {
           {slugStatus === "unavailable"
             ? slugMessage
             : storeSlug
-              ? `${storeSlug}.selltns.com`
-              : "your-space.selltns.com"}
+              ? `${APP_DOMAIN}/${storeSlug}`
+              : `${APP_DOMAIN}/your-space`}
         </p>
       </div>
       <DialogFooter>
