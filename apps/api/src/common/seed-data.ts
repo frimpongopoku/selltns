@@ -200,6 +200,7 @@ export const collections: Collection[] = [
     depositType: null,
     depositPercentage: null,
     fulfillmentNote: '',
+    isActive: true,
   },
   {
     id: 'col_2',
@@ -217,6 +218,7 @@ export const collections: Collection[] = [
     depositType: null,
     depositPercentage: null,
     fulfillmentNote: '',
+    isActive: true,
   },
   {
     id: 'col_3',
@@ -246,6 +248,7 @@ export const collections: Collection[] = [
     depositType: null,
     depositPercentage: null,
     fulfillmentNote: '',
+    isActive: true,
   },
   {
     id: 'col_4',
@@ -265,6 +268,7 @@ export const collections: Collection[] = [
     depositType: 'PERCENTAGE',
     depositPercentage: 50,
     fulfillmentNote: 'Hand-woven to order. Ready in 4-6 weeks.',
+    isActive: true,
   },
 ];
 
@@ -335,6 +339,7 @@ export const orders: Order[] = [
     paymentReference: 'NAA8-8842',
     createdAt: '2026-07-20T08:12:00.000Z',
     confirmedAt: null,
+    completedAt: null,
     seenByAdminAt: null,
     history: [
       {
@@ -353,6 +358,7 @@ export const orders: Order[] = [
     balanceRequestedAt: null,
     whatsappNumber: null,
     deliveryAddress: null,
+    preorderCollectionId: null,
   },
   {
     id: 'order_2',
@@ -374,6 +380,7 @@ export const orders: Order[] = [
     paymentReference: 'KWAB-3310',
     createdAt: '2026-07-18T14:40:00.000Z',
     confirmedAt: '2026-07-18T16:05:00.000Z',
+    completedAt: null,
     seenByAdminAt: '2026-07-18T16:00:00.000Z',
     history: [
       {
@@ -397,6 +404,7 @@ export const orders: Order[] = [
     balanceRequestedAt: null,
     whatsappNumber: null,
     deliveryAddress: null,
+    preorderCollectionId: null,
   },
   {
     id: 'order_3',
@@ -424,6 +432,7 @@ export const orders: Order[] = [
     paymentReference: 'EFUA-2201',
     createdAt: '2026-07-15T09:22:00.000Z',
     confirmedAt: '2026-07-15T11:00:00.000Z',
+    completedAt: null,
     seenByAdminAt: '2026-07-15T10:50:00.000Z',
     history: [
       {
@@ -452,6 +461,7 @@ export const orders: Order[] = [
     balanceRequestedAt: null,
     whatsappNumber: null,
     deliveryAddress: null,
+    preorderCollectionId: null,
   },
   {
     id: 'order_4',
@@ -473,6 +483,7 @@ export const orders: Order[] = [
     paymentReference: 'YAWB-9981',
     createdAt: '2026-07-02T12:00:00.000Z',
     confirmedAt: '2026-07-02T13:00:00.000Z',
+    completedAt: '2026-07-04T09:00:00.000Z',
     seenByAdminAt: '2026-07-02T12:45:00.000Z',
     history: [
       {
@@ -501,6 +512,7 @@ export const orders: Order[] = [
     balanceRequestedAt: null,
     whatsappNumber: null,
     deliveryAddress: null,
+    preorderCollectionId: null,
   },
   {
     id: 'order_5',
@@ -522,6 +534,7 @@ export const orders: Order[] = [
     paymentReference: 'ABEN-7765',
     createdAt: '2026-06-28T15:30:00.000Z',
     confirmedAt: null,
+    completedAt: null,
     seenByAdminAt: '2026-06-28T15:45:00.000Z',
     history: [
       {
@@ -545,6 +558,7 @@ export const orders: Order[] = [
     balanceRequestedAt: null,
     whatsappNumber: null,
     deliveryAddress: null,
+    preorderCollectionId: null,
   },
   {
     id: 'order_6',
@@ -566,6 +580,7 @@ export const orders: Order[] = [
     paymentReference: 'KOJO-5523',
     createdAt: '2026-07-25T10:00:00.000Z',
     confirmedAt: '2026-07-25T13:00:00.000Z',
+    completedAt: null,
     seenByAdminAt: '2026-07-25T12:40:00.000Z',
     history: [
       {
@@ -589,6 +604,7 @@ export const orders: Order[] = [
     balanceRequestedAt: null,
     whatsappNumber: '233241185523',
     deliveryAddress: 'House 12, Labone Crescent, Accra',
+    preorderCollectionId: 'col_4',
   },
 ];
 

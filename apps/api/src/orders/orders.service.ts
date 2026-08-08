@@ -42,6 +42,7 @@ function mapOrder(row: PrismaOrder): Order {
     paymentReference: row.paymentReference,
     createdAt: row.createdAt.toISOString(),
     confirmedAt: row.confirmedAt?.toISOString() ?? null,
+    completedAt: row.completedAt?.toISOString() ?? null,
     seenByAdminAt: row.seenByAdminAt?.toISOString() ?? null,
     history: row.history as unknown as Order['history'],
     type: row.type,
@@ -54,8 +55,14 @@ function mapOrder(row: PrismaOrder): Order {
     balanceRequestedAt: row.balanceRequestedAt?.toISOString() ?? null,
     whatsappNumber: row.whatsappNumber,
     deliveryAddress: row.deliveryAddress,
+    preorderCollectionId: row.preorderCollectionId,
   };
 }
+
+// A completed order can be reopened by the vendor to fix a mistake, but only
+// for a short window — otherwise a customer could see their "done" order
+// silently flip back to in-progress days or weeks later.
+const COMPLETION_REVERSAL_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 function mapTenant(row: PrismaTenant): Tenant {
   return {
@@ -225,6 +232,7 @@ export class OrdersService {
             balanceAmount,
             whatsappNumber: input.whatsappNumber?.trim() || undefined,
             deliveryAddress: input.deliveryAddress?.trim() || undefined,
+            preorderCollectionId: preorder?.collectionId,
           },
         });
         const order = mapOrder(row);
@@ -308,6 +316,12 @@ export class OrdersService {
       data: {
         status,
         confirmedAt: status === 'CONFIRMED' ? now : undefined,
+        completedAt:
+          status === 'COMPLETED'
+            ? now
+            : existing.status === 'COMPLETED'
+              ? null
+              : undefined,
         history: history,
       },
     });
@@ -328,6 +342,41 @@ export class OrdersService {
       }
     }
     return order;
+  }
+
+  // Undoes an accidental "Mark completed" — reverts to CONFIRMED so the
+  // vendor can pick the right status from there. Only available for a short
+  // window after completion; past that, the order is final.
+  async reopen(id: string, tenantId: string): Promise<Order> {
+    const existing = await this.findOne(id, tenantId);
+    if (existing.status !== 'COMPLETED') {
+      throw new BadRequestException('Only completed orders can be reopened.');
+    }
+    const completedAt = existing.completedAt
+      ? new Date(existing.completedAt)
+      : null;
+    if (
+      !completedAt ||
+      Date.now() - completedAt.getTime() > COMPLETION_REVERSAL_WINDOW_MS
+    ) {
+      throw new BadRequestException(
+        'This order was completed too long ago to be reopened.',
+      );
+    }
+    const now = new Date();
+    const history = [
+      ...existing.history,
+      {
+        status: 'CONFIRMED' as OrderStatus,
+        note: 'Reopened by admin — marked completed in error',
+        at: now.toISOString(),
+      },
+    ];
+    const row = await this.prisma.order.update({
+      where: { id: existing.id },
+      data: { status: 'CONFIRMED', completedAt: null, history: history },
+    });
+    return mapOrder(row);
   }
 
   async markSeen(id: string, tenantId: string): Promise<Order> {

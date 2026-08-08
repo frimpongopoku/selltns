@@ -57,10 +57,11 @@ export function PaymentMethodsManager({
         </Card>
       ) : (
       <div className="mt-6 flex flex-col gap-3">
-        {methods.map((method) => (
+        {methods.map((method, i) => (
           <Card
             key={method.id}
-            className="flex flex-col gap-4 p-5 transition-shadow hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
+            style={{ animationDelay: `${i * 60}ms` }}
+            className="animate-in fade-in-0 slide-in-from-bottom-1 fill-mode-both flex flex-col gap-4 p-5 transition-shadow duration-400 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="flex items-center gap-3">
               {method.type === "MOMO" ? (

@@ -131,6 +131,7 @@ export interface Collection {
   depositType: DepositType | null;
   depositPercentage: number | null;
   fulfillmentNote: string;
+  isActive: boolean;
 }
 
 export interface CollectionWithProducts extends Collection {
@@ -172,6 +173,7 @@ export interface Order {
   paymentReference: string;
   createdAt: string;
   confirmedAt: string | null;
+  completedAt: string | null;
   seenByAdminAt: string | null;
   history: { status: OrderStatus; note: string; at: string }[];
   type: OrderType;
@@ -184,6 +186,7 @@ export interface Order {
   balanceRequestedAt: string | null;
   whatsappNumber: string | null;
   deliveryAddress: string | null;
+  preorderCollectionId: string | null;
 }
 
 export type ContentBlockType = "TEXT" | "VIDEO" | "PHOTOS";

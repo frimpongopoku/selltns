@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getCollection, getTenantBySlug } from "@/lib/api";
 import { ThemeScope } from "@/components/theme/theme-scope";
 import { ProductCard } from "@/components/storefront/product-card";
+import { PreorderBanner } from "@/components/storefront/preorder-banner";
 
 export async function generateMetadata({
   params,
@@ -45,6 +46,7 @@ export default async function CollectionPage({
         )}
         <h1 className="store-heading text-3xl font-semibold">{collection.title}</h1>
         <p className="store-muted mt-3 max-w-lg leading-relaxed">{collection.description}</p>
+        <PreorderBanner collection={collection} />
         <div className="mt-9 grid grid-cols-3 gap-3 sm:gap-5 lg:grid-cols-4">
           {activeProducts.map((product, i) => (
             <div

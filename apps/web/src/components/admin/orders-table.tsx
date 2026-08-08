@@ -68,18 +68,19 @@ export function OrdersTable({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((order) => (
+                  {filtered.map((order, i) => (
                     <TableRow
                       key={order.id}
                       onClick={() => setSelectedId(order.id)}
-                      className="cursor-pointer"
+                      style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}
+                      className="animate-in fade-in-0 fill-mode-both cursor-pointer duration-300"
                     >
                       <TableCell className="font-medium">
                         <span className="inline-flex items-center gap-2">
                           {!order.seenByAdminAt && (
                             <span
                               title="New — not yet opened"
-                              className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                              className="pulse-dot h-1.5 w-1.5 shrink-0 rounded-full bg-primary text-primary"
                             />
                           )}
                           {order.customerName}

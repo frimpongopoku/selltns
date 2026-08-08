@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, PackageSearch } from "lucide-react";
+import { ExternalLink, Loader2, PackageSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -58,9 +59,20 @@ export function PreorderActions({
 
   return (
     <Card className="mt-6 p-5">
-      <div className="flex items-center gap-2">
-        <PackageSearch className="h-4 w-4 text-muted-foreground" />
-        <h2 className="font-medium">Pre-order</h2>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <PackageSearch className="h-4 w-4 text-muted-foreground" />
+          <h2 className="font-medium">Pre-order</h2>
+        </div>
+        {order.preorderCollectionId && (
+          <Link
+            href={`/admin/collections/${order.preorderCollectionId}`}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ExternalLink className="h-3 w-3" />
+            View collection
+          </Link>
+        )}
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-y-2 text-sm">

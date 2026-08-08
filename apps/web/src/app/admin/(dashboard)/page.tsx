@@ -39,10 +39,28 @@ export default async function AdminDashboardPage() {
 
       <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Pending order requests", value: String(pending), icon: ClipboardList, hint: "Need review" },
-          { label: "Confirmed / awaiting payment", value: String(confirmed), icon: Wallet },
-          { label: "Completed revenue", value: formatMoney(completedTotal), icon: TrendingUp },
-          { label: "Active products", value: String(activeProducts), icon: Package, hint: `${products.length} total` },
+          {
+            label: "Pending order requests",
+            value: String(pending),
+            icon: <ClipboardList className="h-5 w-5" />,
+            hint: "Need review",
+          },
+          {
+            label: "Confirmed / awaiting payment",
+            value: String(confirmed),
+            icon: <Wallet className="h-5 w-5" />,
+          },
+          {
+            label: "Completed revenue",
+            value: formatMoney(completedTotal),
+            icon: <TrendingUp className="h-5 w-5" />,
+          },
+          {
+            label: "Active products",
+            value: String(activeProducts),
+            icon: <Package className="h-5 w-5" />,
+            hint: `${products.length} total`,
+          },
         ].map((stat, i) => (
           <div
             key={stat.label}
@@ -73,10 +91,11 @@ export default async function AdminDashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.slice(0, 5).map((order) => (
+              {orders.slice(0, 5).map((order, i) => (
                 <TableRow
                   key={order.id}
-                  className="cursor-pointer"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                  className="animate-in fade-in-0 fill-mode-both cursor-pointer duration-300"
                 >
                   <TableCell>
                     <Link href={`/admin/orders/${order.id}`} className="hover:underline">

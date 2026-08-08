@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ShoppingBag } from "lucide-react";
+import { Check, CalendarClock, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCart } from "./cart-provider";
@@ -20,7 +20,12 @@ export function AddToCartButton({
   // Made-to-order pre-order items aren't tracked by stock count the way
   // regular inventory is — a pre-order product legitimately sits at 0 stock.
   const outOfStock = product.stock <= 0 && !isPreorder;
-  const label = isPreorder ? "Pre-order" : "Add to cart";
+  // "Add to cart" implies off-the-shelf stock — wrong mental model for a
+  // made-to-order piece, so pre-order gets its own reserve-flavored action
+  // and icon instead of the shopping-bag/cart metaphor.
+  const label = isPreorder ? "Reserve this piece" : "Add to cart";
+  const shortLabel = isPreorder ? "Reserve" : "Add";
+  const addedLabel = isPreorder ? "Reserved" : "Added";
 
   return (
     <Button
@@ -39,7 +44,9 @@ export function AddToCartButton({
         setAdded(true);
         setTimeout(() => setAdded(false), 1200);
       }}
-      className="store-btn-primary w-full gap-1.5 border-0 shadow-none"
+      className={`store-btn-primary w-full gap-1.5 border-0 shadow-none ${
+        isPreorder && !added && !outOfStock ? "animate-attention-pulse" : ""
+      }`}
       size={size}
     >
       <span
@@ -48,10 +55,12 @@ export function AddToCartButton({
       >
         {outOfStock ? null : added ? (
           <Check className="h-4 w-4" />
+        ) : isPreorder ? (
+          <CalendarClock className="h-4 w-4" />
         ) : (
           <ShoppingBag className="h-4 w-4" />
         )}
-        {outOfStock ? "Out of stock" : added ? "Added" : size === "sm" ? label.split(" ")[0] : label}
+        {outOfStock ? "Out of stock" : added ? addedLabel : size === "sm" ? shortLabel : label}
       </span>
     </Button>
   );

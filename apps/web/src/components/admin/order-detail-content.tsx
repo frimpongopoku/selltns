@@ -40,12 +40,10 @@ export function OrderDetailContent({
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{order.customerName}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{order.customerContact}</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 pr-8">
+        <h1 className="text-2xl font-semibold break-words">{order.customerName}</h1>
+        <p className="text-sm text-muted-foreground">{order.customerContact}</p>
+        <div className="flex flex-wrap items-center gap-2">
           {order.type === "PREORDER" && (
             <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-300">
               Pre-order

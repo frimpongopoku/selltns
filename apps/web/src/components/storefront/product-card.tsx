@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { CalendarClock } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import { AddToCartButton } from "./add-to-cart-button";
@@ -26,7 +27,8 @@ export function ProductCard({ product }: { product: Product }) {
           <div className="h-full w-full bg-[var(--store-hover-bg)]" />
         )}
         {product.preorder ? (
-          <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[0.65rem] font-medium text-white sm:px-2.5 sm:py-1 sm:text-xs">
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[0.65rem] font-medium text-white sm:px-2.5 sm:py-1 sm:text-xs">
+            <CalendarClock className="h-3 w-3" />
             Pre-order
           </span>
         ) : (

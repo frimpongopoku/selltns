@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,8 +14,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { modifyOrderItems, updateOrderStatus } from "@/lib/api";
+import { modifyOrderItems, reopenOrder, updateOrderStatus } from "@/lib/api";
 import type { Order, OrderStatus } from "@/lib/types";
+
+// Matches OrdersService.reopen's server-side window — kept here purely to
+// decide whether to show the button at all; the server is the actual gate.
+const REOPEN_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 export function OrderActions({
   tenantId,
@@ -47,6 +51,35 @@ export function OrderActions({
 
   const willNewlyConfirm = order.status === "PENDING";
 
+  // Date.now() is impure, so it can't be called directly during render —
+  // deferred to an effect instead. `now` stays null on the server/first
+  // paint, which just means the button briefly doesn't show rather than
+  // ever showing incorrectly.
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(Date.now());
+  }, []);
+  const canReopen =
+    now !== null &&
+    order.status === "COMPLETED" &&
+    !!order.completedAt &&
+    now - new Date(order.completedAt).getTime() < REOPEN_WINDOW_MS;
+
+  async function handleReopen() {
+    setBusy(true);
+    try {
+      const updated = await reopenOrder(order.id, tenantId);
+      toast.success("Order reopened — back to confirmed");
+      onUpdated?.(updated);
+      router.refresh();
+    } catch {
+      toast.error("Couldn't reopen this order — the window to undo may have closed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submitModification() {
     setBusy(true);
     try {
@@ -77,6 +110,12 @@ export function OrderActions({
         <Button disabled={busy} className="gap-2" onClick={() => setStatus("COMPLETED", "Payment received, order fulfilled")}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           Mark completed
+        </Button>
+      )}
+      {canReopen && (
+        <Button variant="outline" disabled={busy} className="gap-2" onClick={handleReopen}>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Undo2 className="h-4 w-4" />}
+          Undo completion
         </Button>
       )}
       {["PENDING", "CONFIRMED", "MODIFIED"].includes(order.status) && (

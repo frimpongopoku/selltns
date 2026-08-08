@@ -294,3 +294,68 @@
 [data-template="FASHION"] .store-heading {
   font-style: italic;
 }
+
+/* ==========================================================================
+   Shared motion utilities — small, purposeful animations reused across the
+   storefront and admin. Kept out of @layer components so they can freely
+   override transform/opacity without specificity fights, and respected by
+   the prefers-reduced-motion reset above (animation-duration is forced to
+   ~0 there, which neutralizes all of these).
+   ========================================================================== */
+
+@keyframes gentle-pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--store-accent, currentColor) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--store-accent, currentColor) 0%, transparent);
+  }
+}
+
+/* A slow, soft attention cue — for the one action on a page that most
+   deserves a glance (e.g. the pre-order reserve button). Not a spinner,
+   not urgent; just enough to catch a scrolling eye. */
+.animate-attention-pulse {
+  animation: gentle-pulse-ring 2.4s ease-in-out infinite;
+}
+
+@keyframes ping-once {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  75%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* An unread/urgent marker — small dot with a expanding ring behind it,
+   used for "new" indicators (unseen order rows, notifications). */
+.pulse-dot {
+  position: relative;
+}
+.pulse-dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: currentColor;
+  animation: ping-once 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes count-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-count-in {
+  animation: count-in 0.4s ease-out both;
+}

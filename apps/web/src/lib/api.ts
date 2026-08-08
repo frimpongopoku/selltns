@@ -240,6 +240,11 @@ export const updateOrderStatus = (
     method: "PATCH",
     body: JSON.stringify({ tenantId, status, note }),
   });
+export const reopenOrder = (id: string, tenantId: string) =>
+  request<Order>(`/orders/${id}/reopen`, {
+    method: "PATCH",
+    body: JSON.stringify({ tenantId }),
+  });
 export const modifyOrderItems = (
   id: string,
   tenantId: string,

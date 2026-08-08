@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { getTenantBySlug } from "@/lib/api";
+import { getStoryBlocks, getTenantBySlug } from "@/lib/api";
+import { hasStoryContent } from "@/lib/story";
 import { ThemeScope } from "@/components/theme/theme-scope";
 import { StoreProvider } from "@/components/storefront/store-context";
 import { CartProvider } from "@/components/storefront/cart-provider";
@@ -16,6 +17,7 @@ export default async function StorefrontLayout({
   const { slug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
+  const hasStory = hasStoryContent(await getStoryBlocks(tenant.id).catch(() => []));
 
   // SiteHeader/SiteFooter are Client Components rendered on every storefront
   // page — neither needs the vendor's phone number, so it's stripped before
@@ -28,9 +30,9 @@ export default async function StorefrontLayout({
     <StoreProvider slug={slug}>
       <ThemeScope tokens={tenant.themeTokens} className="flex min-h-full flex-col">
         <CartProvider>
-          <SiteHeader tenant={publicTenant} />
+          <SiteHeader tenant={publicTenant} hasStory={hasStory} />
           <main className="flex-1">{children}</main>
-          <SiteFooter tenant={publicTenant} />
+          <SiteFooter tenant={publicTenant} hasStory={hasStory} />
         </CartProvider>
       </ThemeScope>
     </StoreProvider>

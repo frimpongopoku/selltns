@@ -12,7 +12,7 @@ export default async function CollectionsIndexPage({
   const { slug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
-  const collections = await getCollections(tenant.id);
+  const collections = (await getCollections(tenant.id)).filter((c) => c.isActive);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
@@ -43,11 +43,18 @@ export default async function CollectionsIndexPage({
               <p className="mt-1.5 max-w-sm text-sm text-white/80">
                 {collection.description}
               </p>
-              {collection.themeOverride && (
-                <span className="mt-3 inline-block rounded-full bg-white/20 px-2.5 py-1 text-xs text-white">
-                  Styled differently
-                </span>
-              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                {collection.type === "PREORDER" && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2.5 py-1 text-xs font-medium text-white">
+                    Pre-order
+                  </span>
+                )}
+                {collection.themeOverride && (
+                  <span className="inline-block rounded-full bg-white/20 px-2.5 py-1 text-xs text-white">
+                    Styled differently
+                  </span>
+                )}
+              </div>
             </div>
           </Link>
         ))}

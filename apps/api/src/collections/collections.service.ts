@@ -12,6 +12,7 @@ import {
   MAX_TAGS_PER_COLLECTION,
 } from './collections.constants';
 import type { Collection, ThemeTokens } from '../common/types';
+import { getPreorderInfoMap } from '../common/preorder-info';
 
 const PRODUCTS_INCLUDE = {
   products: {
@@ -36,6 +37,7 @@ interface CollectionRow {
   depositType: 'FULL' | 'PERCENTAGE' | null;
   depositPercentage: number | null;
   fulfillmentNote: string;
+  isActive: boolean;
   products: { productId: string; product: PrismaProduct }[];
 }
 
@@ -55,6 +57,7 @@ function mapCollection(row: CollectionRow) {
     depositType: row.depositType,
     depositPercentage: row.depositPercentage,
     fulfillmentNote: row.fulfillmentNote,
+    isActive: row.isActive,
     productIds: row.products.map((cp) => cp.productId),
     products: row.products.map((cp) => cp.product),
   };
@@ -121,13 +124,41 @@ export interface FindAllPaginatedParams {
 export class CollectionsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  // A collection's own `type: 'PREORDER'` only marks the collection —
+  // nothing on Product itself says "I'm a pre-order item", so the storefront
+  // relies on each nested product carrying its own `preorder` field (same
+  // shape ProductsService attaches when fetching products directly). Without
+  // this, a product listed inside a pre-order collection would render with
+  // the regular add-to-cart/stock UI instead of the reserve/deposit one.
+  private async withProductPreorderInfo<
+    T extends { tenantId: string; products: PrismaProduct[] },
+  >(collections: T[]): Promise<T[]> {
+    const productIds = [
+      ...new Set(collections.flatMap((c) => c.products.map((p) => p.id))),
+    ];
+    if (productIds.length === 0) return collections;
+    const tenantId = collections[0].tenantId;
+    const byProductId = await getPreorderInfoMap(
+      this.prisma,
+      tenantId,
+      productIds,
+    );
+    return collections.map((c) => ({
+      ...c,
+      products: c.products.map((p) => ({
+        ...p,
+        preorder: byProductId.get(p.id) ?? null,
+      })),
+    }));
+  }
+
   async findAll(tenantId: string) {
     const collections = await this.prisma.collection.findMany({
       where: { tenantId },
       include: PRODUCTS_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
-    return collections.map(mapCollection);
+    return this.withProductPreorderInfo(collections.map(mapCollection));
   }
 
   // Paginates the collections table directly via raw SQL (for search/cursor),
@@ -175,10 +206,12 @@ export class CollectionsService {
         })
       : [];
     const byId = new Map(collections.map((c) => [c.id, c]));
-    const items = ids
-      .map((id) => byId.get(id))
-      .filter((c): c is NonNullable<typeof c> => !!c)
-      .map(mapCollection);
+    const items = await this.withProductPreorderInfo(
+      ids
+        .map((id) => byId.get(id))
+        .filter((c): c is NonNullable<typeof c> => !!c)
+        .map(mapCollection),
+    );
 
     const last = pageRows[pageRows.length - 1];
     const nextCursor =
@@ -206,7 +239,10 @@ export class CollectionsService {
     });
     if (!collection)
       throw new NotFoundException(`Collection ${idOrSlug} not found`);
-    return mapCollection(collection);
+    const [withPreorder] = await this.withProductPreorderInfo([
+      mapCollection(collection),
+    ]);
+    return withPreorder;
   }
 
   async create(input: Partial<Collection> & { tenantId: string }) {
@@ -234,6 +270,7 @@ export class CollectionsService {
         depositType: preorder.depositType,
         depositPercentage: preorder.depositPercentage,
         fulfillmentNote: preorder.fulfillmentNote,
+        isActive: input.isActive ?? true,
         products: {
           create: productIds.map((productId, position) => ({
             productId,
@@ -243,7 +280,10 @@ export class CollectionsService {
       },
       include: PRODUCTS_INCLUDE,
     });
-    return mapCollection(collection);
+    const [withPreorder] = await this.withProductPreorderInfo([
+      mapCollection(collection),
+    ]);
+    return withPreorder;
   }
 
   async update(id: string, tenantId: string, input: Partial<Collection>) {
@@ -284,6 +324,7 @@ export class CollectionsService {
         depositType: preorder.depositType,
         depositPercentage: preorder.depositPercentage,
         fulfillmentNote: preorder.fulfillmentNote,
+        isActive: input.isActive ?? existing.isActive,
       };
       if (input.themeOverride !== undefined) {
         data.themeOverride =
@@ -298,7 +339,10 @@ export class CollectionsService {
         include: PRODUCTS_INCLUDE,
       });
     });
-    return mapCollection(collection);
+    const [withPreorder] = await this.withProductPreorderInfo([
+      mapCollection(collection),
+    ]);
+    return withPreorder;
   }
 
   async remove(id: string, tenantId: string): Promise<{ id: string }> {

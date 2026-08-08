@@ -118,14 +118,15 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
       ) : (
         <>
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {assets.map((asset) => (
+            {assets.map((asset, i) => (
               <div
                 key={asset.id}
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelected(asset)}
                 onKeyDown={(e) => e.key === "Enter" && setSelected(asset)}
-                className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg border text-left"
+                style={{ animationDelay: `${Math.min(i, 20) * 25}ms` }}
+                className="group relative aspect-square animate-in fade-in-0 zoom-in-95 fill-mode-both cursor-pointer overflow-hidden rounded-lg border text-left duration-300"
               >
                 <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="200px" className="object-cover object-top" />
                 <div className="absolute inset-x-0 bottom-0 translate-y-full bg-black/60 px-2 py-1 text-[10px] text-white transition-transform group-hover:translate-y-0">

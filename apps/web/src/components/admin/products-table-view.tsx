@@ -35,8 +35,12 @@ export function ProductsTableView({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {products.map((product) => (
-              <TableRow key={product.id}>
+            {products.map((product, i) => (
+              <TableRow
+                key={product.id}
+                style={{ animationDelay: `${Math.min(i, 15) * 30}ms` }}
+                className="animate-in fade-in-0 fill-mode-both duration-300"
+              >
                 <TableCell>
                   <Link
                     href={`/admin/products/${product.id}`}

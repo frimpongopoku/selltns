@@ -19,8 +19,11 @@ const LABELS: Record<OrderStatus, string> = {
 export function StatusBadge({ status }: { status: OrderStatus }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STYLES[status]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${STYLES[status]}`}
     >
+      {status === "PENDING" && (
+        <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-amber-600 text-amber-600 dark:bg-amber-400 dark:text-amber-400" />
+      )}
       {LABELS[status]}
     </span>
   );

@@ -65,6 +65,22 @@ function StorefrontLink({ tenant }: { tenant: Tenant }) {
   );
 }
 
+function BiibisoftCredit() {
+  return (
+    <p className="px-1 text-center text-[11px] text-muted-foreground/70">
+      Built by the{" "}
+      <a
+        href="https://biibisoft.com"
+        target="_blank"
+        rel="noreferrer"
+        className="underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+      >
+        Biibisoft Team
+      </a>
+    </p>
+  );
+}
+
 function UserBlock({ user }: { user: TeamMember }) {
   const router = useRouter();
 
@@ -119,6 +135,7 @@ export function AdminShell({
         </div>
         <StorefrontLink tenant={tenant} />
         <UserBlock user={user} />
+        <BiibisoftCredit />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -136,6 +153,7 @@ export function AdminShell({
               </div>
               <StorefrontLink tenant={tenant} />
               <UserBlock user={user} />
+              <BiibisoftCredit />
             </SheetContent>
           </Sheet>
           <p className="text-sm font-medium">{tenant.name}</p>

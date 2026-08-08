@@ -68,6 +68,11 @@ export class OrdersController {
     );
   }
 
+  @Patch(':id/reopen')
+  reopen(@Param('id') id: string, @Body() body: { tenantId: string }) {
+    return this.ordersService.reopen(id, body.tenantId);
+  }
+
   @Patch(':id/items')
   modifyItems(
     @Param('id') id: string,

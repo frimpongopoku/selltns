@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { CalendarClock } from "lucide-react";
 import { getCollections, getProduct, getProducts, getTenantBySlug } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
@@ -47,8 +48,8 @@ export default async function ProductPage({
   const otherProducts = allProducts
     .filter((p) => p.id !== product.id && p.isActive)
     .slice(0, 4);
-  const featuredIn = allCollections.filter((c) =>
-    c.productIds.includes(product.id),
+  const featuredIn = allCollections.filter(
+    (c) => c.isActive && c.productIds.includes(product.id),
   );
 
   return (
@@ -57,8 +58,9 @@ export default async function ProductPage({
         <ProductGallery images={product.images} alt={product.title} />
         <div>
           {product.preorder && (
-            <p className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-400">
-              Pre-order
+            <p className="animate-in fade-in-0 zoom-in-95 mb-3 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-700 duration-300 dark:text-amber-400">
+              <CalendarClock className="h-3.5 w-3.5" />
+              Pre-order — made after you request it
             </p>
           )}
           <h1 className="store-heading text-3xl font-semibold">{product.title}</h1>

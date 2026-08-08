@@ -6,7 +6,7 @@ import { useStoreSlug } from "./store-context";
 
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
 
-export function SiteFooter({ tenant }: { tenant: Tenant }) {
+export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boolean }) {
   const slug = useStoreSlug();
 
   return (
@@ -32,9 +32,11 @@ export function SiteFooter({ tenant }: { tenant: Tenant }) {
             </div>
             <div className="flex flex-col gap-3">
               <span className="text-xs font-semibold tracking-wide uppercase store-muted">Store</span>
-              <Link href={`/${slug}/story`} className="transition-colors hover:text-[var(--store-primary)]">
-                Our Story
-              </Link>
+              {hasStory && (
+                <Link href={`/${slug}/story`} className="transition-colors hover:text-[var(--store-primary)]">
+                  Our Story
+                </Link>
+              )}
               <span className="store-muted">
                 {tenant.customDomain && tenant.domainVerified
                   ? tenant.customDomain
@@ -44,7 +46,16 @@ export function SiteFooter({ tenant }: { tenant: Tenant }) {
           </div>
         </div>
         <p className="store-muted mt-10 text-xs">
-          © {new Date().getFullYear()} {tenant.name}. Built on Selltns.
+          © {new Date().getFullYear()} {tenant.name}. Built on Selltns, by the{" "}
+          <a
+            href="https://biibisoft.com"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[var(--store-primary)]"
+          >
+            Biibisoft Team
+          </a>
+          .
         </p>
       </div>
     </footer>

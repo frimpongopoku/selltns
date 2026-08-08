@@ -9,6 +9,7 @@ import { getCollectionTags } from "@/lib/api";
 import { useCollectionLibrary } from "@/lib/use-collection-library";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import { onCollectionCreated } from "@/lib/collection-events";
+import { CollectionActiveToggle } from "@/components/admin/collection-active-toggle";
 
 export function CollectionsExplorer({ tenantId }: { tenantId: string }) {
   const {
@@ -106,40 +107,56 @@ export function CollectionsExplorer({ tenantId }: { tenantId: string }) {
         <>
           <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {collections.map((collection, i) => (
-              <Link
+              <div
                 key={collection.id}
-                href={`/admin/collections/${collection.id}`}
                 style={{ animationDelay: `${Math.min(i, 8) * 50}ms` }}
                 className="animate-in fade-in-0 slide-in-from-bottom-1 fill-mode-both duration-300"
               >
                 <Card className="overflow-hidden p-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                  <div className="relative aspect-video overflow-hidden">
-                    <div
-                      className="h-full w-full bg-cover bg-top transition-transform duration-300 hover:scale-105"
-                      style={{ backgroundImage: `url(${collection.coverImage})` }}
+                  <Link href={`/admin/collections/${collection.id}`} className="block">
+                    <div className="relative aspect-video overflow-hidden">
+                      <div
+                        className="h-full w-full bg-cover bg-top transition-transform duration-300 hover:scale-105"
+                        style={{ backgroundImage: `url(${collection.coverImage})` }}
+                      />
+                      {collection.type === "PREORDER" && (
+                        <span className="absolute left-2.5 top-2.5 rounded-full bg-amber-500/90 px-2 py-0.5 text-[11px] font-medium text-white">
+                          Pre-order
+                        </span>
+                      )}
+                      {!collection.isActive && (
+                        <span className="absolute right-2.5 top-2.5 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">
+                          Not live
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-5 pb-3">
+                      <p className="font-medium">{collection.title}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {collection.products.length} products
+                        {collection.type === "PREORDER"
+                          ? ` · ${
+                              collection.depositType === "FULL"
+                                ? "full payment"
+                                : `${collection.depositPercentage}% deposit`
+                            }`
+                          : ""}
+                        {collection.themeOverride ? " · custom theme" : ""}
+                      </p>
+                    </div>
+                  </Link>
+                  <div className="flex items-center justify-between px-5 pb-4 pt-1">
+                    <span className="text-xs text-muted-foreground">
+                      {collection.isActive ? "Live" : "Not live"}
+                    </span>
+                    <CollectionActiveToggle
+                      collectionId={collection.id}
+                      tenantId={tenantId}
+                      initialActive={collection.isActive}
                     />
-                    {collection.type === "PREORDER" && (
-                      <span className="absolute left-2.5 top-2.5 rounded-full bg-amber-500/90 px-2 py-0.5 text-[11px] font-medium text-white">
-                        Pre-order
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <p className="font-medium">{collection.title}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {collection.products.length} products
-                      {collection.type === "PREORDER"
-                        ? ` · ${
-                            collection.depositType === "FULL"
-                              ? "full payment"
-                              : `${collection.depositPercentage}% deposit`
-                          }`
-                        : ""}
-                      {collection.themeOverride ? " · custom theme" : ""}
-                    </p>
                   </div>
                 </Card>
-              </Link>
+              </div>
             ))}
           </div>
 

@@ -11,6 +11,7 @@ import {
   PRODUCTS_PAGE_SIZE_MAX,
 } from './products.constants';
 import type { Product, PreorderInfo } from '../common/types';
+import { attachPreorderInfo } from '../common/preorder-info';
 import type { Product as PrismaProduct } from '@prisma/client';
 
 export interface FindAllPaginatedParams {
@@ -47,55 +48,7 @@ export class ProductsService {
       where: { tenantId },
       orderBy: { displayOrder: 'asc' },
     });
-    return this.withPreorderInfo(tenantId, products);
-  }
-
-  // A product is a pre-order item purely by virtue of belonging to a
-  // PREORDER-type collection — there's no flag on Product itself. Products
-  // can only carry one active preorder ruleset, so if a product somehow
-  // ends up in more than one PREORDER collection, the oldest one wins.
-  private async withPreorderInfo<T extends { id: string }>(
-    tenantId: string,
-    products: T[],
-  ): Promise<(T & { preorder: PreorderInfo | null })[]> {
-    if (products.length === 0) return [];
-    const ids = products.map((p) => p.id);
-    const rows = await this.prisma.$queryRaw<
-      {
-        productId: string;
-        collectionId: string;
-        collectionTitle: string;
-        depositType: 'FULL' | 'PERCENTAGE';
-        depositPercentage: number | null;
-        fulfillmentNote: string;
-      }[]
-    >`
-      SELECT cp.product_id AS "productId", c.id AS "collectionId",
-             c.title AS "collectionTitle", c.deposit_type AS "depositType",
-             c.deposit_percentage AS "depositPercentage",
-             c.fulfillment_note AS "fulfillmentNote"
-      FROM collection_products cp
-      JOIN collections c ON c.id = cp.collection_id
-      WHERE c.tenant_id = ${tenantId}
-        AND c.type = 'PREORDER'
-        AND cp.product_id = ANY(${ids})
-      ORDER BY c.created_at ASC
-    `;
-    const byProductId = new Map<string, PreorderInfo>();
-    for (const row of rows) {
-      if (byProductId.has(row.productId)) continue;
-      byProductId.set(row.productId, {
-        collectionId: row.collectionId,
-        collectionTitle: row.collectionTitle,
-        depositType: row.depositType,
-        depositPercentage: row.depositPercentage,
-        fulfillmentNote: row.fulfillmentNote,
-      });
-    }
-    return products.map((p) => ({
-      ...p,
-      preorder: byProductId.get(p.id) ?? null,
-    }));
+    return attachPreorderInfo(this.prisma, tenantId, products);
   }
 
   async findAllPaginated(
@@ -146,7 +99,7 @@ export class ProductsService {
       hasMore && last
         ? encodeCursor({ displayOrder: last.displayOrder, id: last.id })
         : null;
-    const items = await this.withPreorderInfo(tenantId, pageRows);
+    const items = await attachPreorderInfo(this.prisma, tenantId, pageRows);
 
     return { items, nextCursor };
   }
@@ -169,7 +122,9 @@ export class ProductsService {
       where: { tenantId, OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
     });
     if (!product) throw new NotFoundException(`Product ${idOrSlug} not found`);
-    const [withPreorder] = await this.withPreorderInfo(tenantId, [product]);
+    const [withPreorder] = await attachPreorderInfo(this.prisma, tenantId, [
+      product,
+    ]);
     return withPreorder;
   }
 

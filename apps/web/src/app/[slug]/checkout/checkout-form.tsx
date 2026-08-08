@@ -154,7 +154,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
           </p>
         </div>
         {isPreorder && (
-          <>
+          <div className="animate-in fade-in-0 slide-in-from-top-1 flex flex-col gap-5 duration-300">
             <div>
               <label htmlFor="whatsapp" className="store-label">WhatsApp number</label>
               <input
@@ -181,7 +181,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
                 className="store-input mt-1.5"
               />
             </div>
-          </>
+          </div>
         )}
         <button
           type="submit"

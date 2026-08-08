@@ -1,14 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Minus, Plus, X } from "lucide-react";
+import { CalendarClock, Minus, Plus, X } from "lucide-react";
 import { useCart } from "@/components/storefront/cart-provider";
 import { useStoreSlug } from "@/components/storefront/store-context";
 import { formatMoney } from "@/lib/format";
 
+// Matches the fade/slide-out below — the actual removal is deferred until
+// the transition finishes so the item visibly leaves instead of vanishing.
+const REMOVE_TRANSITION_MS = 180;
+
 export default function CartPage() {
-  const { lines, total, updateQuantity, removeItem } = useCart();
+  const { lines, total, updateQuantity, removeItem, preorderCollectionId } = useCart();
   const slug = useStoreSlug();
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const isPreorder = !!preorderCollectionId;
+
+  function handleRemove(productId: string) {
+    setRemovingId(productId);
+    setTimeout(() => {
+      removeItem(productId);
+      setRemovingId(null);
+    }, REMOVE_TRANSITION_MS);
+  }
 
   if (lines.length === 0) {
     return (
@@ -24,10 +39,27 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-4xl animate-in fade-in-0 slide-in-from-bottom-2 px-4 py-12 duration-500 sm:px-6 sm:py-16 lg:px-8">
-      <h1 className="store-heading text-3xl font-semibold">Your cart</h1>
+      <div className="flex items-center gap-2">
+        {isPreorder && <CalendarClock className="h-6 w-6 text-amber-600 dark:text-amber-400" />}
+        <h1 className="store-heading text-3xl font-semibold">
+          {isPreorder ? "Your pre-order" : "Your cart"}
+        </h1>
+      </div>
+      {isPreorder && (
+        <p className="store-muted mt-2 max-w-md text-sm leading-relaxed">
+          These pieces are made to order. You&apos;ll pay a deposit once we confirm, not now.
+        </p>
+      )}
       <div className="mt-8 divide-y divide-[var(--store-border)]">
         {lines.map((line) => (
-          <div key={line.productId} className="flex gap-4 py-5">
+          <div
+            key={line.productId}
+            className={`flex gap-4 py-5 transition-all duration-200 ${
+              removingId === line.productId
+                ? "-translate-x-2 scale-[0.98] opacity-0"
+                : "translate-x-0 scale-100 opacity-100"
+            }`}
+          >
             <div
               className="store-card h-20 w-20 shrink-0 bg-cover bg-top"
               style={line.image ? { backgroundImage: `url(${line.image})` } : undefined}
@@ -39,7 +71,7 @@ export default function CartPage() {
                 <p className="store-heading text-base leading-snug">{line.title}</p>
                 <button
                   type="button"
-                  onClick={() => removeItem(line.productId)}
+                  onClick={() => handleRemove(line.productId)}
                   className="shrink-0 rounded-full p-1 store-muted transition-colors hover:bg-[var(--store-hover-bg)] hover:text-[var(--store-fg)]"
                   aria-label="Remove item"
                 >
@@ -105,7 +137,7 @@ export default function CartPage() {
               </p>
               <button
                 type="button"
-                onClick={() => removeItem(line.productId)}
+                onClick={() => handleRemove(line.productId)}
                 className="ml-2 rounded-full p-1 store-muted transition-colors hover:bg-[var(--store-hover-bg)] hover:text-[var(--store-fg)]"
                 aria-label="Remove item"
               >
@@ -124,7 +156,7 @@ export default function CartPage() {
           href={`/${slug}/checkout`}
           className="store-btn-primary inline-flex items-center justify-center px-8 py-3.5 text-base font-medium"
         >
-          Submit order request
+          {isPreorder ? "Continue to pre-order request" : "Submit order request"}
         </Link>
       </div>
     </div>

@@ -152,13 +152,24 @@ export default async function TrackOrderPage({
       <div className="mt-9">
         <h2 className="store-heading text-lg font-semibold">Status history</h2>
         <ol className="mt-5 flex flex-col gap-5 border-l border-[var(--store-border)] pl-5">
-          {order.history.map((entry, i) => (
-            <li key={i} className="relative">
-              <span className="absolute -left-[23px] top-1 h-2.5 w-2.5 rounded-full bg-[var(--store-primary)]" />
-              <p className="text-sm font-medium">{entry.note}</p>
-              <p className="store-muted text-xs">{formatDateTime(entry.at)}</p>
-            </li>
-          ))}
+          {order.history.map((entry, i) => {
+            const isLatest = i === order.history.length - 1;
+            return (
+              <li
+                key={i}
+                style={{ animationDelay: `${i * 90}ms` }}
+                className="animate-in fade-in-0 slide-in-from-left-1 relative fill-mode-both duration-400"
+              >
+                <span
+                  className={`absolute -left-[23px] top-1 h-2.5 w-2.5 rounded-full bg-[var(--store-primary)] text-[var(--store-primary)] ${
+                    isLatest ? "pulse-dot" : ""
+                  }`}
+                />
+                <p className="text-sm font-medium">{entry.note}</p>
+                <p className="store-muted text-xs">{formatDateTime(entry.at)}</p>
+              </li>
+            );
+          })}
         </ol>
       </div>
 

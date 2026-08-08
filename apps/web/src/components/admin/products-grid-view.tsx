@@ -16,8 +16,12 @@ export function ProductsGridView({
 }) {
   return (
     <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      {products.map((product) => (
-        <Card key={product.id} className="overflow-hidden p-0 transition-shadow hover:shadow-md">
+      {products.map((product, i) => (
+        <Card
+          key={product.id}
+          style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
+          className="animate-in fade-in-0 slide-in-from-bottom-1 fill-mode-both overflow-hidden p-0 transition-shadow duration-400 hover:shadow-md"
+        >
           <Link href={`/admin/products/${product.id}`} className="block">
             <div
               className="aspect-square bg-cover bg-top"

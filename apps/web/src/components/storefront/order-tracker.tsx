@@ -9,6 +9,7 @@ import type { Order, Tenant } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import { waLink } from "@/lib/phone";
 import { useRevealedPhone } from "@/lib/use-revealed-phone";
+import { generateOrderBookletPdf } from "@/lib/generate-order-pdf";
 
 export function TrackerActions({
   order,
@@ -51,7 +52,13 @@ export function TrackerActions({
     <div className="flex flex-wrap gap-3">
       <button
         type="button"
-        onClick={() => toast.info("PDF booklet generation is coming soon. This is a mock action.")}
+        onClick={() => {
+          try {
+            generateOrderBookletPdf(order, tenant);
+          } catch {
+            toast.error("Couldn't generate the PDF. Please try again.");
+          }
+        }}
         className="store-btn-secondary inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium"
       >
         <Download className="h-4 w-4" />

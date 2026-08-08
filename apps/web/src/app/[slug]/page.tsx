@@ -34,6 +34,7 @@ export default async function StoreHomePage({
     getCollections(tenant.id),
   ]);
   const activeProducts = products.filter((p) => p.isActive);
+  const activeCollections = collections.filter((c) => c.isActive);
 
   return (
     <div>
@@ -58,11 +59,11 @@ export default async function StoreHomePage({
         </div>
       </section>
 
-      {collections.length > 0 && (
+      {activeCollections.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
           <h2 className="store-heading text-2xl font-semibold">Collections</h2>
           <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            {collections.map((collection, i) => (
+            {activeCollections.map((collection, i) => (
               <Link
                 key={collection.id}
                 href={`/${slug}/collections/${collection.slug}`}
@@ -75,6 +76,11 @@ export default async function StoreHomePage({
                 />
                 <div className="absolute inset-0 bg-black/35 transition-colors group-hover:bg-black/50" />
                 <div className="absolute bottom-0 left-0 p-5">
+                  {collection.type === "PREORDER" && (
+                    <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2.5 py-1 text-xs font-medium text-white">
+                      Pre-order
+                    </span>
+                  )}
                   <p className="store-heading text-lg text-white">
                     {collection.title}
                   </p>

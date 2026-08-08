@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -65,6 +66,7 @@ export function CollectionForm({
     collection?.depositPercentage ?? 50,
   );
   const [fulfillmentNote, setFulfillmentNote] = useState(collection?.fulfillmentNote ?? "");
+  const [isActive, setIsActive] = useState(collection?.isActive ?? true);
   const [saving, setSaving] = useState(false);
 
   function handleToggleProduct(product: Product) {
@@ -95,6 +97,7 @@ export function CollectionForm({
       depositType: isPreorder ? depositType : null,
       depositPercentage: isPreorder && depositType === "PERCENTAGE" ? depositPercentage : null,
       fulfillmentNote: isPreorder ? fulfillmentNote : "",
+      isActive,
     };
     try {
       const saved = collection
@@ -260,6 +263,17 @@ export function CollectionForm({
             onChange={(e) => setSeoDescription(e.target.value)}
             className="mt-1.5"
           />
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <Switch checked={isActive} onCheckedChange={setIsActive} className="mt-0.5" />
+        <div>
+          <Label>Live</Label>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            When off, this collection is hidden from your storefront&apos;s homepage and
+            collections list. Direct links to it still work.
+          </p>
         </div>
       </div>
 

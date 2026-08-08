@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Play } from "lucide-react";
 import { getStoryBlocks, getTenantBySlug } from "@/lib/api";
 import { getYouTubeEmbedUrl } from "@/lib/video";
+import { meaningfulStoryBlocks } from "@/lib/story";
 
 export const metadata = { title: "Our Story" };
 
@@ -14,7 +15,7 @@ export default async function StoryPage({
   const { slug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
-  const blocks = await getStoryBlocks(tenant.id);
+  const blocks = meaningfulStoryBlocks(await getStoryBlocks(tenant.id));
 
   return (
     <div className="pb-24">

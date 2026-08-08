@@ -9,7 +9,7 @@ import { CartIndicator } from "./cart-indicator";
 import { useStoreSlug } from "./store-context";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
-export function SiteHeader({ tenant }: { tenant: Tenant }) {
+export function SiteHeader({ tenant, hasStory }: { tenant: Tenant; hasStory: boolean }) {
   const pathname = usePathname();
   const slug = useStoreSlug();
   const [open, setOpen] = useState(false);
@@ -17,7 +17,7 @@ export function SiteHeader({ tenant }: { tenant: Tenant }) {
   const navLinks = [
     { href: `/${slug}`, label: "Shop" },
     { href: `/${slug}/collections`, label: "Collections" },
-    { href: `/${slug}/story`, label: "Our Story" },
+    ...(hasStory ? [{ href: `/${slug}/story`, label: "Our Story" }] : []),
   ];
 
   return (

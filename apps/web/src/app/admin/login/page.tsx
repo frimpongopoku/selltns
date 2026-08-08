@@ -79,6 +79,17 @@ export default function AdminLoginPage() {
           </Link>
         </p>
       </Card>
+      <p className="fixed inset-x-0 bottom-6 text-center text-xs text-muted-foreground">
+        Built by the{" "}
+        <a
+          href="https://biibisoft.com"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-dotted underline-offset-2 hover:text-foreground"
+        >
+          Biibisoft Team
+        </a>
+      </p>
     </div>
   );
 }

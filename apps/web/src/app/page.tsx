@@ -328,7 +328,17 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-[#141414]/10 px-5 py-10 text-center text-xs text-[#66605A] sm:px-8 dark:border-[#F2F1EE]/10 dark:text-[#A8A29B]">
-        © {new Date().getFullYear()} Selltns. Made for shops across Ghana.
+        © {new Date().getFullYear()} Selltns. Made for shops across Ghana. Built
+        by the{" "}
+        <a
+          href="https://biibisoft.com"
+          target="_blank"
+          rel="noreferrer"
+          className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[#141414] dark:hover:text-[#F2F1EE]"
+        >
+          Biibisoft Team
+        </a>
+        .
       </footer>
     </div>
   );
