@@ -1,4 +1,4 @@
-import type { Order, Tenant } from '../common/types';
+import type { Order, Role, Tenant } from '../common/types';
 
 function formatGHS(amount: number): string {
   return new Intl.NumberFormat('en-GH', {
@@ -305,5 +305,31 @@ export function preorderBalanceDueEmail(
     </p>`,
   );
   const text = `Your pre-order from ${tenant.name} is ready. Pay the balance of ${formatGHS(balance)} using reference ${order.paymentReference}: ${payUrl}`;
+  return { subject, html, text };
+}
+
+export function teamInviteEmail(
+  member: { name: string; email: string; role: Role },
+  tenant: Tenant,
+  loginUrl: string,
+) {
+  const roleLabel = member.role.charAt(0) + member.role.slice(1).toLowerCase();
+  const subject = `You've been invited to ${tenant.name} on Selltns`;
+  const html = layout(
+    tenant.name,
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">You're invited to ${tenant.name}</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 16px;">
+      You've been added to ${tenant.name}'s Selltns dashboard as a
+      <strong>${roleLabel}</strong>.
+    </p>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
+      To get in, sign in with Google using <strong>${member.email}</strong> —
+      this exact email address is how your invite is recognized, so signing
+      in with a different Google account won't work.
+    </p>
+    ${button(loginUrl, 'Sign in to the dashboard')}`,
+  );
+  const text = `You've been invited to ${tenant.name} on Selltns as ${roleLabel}. Sign in with Google using ${member.email} at ${loginUrl}`;
   return { subject, html, text };
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Tenant } from "@/lib/types";
 import { useStoreSlug } from "./store-context";
 import { OwnershipCredit } from "./ownership-credit";
+import { BUILD_LABEL } from "@/lib/build-info";
 
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
 
@@ -17,8 +18,7 @@ export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boo
           <div>
             <p className="store-heading text-lg font-semibold">{tenant.name}</p>
             <p className="store-muted mt-3 max-w-xs text-sm leading-relaxed">
-              Handmade, made-to-order pieces. Requested here, confirmed by us,
-              paid your way.
+              {tenant.footerTagline}
             </p>
           </div>
           <div className="flex gap-12 text-sm sm:gap-16">
@@ -62,7 +62,7 @@ export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boo
           >
             Biibisoft Team
           </a>
-          .
+          . <span className="opacity-60">{BUILD_LABEL}</span>
         </p>
       </div>
     </footer>

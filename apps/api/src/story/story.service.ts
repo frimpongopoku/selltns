@@ -1,18 +1,30 @@
-import { Injectable } from '@nestjs/common';
-import { storyBlocks } from '../common/seed-data';
-import { ContentBlock } from '../common/types';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import type { ContentBlock } from '../common/types';
 
 @Injectable()
 export class StoryService {
-  private blocks: ContentBlock[] = [...storyBlocks];
+  constructor(private readonly prisma: PrismaService) {}
 
-  findAll(tenantId: string): ContentBlock[] {
-    return this.blocks.filter((b) => b.tenantId === tenantId);
+  async findAll(tenantId: string): Promise<ContentBlock[]> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { storyBlocks: true },
+    });
+    if (!tenant) throw new NotFoundException(`Tenant ${tenantId} not found`);
+    return tenant.storyBlocks as unknown as ContentBlock[];
   }
 
-  replaceAll(tenantId: string, blocks: ContentBlock[]): ContentBlock[] {
+  async replaceAll(tenantId: string, blocks: ContentBlock[]): Promise<ContentBlock[]> {
     const stamped = blocks.map((b) => ({ ...b, tenantId }));
-    this.blocks = [...this.blocks.filter((b) => b.tenantId !== tenantId), ...stamped];
+    await this.prisma.tenant
+      .update({
+        where: { id: tenantId },
+        data: { storyBlocks: stamped as object },
+      })
+      .catch(() => {
+        throw new NotFoundException(`Tenant ${tenantId} not found`);
+      });
     return stamped;
   }
 }

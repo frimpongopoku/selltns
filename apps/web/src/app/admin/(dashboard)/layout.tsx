@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import { getMe } from "@/lib/get-me";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { SentryUserContext } from "@/components/sentry-context";
+import { PostHogIdentify } from "@/components/analytics/posthog-identify";
 import type { TeamMember } from "@/lib/types";
 
 export default async function AdminDashboardLayout({
@@ -32,6 +33,13 @@ export default async function AdminDashboardLayout({
   return (
     <AdminShell tenant={me.tenant} spaces={me.spaces} user={currentUser}>
       <SentryUserContext
+        userId={me.user.id}
+        email={me.user.email}
+        tenantId={me.tenant.id}
+        tenantSlug={me.tenant.slug}
+        role={me.role}
+      />
+      <PostHogIdentify
         userId={me.user.id}
         email={me.user.email}
         tenantId={me.tenant.id}

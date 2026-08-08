@@ -12,6 +12,7 @@ import {
   Store,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { BUILD_LABEL } from "@/lib/build-info";
 import { DashboardPreview } from "@/components/marketing/dashboard-preview";
 import { StorefrontPreview } from "@/components/marketing/storefront-preview";
 
@@ -338,7 +339,7 @@ export default function LandingPage() {
         >
           Biibisoft Team
         </a>
-        .
+        . <span className="opacity-60">{BUILD_LABEL}</span>
       </footer>
     </div>
   );

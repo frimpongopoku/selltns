@@ -1,11 +1,15 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import type { Role, TeamMember } from '../common/types';
+import { EMAIL_SERVICE, type EmailService } from '../email/email.service';
+import { teamInviteEmail } from '../email/templates';
+import type { Role, TeamMember, Tenant } from '../common/types';
 
 interface MembershipRow {
   id: string;
@@ -30,7 +34,13 @@ function mapMember(row: MembershipRow): TeamMember {
 
 @Injectable()
 export class TeamService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(TeamService.name);
+  private readonly webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:4310';
+
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
+  ) {}
 
   async findAll(tenantId: string): Promise<TeamMember[]> {
     const rows = await this.prisma.tenantMembership.findMany({
@@ -75,6 +85,26 @@ export class TeamService {
       data: { tenantId, userId: user.id, role: input.role },
       include: { user: true },
     });
+
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (tenant) {
+      const loginUrl = `${this.webOrigin}/admin/login`;
+      this.emailService
+        .send({
+          to: email,
+          ...teamInviteEmail(
+            { name, email, role: input.role },
+            tenant as unknown as Tenant,
+            loginUrl,
+          ),
+        })
+        .catch((err) => {
+          // The membership already exists — a failed invite email
+          // shouldn't undo it, just get logged for follow-up.
+          this.logger.error(`Failed to send invite email to ${email}: ${err}`);
+        });
+    }
+
     return mapMember(membership);
   }
 

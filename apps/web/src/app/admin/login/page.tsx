@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { BUILD_LABEL } from "@/lib/build-info";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { signInWithGooglePopup } from "@/lib/firebase-client";
@@ -88,7 +89,8 @@ export default function AdminLoginPage() {
           className="underline decoration-dotted underline-offset-2 hover:text-foreground"
         >
           Biibisoft Team
-        </a>
+        </a>{" "}
+        <span className="opacity-60">{BUILD_LABEL}</span>
       </p>
     </div>
   );

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, Loader2, X } from "lucide-react";
+import { BUILD_LABEL } from "@/lib/build-info";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -211,7 +212,8 @@ export default function RegisterPage() {
           className="underline decoration-dotted underline-offset-2 hover:text-foreground"
         >
           Biibisoft Team
-        </a>
+        </a>{" "}
+        <span className="opacity-60">{BUILD_LABEL}</span>
       </p>
     </div>
   );

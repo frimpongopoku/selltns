@@ -8,6 +8,7 @@ import { CartProvider } from "@/components/storefront/cart-provider";
 import { SiteHeader } from "@/components/storefront/site-header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { SentryUserContext } from "@/components/sentry-context";
+import { PostHogIdentify } from "@/components/analytics/posthog-identify";
 
 export default async function StorefrontLayout({
   children,
@@ -34,6 +35,7 @@ export default async function StorefrontLayout({
       <ThemeScope tokens={tenant.themeTokens} className="flex min-h-full flex-col">
         <CartProvider>
           <SentryUserContext tenantId={tenant.id} tenantSlug={slug} />
+          <PostHogIdentify tenantId={tenant.id} tenantSlug={slug} />
           <SiteHeader tenant={publicTenant} hasStory={hasStory} />
           <main className="flex-1">{children}</main>
           <SiteFooter tenant={publicTenant} hasStory={hasStory} />

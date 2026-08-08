@@ -8,6 +8,7 @@ import {
   collections,
   paymentMethods,
   orders,
+  storyBlocks,
 } from '../src/common/seed-data';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -25,6 +26,7 @@ async function main() {
       domainVerified: tenant.domainVerified,
       whatsappNumber: tenant.whatsappNumber,
       themeTokens: tenant.themeTokens as object,
+      storyBlocks: storyBlocks as object,
       createdAt: new Date(tenant.createdAt),
     },
   });

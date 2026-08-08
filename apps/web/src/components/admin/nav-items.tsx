@@ -8,7 +8,7 @@ import {
   Palette,
   Users,
   Globe,
-  BookOpen,
+  LayoutTemplate,
   Store,
   PackageSearch,
 } from "lucide-react";
@@ -26,7 +26,7 @@ export const NAV_ITEMS = [
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon, roles: ["OWNER", "MANAGER"] as Role[] },
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
   { href: "/admin/payments", label: "Payment methods", icon: Wallet, roles: ["OWNER", "MANAGER"] as Role[] },
-  { href: "/admin/story", label: "Story page", icon: BookOpen, roles: ["OWNER", "MANAGER"] as Role[] },
+  { href: "/admin/configure", label: "Configure pages", icon: LayoutTemplate, roles: ["OWNER", "MANAGER"] as Role[] },
 ] as const;
 
 export const SETTINGS_NAV_ITEMS = [

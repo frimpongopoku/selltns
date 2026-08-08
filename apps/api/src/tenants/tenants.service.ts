@@ -98,6 +98,21 @@ export class TenantsService {
     return tenant as unknown as Tenant;
   }
 
+  async updateStorefrontCopy(
+    tenantId: string,
+    input: { heroTagline?: string; footerTagline?: string },
+  ): Promise<Tenant> {
+    const tenant = await this.prisma.tenant
+      .update({
+        where: { id: tenantId },
+        data: input,
+      })
+      .catch(() => {
+        throw new NotFoundException(`Tenant ${tenantId} not found`);
+      });
+    return tenant as unknown as Tenant;
+  }
+
   async getDomainStatus(tenantId: string): Promise<CustomDomainInfo> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

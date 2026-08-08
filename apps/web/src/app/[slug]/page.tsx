@@ -14,7 +14,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) return { title: "Store not found" };
-  const description = `Small-batch, handmade pieces from ${tenant.name}. Request your favorites and we'll confirm before arranging payment.`;
+  const description = tenant.heroTagline;
   const canonical = getCanonicalUrl(tenant);
   return {
     title: tenant.name,
@@ -55,8 +55,7 @@ export default async function StoreHomePage({
             {tenant.name}
           </h1>
           <p className="store-muted mt-5 max-w-lg text-base leading-relaxed sm:text-lg">
-            Small-batch, handmade pieces. Request your favorites and
-            we&apos;ll confirm before arranging payment.
+            {tenant.heroTagline}
           </p>
           <Link
             href="#products"

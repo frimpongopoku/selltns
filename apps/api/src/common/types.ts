@@ -32,6 +32,8 @@ export interface Tenant {
   ownerTitle: string;
   ownerBio: string;
   ownerInfoVisible: boolean;
+  heroTagline: string;
+  footerTagline: string;
   themeTokens: ThemeTokens;
   createdAt: string;
 }

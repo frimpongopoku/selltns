@@ -97,6 +97,14 @@ export const updateTenantOwnershipInfo = (
     method: "PATCH",
     body: JSON.stringify(input),
   });
+export const updateTenantStorefrontCopy = (
+  tenantId: string,
+  input: { heroTagline?: string; footerTagline?: string },
+) =>
+  adminRequest<Tenant>(`/tenants/${tenantId}/storefront-copy`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 export const getDomainStatus = (tenantId: string) =>
   adminRequest<DomainStatus>(`/tenants/${tenantId}/domain`);
 export const setDomain = (tenantId: string, domain: string) =>

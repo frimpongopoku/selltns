@@ -107,6 +107,20 @@ export class TenantsController {
     return this.tenantsService.updateProfile(id, body);
   }
 
+  // Regular storefront content (hero/footer copy) — same role scope as
+  // Story page edits, not the OWNER-only sensitivity of ownership-info.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
+  @Patch(':id/storefront-copy')
+  updateStorefrontCopy(
+    @Param('id') id: string,
+    @CurrentUser() user: SessionPayload,
+    @Body() body: { heroTagline?: string; footerTagline?: string },
+  ) {
+    this.assertOwnTenant(id, user);
+    return this.tenantsService.updateStorefrontCopy(id, body);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER')
   @Patch(':id/ownership-info')

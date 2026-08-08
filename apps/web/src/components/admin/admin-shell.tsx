@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { AdminNavLinks } from "./admin-nav-links";
 import { SpaceSwitcher } from "./space-switcher";
 import { signOut } from "@/lib/auth-actions";
+import { BUILD_LABEL } from "@/lib/build-info";
 import type { Space, Tenant, TeamMember } from "@/lib/types";
 
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
@@ -90,6 +91,7 @@ function BiibisoftCredit() {
       >
         Biibisoft Team
       </a>
+      <span className="block opacity-70">{BUILD_LABEL}</span>
     </p>
   );
 }

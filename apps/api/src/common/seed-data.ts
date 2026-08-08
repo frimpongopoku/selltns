@@ -21,6 +21,10 @@ export const tenant: Tenant = {
   ownerTitle: 'Founder & Designer',
   ownerBio: 'Handcrafted in Accra, one piece at a time.',
   ownerInfoVisible: false,
+  heroTagline:
+    "Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.",
+  footerTagline:
+    'Handmade, made-to-order pieces. Requested here, confirmed by us, paid your way.',
   themeTokens: {
     template: 'FASHION',
     primary: '#17140F',

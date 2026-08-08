@@ -51,6 +51,9 @@ model Tenant {
   ownerTitle       String @default("") @map("owner_title")
   ownerBio         String @default("") @map("owner_bio")
   ownerInfoVisible Boolean @default(false) @map("owner_info_visible")
+  heroTagline    String   @default("Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.") @map("hero_tagline")
+  footerTagline  String   @default("Handmade, made-to-order pieces. Requested here, confirmed by us, paid your way.") @map("footer_tagline")
+  storyBlocks    Json     @default("[]") @map("story_blocks")
   themeTokens    Json     @map("theme_tokens")
   createdAt      DateTime @default(now()) @map("created_at")
 

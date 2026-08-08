@@ -76,6 +76,8 @@ function mapTenant(row: PrismaTenant): Tenant {
     ownerTitle: row.ownerTitle,
     ownerBio: row.ownerBio,
     ownerInfoVisible: row.ownerInfoVisible,
+    heroTagline: row.heroTagline,
+    footerTagline: row.footerTagline,
     themeTokens: row.themeTokens as unknown as Tenant['themeTokens'],
     createdAt: row.createdAt.toISOString(),
   };

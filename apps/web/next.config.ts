@@ -1,5 +1,21 @@
+import { execSync } from "node:child_process";
 import type { NextConfig } from "next";
 import type { RemotePattern } from "next/dist/shared/lib/image-config";
+
+// Resolved once, at build time, in this file's own Node process — never
+// bundled into app code, so shelling out to git here is safe. Hosting
+// platforms set the first two automatically (no config needed); local dev
+// falls back to reading the repo directly, then to "dev" if that fails too
+// (e.g. a Docker build with no .git present).
+function resolveBuildCommit(): string {
+  const fromPlatform = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.RAILWAY_GIT_COMMIT_SHA;
+  if (fromPlatform) return fromPlatform.slice(0, 7);
+  try {
+    return execSync("git rev-parse --short HEAD", { cwd: __dirname }).toString().trim();
+  } catch {
+    return "";
+  }
+}
 
 function remotePatternFor(rawUrl: string | undefined): RemotePattern | null {
   if (!rawUrl) return null;
@@ -28,6 +44,9 @@ const remotePatterns: RemotePattern[] = [
 ].filter((p): p is RemotePattern => p !== null);
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_COMMIT: resolveBuildCommit(),
+  },
   images: {
     remotePatterns,
     // Next blocks the image optimizer from fetching upstream hosts that
