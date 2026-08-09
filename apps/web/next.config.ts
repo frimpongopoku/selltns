@@ -1,17 +1,17 @@
 import { execSync } from "node:child_process";
 import type { NextConfig } from "next";
 import type { RemotePattern } from "next/dist/shared/lib/image-config";
+import packageJson from "./package.json";
 
-// Resolved once, at build time, in this file's own Node process — never
-// bundled into app code, so shelling out to git here is safe. Hosting
-// platforms set the first two automatically (no config needed); local dev
-// falls back to reading the repo directly, then to "dev" if that fails too
-// (e.g. a Docker build with no .git present).
-function resolveBuildCommit(): string {
-  const fromPlatform = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.RAILWAY_GIT_COMMIT_SHA;
-  if (fromPlatform) return fromPlatform.slice(0, 7);
+// A real, ever-increasing integer — total commit count on the branch being
+// built — rather than an opaque hash. Resolved once, at build time, in
+// this file's own Node process (never bundled into app code, so shelling
+// out to git here is safe). Requires full git history, not a shallow
+// clone; falls back to "" (hidden in the UI) if that's ever unavailable
+// rather than showing a misleading count.
+function resolveBuildNumber(): string {
   try {
-    return execSync("git rev-parse --short HEAD", { cwd: __dirname }).toString().trim();
+    return execSync("git rev-list --count HEAD", { cwd: __dirname }).toString().trim();
   } catch {
     return "";
   }
@@ -45,7 +45,8 @@ const remotePatterns: RemotePattern[] = [
 
 const nextConfig: NextConfig = {
   env: {
-    NEXT_PUBLIC_BUILD_COMMIT: resolveBuildCommit(),
+    NEXT_PUBLIC_APP_VERSION: packageJson.version,
+    NEXT_PUBLIC_BUILD_NUMBER: resolveBuildNumber(),
   },
   images: {
     remotePatterns,
