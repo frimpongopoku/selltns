@@ -28,10 +28,16 @@ function checkRequiredEnv() {
 async function bootstrap() {
   checkRequiredEnv();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-  app.enableCors({
-    origin: process.env.WEB_ORIGIN ?? 'http://localhost:4310',
-    credentials: true,
-  });
+  // No fetch in apps/web ever sets `credentials: "include"` — admin calls
+  // go through the web app's same-origin proxy (server-to-server, not
+  // subject to CORS) using a Bearer header, not cookies. So the only
+  // requests a browser makes directly, cross-origin, to this API are
+  // public/unauthenticated storefront calls (cart, checkout, tracking, the
+  // support form) — safe to allow from any origin, which is what makes a
+  // vendor's custom domain work for those too, not just the platform
+  // domain. `credentials: true` is deliberately NOT set (incompatible with
+  // allowing any origin, and nothing here relies on cross-origin cookies).
+  app.enableCors({ origin: true });
   // Only used when R2 env vars are absent and MediaModule falls back to disk
   // storage for local dev — see media/storage/local-disk-storage.service.ts.
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });

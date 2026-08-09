@@ -1,0 +1,7 @@
+# Vercel only ever builds apps/web (Root Directory is set to apps/web in
+# the project's dashboard settings) — everything below is irrelevant to
+# that build and just slows down the upload/build step.
+apps/api
+selltns-spec.md
+.agents
+.claude
