@@ -9,3 +9,7 @@ out/
 coverage/
 apps/api/uploads/
 apps/api/emails-sent/
+skills-lock.json
+.agents/skills/design-taste-frontend/SKILL.md
+.claude/skills/design-taste-frontend
+apps/web/.env.local.example

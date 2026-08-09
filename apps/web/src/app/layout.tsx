@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Cormorant_Garamond, Manrope } from "next/font/google";
+import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { PostHogTracker } from "@/components/analytics/posthog-tracker";
@@ -62,6 +63,18 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {/* Platform-wide "your click was acknowledged" signal — most
+              useful in dev (Turbopack's on-demand compile can leave a page
+              feeling unresponsive for a moment) but real in production too,
+              since most routes here are server-rendered. Auto-tracks <Link>
+              clicks and history navigation; a static brand color rather
+              than a per-tenant one since this spans admin/landing too. */}
+          <NextTopLoader
+            color="#E0A458"
+            height={3}
+            showSpinner={false}
+            shadow={false}
+          />
           <PostHogTracker />
           {children}
           <Toaster position="bottom-right" />
