@@ -42,14 +42,15 @@ happens without it. None of them block a first deploy; add them whenever.
 5. Once deployed, note the public URL Railway gives the service (Settings →
    Networking → Generate Domain, or attach a custom subdomain like
    `api.yourdomain.com`) — this is `NEXT_PUBLIC_API_URL` for the web app.
-6. **Bootstrap the first superadmin** (one-time, after the first successful
-   deploy): run `npx prisma db seed` against the production service — e.g.
-   `railway run --service <api-service-name> npx prisma db seed` from your
-   machine, or via the Railway dashboard's one-off command runner. **Don't**
-   set `SEED_DEMO_DATA=true` on Railway — leave it unset, so this only
-   upserts the `mrfimpong@gmail.com` superadmin row and skips the fake demo
-   tenant entirely (see the comment at the top of `prisma/seed.ts`). Safe to
-   re-run any time; it's an idempotent upsert.
+6. **Bootstrap the first superadmin** — a required step, not optional/demo
+   data: without it nobody can ever sign in to `/superadmin` (self-registration
+   is deliberately blocked). Once, right after the first successful deploy,
+   run `npm run bootstrap:superadmin` against the production service — e.g.
+   `railway run --service <api-service-name> npm run bootstrap:superadmin`
+   from your machine, or via the Railway dashboard's one-off command runner.
+   This is unrelated to `prisma db seed` (that command is demo/dev fixture
+   data only — see step below — and shouldn't be run against production at
+   all). Safe to re-run any time; it's an idempotent upsert.
 
 ## 2. Supporting services
 
