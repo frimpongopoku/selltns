@@ -204,6 +204,10 @@ export default function RegisterPage() {
         </p>
         <p className="mt-2 text-center text-xs text-muted-foreground">
           By creating a store, you agree to our{" "}
+          <Link href="/terms" className="underline underline-offset-2">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
           <Link href="/privacy" className="underline underline-offset-2">
             Privacy Policy
           </Link>

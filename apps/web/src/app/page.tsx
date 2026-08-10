@@ -347,6 +347,20 @@ export default function LandingPage() {
         >
           Privacy
         </Link>
+        <span className="mx-2 opacity-40">·</span>
+        <Link
+          href="/terms"
+          className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[#141414] dark:hover:text-[#F2F1EE]"
+        >
+          Terms
+        </Link>
+        <span className="mx-2 opacity-40">·</span>
+        <Link
+          href="/health"
+          className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[#141414] dark:hover:text-[#F2F1EE]"
+        >
+          Status
+        </Link>
       </footer>
     </div>
   );
