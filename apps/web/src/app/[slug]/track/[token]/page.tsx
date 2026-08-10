@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/storefront/status-badge";
 import { TrackerActions } from "@/components/storefront/order-tracker";
 import { CopyValue } from "@/components/storefront/copy-value";
 import { PaymentMethodCard } from "@/components/storefront/payment-method-card";
+import { PaymentSafetyNotice } from "@/components/storefront/payment-safety-notice";
 import { obscurePaymentMethodPhone, obscurePhone } from "@/lib/phone";
 import type { Product } from "@/lib/types";
 
@@ -208,7 +209,16 @@ export default async function TrackOrderPage({
             Pay now on {tenant.name}&apos;s payment page
           </Link>
 
-          <div className="mt-4 flex flex-col gap-3">
+          {enabledMethods.length > 0 && (
+            <div className="mt-4">
+              <PaymentSafetyNotice
+                tenantName={tenant.name}
+                verified={tenant.verificationStatus === "VERIFIED"}
+              />
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
             {enabledMethods.map((method) => (
               <PaymentMethodCard key={method.id} method={obscurePaymentMethodPhone(method)} />
             ))}

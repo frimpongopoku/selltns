@@ -15,6 +15,14 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // First superadmin, independent of tenant seeding below — see
+  // superadmin/superadmin-session.guard.ts for how this table gates access.
+  await prisma.superAdmin.upsert({
+    where: { email: 'mrfimpong@gmail.com' },
+    update: {},
+    create: { email: 'mrfimpong@gmail.com' },
+  });
+
   const seededTenant = await prisma.tenant.upsert({
     where: { id: tenant.id },
     update: { whatsappNumber: tenant.whatsappNumber },

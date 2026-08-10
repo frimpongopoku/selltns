@@ -15,6 +15,8 @@ import { AuthModule } from './auth/auth.module';
 import { TeamModule } from './team/team.module';
 import { StoryModule } from './story/story.module';
 import { SupportModule } from './support/support.module';
+import { VerificationModule } from './verification/verification.module';
+import { SuperAdminModule } from './superadmin/superadmin.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { SupportModule } from './support/support.module';
     TeamModule,
     StoryModule,
     SupportModule,
+    VerificationModule,
+    SuperAdminModule,
   ],
   controllers: [AppController],
   providers: [

@@ -40,29 +40,49 @@ enum DepositType {
   PERCENTAGE
 }
 
-model Tenant {
-  id             String   @id @default(cuid())
-  name           String
-  slug           String   @unique
-  customDomain   String?  @map("custom_domain")
-  domainVerified Boolean  @default(false) @map("domain_verified")
-  whatsappNumber String?  @map("whatsapp_number")
-  ownerDisplayName String @default("") @map("owner_display_name")
-  ownerTitle       String @default("") @map("owner_title")
-  ownerBio         String @default("") @map("owner_bio")
-  ownerInfoVisible Boolean @default(false) @map("owner_info_visible")
-  heroTagline    String   @default("Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.") @map("hero_tagline")
-  footerTagline  String   @default("Handmade, made-to-order pieces. Requested here, confirmed by us, paid your way.") @map("footer_tagline")
-  storyBlocks    Json     @default("[]") @map("story_blocks")
-  themeTokens    Json     @map("theme_tokens")
-  createdAt      DateTime @default(now()) @map("created_at")
+enum VerificationStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
 
-  memberships    TenantMembership[]
-  mediaAssets    MediaAsset[]
-  products       Product[]
-  collections    Collection[]
-  paymentMethods PaymentMethod[]
-  orders         Order[]
+enum VerificationRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Tenant {
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  customDomain     String?  @map("custom_domain")
+  domainVerified   Boolean  @default(false) @map("domain_verified")
+  whatsappNumber   String?  @map("whatsapp_number")
+  ownerDisplayName String   @default("") @map("owner_display_name")
+  ownerTitle       String   @default("") @map("owner_title")
+  ownerBio         String   @default("") @map("owner_bio")
+  ownerInfoVisible Boolean  @default(false) @map("owner_info_visible")
+  heroTagline      String   @default("Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.") @map("hero_tagline")
+  footerTagline    String   @default("Handmade, made-to-order pieces. Requested here, confirmed by us, paid your way.") @map("footer_tagline")
+  storyBlocks      Json     @default("[]") @map("story_blocks")
+  themeTokens      Json     @map("theme_tokens")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  verificationStatus VerificationStatus @default(NONE) @map("verification_status")
+  verifiedAt         DateTime?          @map("verified_at")
+  suspended          Boolean            @default(false)
+  suspendedAt        DateTime?          @map("suspended_at")
+  suspendedReason    String?            @map("suspended_reason")
+
+  memberships         TenantMembership[]
+  mediaAssets         MediaAsset[]
+  products            Product[]
+  collections         Collection[]
+  paymentMethods      PaymentMethod[]
+  orders              Order[]
+  verificationRequest VerificationRequest?
 
   @@map("tenants")
 }
@@ -74,6 +94,12 @@ model User {
   googleSub    String?  @unique @map("google_sub")
   lastTenantId String?  @map("last_tenant_id")
   createdAt    DateTime @default(now()) @map("created_at")
+
+  // A superadmin can verify a *person*, not just one of their shops — see
+  // SuperAdminService.verifyUser(), which cascades this onto
+  // Tenant.verificationStatus for every shop where this user is OWNER.
+  verified   Boolean   @default(false)
+  verifiedAt DateTime? @map("verified_at")
 
   memberships TenantMembership[]
 
@@ -229,6 +255,48 @@ model Order {
 
   @@index([tenantId])
   @@map("orders")
+}
+
+// A vendor's application for the "Verified" badge — full legal name, Ghana
+// Card number, and a photo of the card (plus an optional selfie), reviewed
+// by a SuperAdmin. One row per tenant: a rejected vendor resubmits by
+// overwriting this same row rather than creating a new one, so there's
+// always exactly one current application. Photos are stored via the
+// *private* storage service (media/storage/private-storage.service.ts),
+// never the public media bucket — idPhotoKey/selfiePhotoKey are opaque
+// keys, not URLs, only ever resolved server-side behind SuperAdminGuard.
+model VerificationRequest {
+  id                     String                    @id @default(cuid())
+  tenantId               String                    @unique @map("tenant_id")
+  legalName              String                    @map("legal_name")
+  ghanaCardNumber        String                    @map("ghana_card_number")
+  idPhotoKey             String                    @map("id_photo_key")
+  selfiePhotoKey         String?                   @map("selfie_photo_key")
+  status                 VerificationRequestStatus @default(PENDING)
+  rejectionReason        String?                   @map("rejection_reason")
+  reviewedBySuperAdminId String?                   @map("reviewed_by_super_admin_id")
+  reviewedAt             DateTime?                 @map("reviewed_at")
+  submittedAt            DateTime                  @default(now()) @map("submitted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@map("verification_requests")
+}
+
+// Platform-level admin, entirely separate from tenant Roles (OWNER/MANAGER/
+// STAFF) — not a member of any store, reviews verification applications and
+// moderates tenants. Auth is a parallel Google-login path gated by this
+// table: an email not present here never gets a session, full stop (see
+// SuperAdminGuard). Seeded with the first superadmin in prisma/seed.ts.
+model SuperAdmin {
+  id         String    @id @default(cuid())
+  email      String    @unique
+  name       String?
+  invitedAt  DateTime  @default(now()) @map("invited_at")
+  acceptedAt DateTime? @map("accepted_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@map("super_admins")
 }
 
 // Submissions from the platform-level help/contact page (apps/web's

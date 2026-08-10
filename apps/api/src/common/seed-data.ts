@@ -25,6 +25,11 @@ export const tenant: Tenant = {
     "Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.",
   footerTagline:
     'Handmade, made-to-order pieces. Requested here, confirmed by us, paid your way.',
+  verificationStatus: 'NONE',
+  verifiedAt: null,
+  suspended: false,
+  suspendedAt: null,
+  suspendedReason: null,
   themeTokens: {
     template: 'FASHION',
     primary: '#17140F',

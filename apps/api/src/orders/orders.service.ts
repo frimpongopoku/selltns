@@ -80,6 +80,11 @@ function mapTenant(row: PrismaTenant): Tenant {
     footerTagline: row.footerTagline,
     themeTokens: row.themeTokens as unknown as Tenant['themeTokens'],
     createdAt: row.createdAt.toISOString(),
+    verificationStatus: row.verificationStatus,
+    verifiedAt: row.verifiedAt?.toISOString() ?? null,
+    suspended: row.suspended,
+    suspendedAt: row.suspendedAt?.toISOString() ?? null,
+    suspendedReason: row.suspendedReason,
   };
 }
 

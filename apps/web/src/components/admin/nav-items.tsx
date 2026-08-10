@@ -11,6 +11,7 @@ import {
   LayoutTemplate,
   Store,
   PackageSearch,
+  ShieldCheck,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 
@@ -30,6 +31,7 @@ export const NAV_ITEMS = [
 ] as const;
 
 export const SETTINGS_NAV_ITEMS = [
+  { href: "/admin/verification", label: "Get verified", icon: ShieldCheck, roles: ["OWNER"] as Role[] },
   { href: "/admin/settings/store", label: "Store profile", icon: Store, roles: ["OWNER"] as Role[] },
   { href: "/admin/settings/theme", label: "Storefront theme", icon: Palette, roles: ["OWNER"] as Role[] },
   { href: "/admin/settings/team", label: "Team & roles", icon: Users, roles: ["OWNER"] as Role[] },

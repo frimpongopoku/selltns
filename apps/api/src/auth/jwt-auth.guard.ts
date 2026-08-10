@@ -24,7 +24,17 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      request.user = await this.jwtService.verifyAsync<SessionPayload>(token);
+      const payload = await this.jwtService.verifyAsync<
+        SessionPayload & { kind?: string }
+      >(token);
+      // Superadmin tokens are a distinct, non-tenant session space (see
+      // superadmin/superadmin-session.guard.ts) — reject them here even
+      // though the signature is valid, so the two never become
+      // interchangeable by accident.
+      if (payload.kind === 'SUPERADMIN') {
+        throw new UnauthorizedException('Invalid or expired session');
+      }
+      request.user = payload;
       return true;
     } catch {
       throw new UnauthorizedException('Invalid or expired session');

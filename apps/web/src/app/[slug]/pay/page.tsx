@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPaymentMethods, getTenantBySlug } from "@/lib/api";
 import { PaymentMethodCard } from "@/components/storefront/payment-method-card";
+import { PaymentSafetyNotice } from "@/components/storefront/payment-safety-notice";
 import { OwnershipCredit } from "@/components/storefront/ownership-credit";
 import { obscurePaymentMethodPhone } from "@/lib/phone";
 
@@ -48,22 +49,26 @@ export default async function PayPage({
           No payment methods are set up yet. Check back soon.
         </p>
       ) : (
-        <div className="mt-9 flex flex-col gap-4">
-          {methods.map((method, i) => (
-            <div
-              key={method.id}
-              style={{ animationDelay: `${100 + i * 60}ms` }}
-              className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-both duration-500"
-            >
-              <PaymentMethodCard method={obscurePaymentMethodPhone(method)} />
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="mt-9 animate-in fade-in-0 duration-500 fill-mode-both">
+            <PaymentSafetyNotice
+              tenantName={tenant.name}
+              verified={tenant.verificationStatus === "VERIFIED"}
+            />
+          </div>
+          <div className="flex flex-col gap-4">
+            {methods.map((method, i) => (
+              <div
+                key={method.id}
+                style={{ animationDelay: `${100 + i * 60}ms` }}
+                className="animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-both duration-500"
+              >
+                <PaymentMethodCard method={obscurePaymentMethodPhone(method)} />
+              </div>
+            ))}
+          </div>
+        </>
       )}
-
-      <p className="store-muted mt-10 animate-in fade-in-0 text-center text-xs leading-relaxed duration-700 [animation-delay:250ms] fill-mode-both">
-        Always confirm the recipient name matches {tenant.name} before sending a payment.
-      </p>
 
       {tenant.ownerInfoVisible && (
         <div className="mt-5 animate-in fade-in-0 duration-700 [animation-delay:300ms] fill-mode-both">

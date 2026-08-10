@@ -46,6 +46,16 @@ export default async function AdminDashboardLayout({
         tenantSlug={me.tenant.slug}
         role={me.role}
       />
+      {me.tenant.suspended && (
+        <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+          <p className="font-medium text-destructive">Your store is suspended</p>
+          <p className="mt-1 text-muted-foreground">
+            {me.tenant.suspendedReason ??
+              "Your storefront isn't visible to customers right now."}{" "}
+            Contact support if you think this is a mistake.
+          </p>
+        </div>
+      )}
       {children}
     </AdminShell>
   );

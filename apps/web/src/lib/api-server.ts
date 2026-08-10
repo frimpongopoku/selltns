@@ -10,7 +10,7 @@
 // This calls the Nest API directly instead, attaching the session token
 // from the httpOnly cookie the same way lib/get-me.ts already does.
 import { getSessionToken } from "./session";
-import type { Order, TeamMember } from "./types";
+import type { Order, TeamMember, VerificationStatusResult } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
 
@@ -43,3 +43,5 @@ export const getOrder = (id: string, tenantId: string) =>
   serverAdminRequest<Order>(`/orders/${id}?tenantId=${tenantId}`);
 export const getTeam = (tenantId: string) =>
   serverAdminRequest<TeamMember[]>(`/team?tenantId=${tenantId}`);
+export const getVerificationStatus = () =>
+  serverAdminRequest<VerificationStatusResult>(`/verification`);

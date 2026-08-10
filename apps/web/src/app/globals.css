@@ -116,6 +116,35 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* ==========================================================================
+   Superadmin — deliberately a different look from the vendor admin (light,
+   emerald) so it's never ambiguous which console you're in. Forced dark —
+   not tied to the light/dark toggle, see components/superadmin/superadmin-shell.tsx,
+   which applies both `.dark` (so shared components' dark: utilities resolve)
+   and `.superadmin-scope` (defined after .dark, so it wins at equal
+   specificity) to its root element.
+   ========================================================================== */
+.superadmin-scope {
+  --background: #0b0b12;
+  --foreground: #f2f1fa;
+  --card: #16151f;
+  --card-foreground: #f2f1fa;
+  --popover: #16151f;
+  --popover-foreground: #f2f1fa;
+  --primary: #6d5ae0;
+  --primary-foreground: #ffffff;
+  --secondary: #1e1d2b;
+  --secondary-foreground: #f2f1fa;
+  --muted: #1a1926;
+  --muted-foreground: #8b899e;
+  --accent: #221f33;
+  --accent-foreground: #f2f1fa;
+  --destructive: #f2645b;
+  --border: rgba(124, 106, 232, 0.18);
+  --input: rgba(124, 106, 232, 0.18);
+  --ring: #6d5ae0;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

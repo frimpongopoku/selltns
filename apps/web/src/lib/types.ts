@@ -48,6 +48,21 @@ export interface Tenant {
   footerTagline: string;
   themeTokens: ThemeTokens;
   createdAt: string;
+  verificationStatus: VerificationStatus;
+  verifiedAt: string | null;
+  suspended: boolean;
+  suspendedReason: string | null;
+}
+
+export type VerificationStatus = "NONE" | "PENDING" | "VERIFIED" | "REJECTED";
+
+export interface VerificationStatusResult {
+  status: VerificationStatus;
+  legalName?: string;
+  ghanaCardNumber?: string;
+  rejectionReason?: string | null;
+  submittedAt?: string;
+  reviewedAt?: string | null;
 }
 
 export interface DnsInstruction {

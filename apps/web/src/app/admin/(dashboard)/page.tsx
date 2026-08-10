@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ClipboardList, Package, Wallet, TrendingUp } from "lucide-react";
+import { ClipboardList, Package, Wallet, TrendingUp, ShieldCheck, ArrowRight } from "lucide-react";
 import { getProducts } from "@/lib/api";
 import { getOrders } from "@/lib/api-server";
 import { getMe } from "@/lib/get-me";
@@ -37,6 +37,26 @@ export default async function AdminDashboardPage() {
           </p>
         </div>
       </div>
+
+      {me.role === "OWNER" && me.tenant.verificationStatus === "NONE" && (
+        <Link
+          href="/admin/verification"
+          className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 transition-colors hover:bg-emerald-500/10"
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <ShieldCheck className="h-4.5 w-4.5" />
+            </span>
+            <div>
+              <p className="text-sm font-medium">Get verified</p>
+              <p className="text-sm text-muted-foreground">
+                Build customer trust with a Verified badge on your storefront.
+              </p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+      )}
 
       <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {[

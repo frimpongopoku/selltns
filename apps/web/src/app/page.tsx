@@ -340,6 +340,13 @@ export default function LandingPage() {
           Biibisoft Team
         </a>
         . <span className="opacity-60">{BUILD_LABEL}</span>
+        <span className="mx-2 opacity-40">·</span>
+        <Link
+          href="/privacy"
+          className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[#141414] dark:hover:text-[#F2F1EE]"
+        >
+          Privacy
+        </Link>
       </footer>
     </div>
   );

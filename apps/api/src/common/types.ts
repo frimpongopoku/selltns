@@ -36,6 +36,11 @@ export interface Tenant {
   footerTagline: string;
   themeTokens: ThemeTokens;
   createdAt: string;
+  verificationStatus: 'NONE' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+  verifiedAt: string | null;
+  suspended: boolean;
+  suspendedAt: string | null;
+  suspendedReason: string | null;
 }
 
 export interface TeamMember {

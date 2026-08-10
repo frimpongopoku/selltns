@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/storefront/site-header";
 import { SiteFooter } from "@/components/storefront/site-footer";
 import { SentryUserContext } from "@/components/sentry-context";
 import { PostHogIdentify } from "@/components/analytics/posthog-identify";
+import { SuspendedStoreNotice } from "@/components/storefront/suspended-store-notice";
 
 export default async function StorefrontLayout({
   children,
@@ -20,6 +21,7 @@ export default async function StorefrontLayout({
   const { slug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
+  if (tenant.suspended) return <SuspendedStoreNotice tenant={tenant} />;
   const hasStory = hasStoryContent(await getStoryBlocks(tenant.id).catch(() => []));
   Sentry.setTag("tenant", slug);
 

@@ -333,3 +333,58 @@ export function teamInviteEmail(
   const text = `You've been invited to ${tenant.name} on Selltns as ${roleLabel}. Sign in with Google using ${member.email} at ${loginUrl}`;
   return { subject, html, text };
 }
+
+// Verification is a property of a person, not a single shop — approving it
+// (whether via a submitted application or a direct superadmin action) marks
+// every shop that person owns as Verified, so this lists all of them rather
+// than naming just one tenant.
+export function userVerifiedEmail(tenantNames: string[]) {
+  const shopsList = tenantNames.join(', ');
+  const plural = tenantNames.length > 1;
+  const subject = plural ? `Your Selltns stores are now Verified` : `${tenantNames[0]} is now Verified on Selltns`;
+  const html = layout(
+    'Selltns',
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">You're verified</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 16px;">
+      We've confirmed your identity. The Verified badge is now live on
+      ${plural ? "every store you run on Selltns" : "your storefront"}
+      (${shopsList}), and the payment-page caution notice has been replaced
+      with it.
+    </p>`,
+  );
+  const text = `You're verified on Selltns. The badge is now live on: ${shopsList}`;
+  return { subject, html, text };
+}
+
+export function verificationRejectedEmail(tenant: Tenant, reason: string) {
+  const subject = `Your Selltns verification application needs another look`;
+  const html = layout(
+    tenant.name,
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">Your application wasn't approved</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 16px;">${reason}</p>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
+      You can fix the issue and submit again from your dashboard any time.
+    </p>`,
+  );
+  const text = `Your Selltns verification application for ${tenant.name} wasn't approved: ${reason}. You can submit again from your dashboard.`;
+  return { subject, html, text };
+}
+
+export function superAdminInviteEmail(email: string, loginUrl: string) {
+  const subject = `You've been added as a Selltns superadmin`;
+  const html = layout(
+    'Selltns',
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">You're a superadmin</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
+      You've been added to the Selltns superadmin dashboard. Sign in with
+      Google using <strong>${email}</strong> — this exact email address is
+      how your access is recognized.
+    </p>
+    ${button(loginUrl, 'Sign in to the superadmin dashboard')}`,
+  );
+  const text = `You've been added as a Selltns superadmin. Sign in with Google using ${email} at ${loginUrl}`;
+  return { subject, html, text };
+}

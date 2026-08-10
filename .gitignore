@@ -8,6 +8,7 @@ out/
 .DS_Store
 coverage/
 apps/api/uploads/
+apps/api/private-uploads/
 apps/api/emails-sent/
 skills-lock.json
 .agents/skills/design-taste-frontend/SKILL.md

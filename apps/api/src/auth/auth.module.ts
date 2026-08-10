@@ -21,6 +21,8 @@ import { RolesGuard } from './roles.guard';
   ],
   controllers: [AuthController],
   providers: [AuthService, FirebaseVerifierService, JwtAuthGuard, RolesGuard],
-  exports: [JwtAuthGuard, RolesGuard],
+  // FirebaseVerifierService is also used by SuperAdminModule's parallel
+  // Google-login path (same Firebase project, different allowlist table).
+  exports: [JwtAuthGuard, RolesGuard, FirebaseVerifierService],
 })
 export class AuthModule {}

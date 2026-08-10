@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Tenant } from "@/lib/types";
 import { useStoreSlug } from "./store-context";
 import { OwnershipCredit } from "./ownership-credit";
+import { VerifiedBadge } from "./verified-badge";
 import { BUILD_LABEL } from "@/lib/build-info";
 
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
@@ -16,7 +17,10 @@ export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boo
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
         <div className="flex flex-col gap-10 sm:flex-row sm:justify-between">
           <div>
-            <p className="store-heading text-lg font-semibold">{tenant.name}</p>
+            <p className="store-heading flex items-center gap-2 text-lg font-semibold">
+              {tenant.name}
+              {tenant.verificationStatus === "VERIFIED" && <VerifiedBadge />}
+            </p>
             <p className="store-muted mt-3 max-w-xs text-sm leading-relaxed">
               {tenant.footerTagline}
             </p>
@@ -40,6 +44,9 @@ export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boo
               )}
               <Link href={`/${slug}/help`} className="transition-colors hover:text-[var(--store-primary)]">
                 Help
+              </Link>
+              <Link href="/privacy" className="transition-colors hover:text-[var(--store-primary)]">
+                Privacy
               </Link>
               <span className="store-muted">
                 {tenant.customDomain && tenant.domainVerified

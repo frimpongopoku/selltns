@@ -8,6 +8,7 @@ import type { Tenant } from "@/lib/types";
 import { CartIndicator } from "./cart-indicator";
 import { useStoreSlug } from "./store-context";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { VerifiedBadge } from "./verified-badge";
 
 export function SiteHeader({ tenant, hasStory }: { tenant: Tenant; hasStory: boolean }) {
   const pathname = usePathname();
@@ -23,8 +24,12 @@ export function SiteHeader({ tenant, hasStory }: { tenant: Tenant; hasStory: boo
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--store-border)] bg-[var(--store-bg)]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
-        <Link href={`/${slug}`} className="store-heading text-xl font-semibold tracking-tight">
+        <Link
+          href={`/${slug}`}
+          className="store-heading flex items-center gap-2 text-xl font-semibold tracking-tight"
+        >
           {tenant.name}
+          {tenant.verificationStatus === "VERIFIED" && <VerifiedBadge />}
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

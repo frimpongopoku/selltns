@@ -202,6 +202,13 @@ export default function RegisterPage() {
             Sign in
           </Link>
         </p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          By creating a store, you agree to our{" "}
+          <Link href="/privacy" className="underline underline-offset-2">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </Card>
       <p className="fixed inset-x-0 bottom-6 text-center text-xs text-muted-foreground">
         Built by the{" "}

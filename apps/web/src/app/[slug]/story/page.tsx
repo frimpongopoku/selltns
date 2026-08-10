@@ -6,6 +6,7 @@ import { getStoryBlocks, getTenantBySlug } from "@/lib/api";
 import { getYouTubeEmbedUrl } from "@/lib/video";
 import { meaningfulStoryBlocks } from "@/lib/story";
 import { OwnershipCredit } from "@/components/storefront/ownership-credit";
+import { VerifiedBadge } from "@/components/storefront/verified-badge";
 import { getCanonicalUrl } from "@/lib/canonical";
 
 export async function generateMetadata({
@@ -39,8 +40,13 @@ export default async function StoryPage({
 
   return (
     <div className="pb-24">
-      {tenant.ownerInfoVisible && (
+      {(tenant.ownerInfoVisible || tenant.verificationStatus === "VERIFIED") && (
         <div className="mx-auto max-w-3xl px-4 pt-16 sm:px-6 sm:pt-20 lg:px-8">
+          {tenant.verificationStatus === "VERIFIED" && (
+            <div className="mb-3">
+              <VerifiedBadge />
+            </div>
+          )}
           <OwnershipCredit tenant={tenant} variant="card" />
         </div>
       )}

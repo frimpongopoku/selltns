@@ -23,7 +23,7 @@ const FAQS = [
   },
   {
     q: "Is my payment information safe?",
-    a: "Selltns never processes or stores payment details — you pay vendors directly via their own Mobile Money or bank details, shown on their payment page.",
+    a: "Not yet — Selltns doesn't process or store payment details today. You pay vendors directly via their own Mobile Money or bank details, shown on their payment page. Only send money if you're confident you know who you're dealing with, and always confirm the recipient name matches the store first — look for a Verified badge as an extra signal of trust.",
   },
 ];
 
