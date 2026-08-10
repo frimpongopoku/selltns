@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDate } from "@/lib/format";
 import type { VerificationRequestStatus } from "@/lib/superadmin-types";
 
-export const metadata = { title: "Verifications — Superadmin" };
+export const metadata = { title: "Verifications" };
 
 const TABS: { label: string; status?: VerificationRequestStatus }[] = [
   { label: "Pending", status: "PENDING" },

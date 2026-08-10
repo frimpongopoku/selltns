@@ -7,7 +7,15 @@ import { formatDate } from "@/lib/format";
 import { TenantSuspendActions } from "@/components/superadmin/tenant-suspend-actions";
 import { UserVerifyActions } from "@/components/superadmin/user-verify-actions";
 
-export const metadata = { title: "Store — Superadmin" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const tenant = await getSuperAdminTenant(id).catch(() => null);
+  return { title: tenant ? tenant.name : "Store" };
+}
 
 export default async function SuperAdminStoreDetailPage({
   params,

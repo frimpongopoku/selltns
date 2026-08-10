@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDate } from "@/lib/format";
 import { TenantSuspendActions } from "@/components/superadmin/tenant-suspend-actions";
 
-export const metadata = { title: "Stores — Superadmin" };
+export const metadata = { title: "Stores" };
 
 export default async function SuperAdminStoresPage({
   searchParams,

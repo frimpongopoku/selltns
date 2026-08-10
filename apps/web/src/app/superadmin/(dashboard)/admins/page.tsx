@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { formatDate } from "@/lib/format";
 import { InviteAdminDialog } from "@/components/superadmin/invite-admin-dialog";
 
-export const metadata = { title: "Admins — Superadmin" };
+export const metadata = { title: "Admins" };
 
 export default async function SuperAdminAdminsPage() {
   const admins = await listAdmins();

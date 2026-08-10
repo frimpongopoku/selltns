@@ -3,7 +3,7 @@ import { getOverview } from "@/lib/superadmin-api-server";
 import { StatCard } from "@/components/admin/stat-card";
 import { formatMoney } from "@/lib/format";
 
-export const metadata = { title: "Overview — Superadmin" };
+export const metadata = { title: "Overview" };
 
 export default async function SuperAdminOverviewPage() {
   const overview = await getOverview();

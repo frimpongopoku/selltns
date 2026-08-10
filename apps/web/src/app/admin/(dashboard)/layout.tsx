@@ -6,6 +6,19 @@ import { SentryUserContext } from "@/components/sentry-context";
 import { PostHogIdentify } from "@/components/analytics/posthog-identify";
 import type { TeamMember } from "@/lib/types";
 
+// Overrides app/admin/layout.tsx's plain "%s · Selltns Admin" template with
+// one that names the actual store — without this, a vendor working across
+// multiple shops (see space-switcher.tsx) sees identical-looking browser
+// tabs for every one of them. getMe() is React-cache()'d, so this doesn't
+// cost a second fetch beyond the one the layout below already makes.
+export async function generateMetadata() {
+  const me = await getMe();
+  const tenantName = me?.tenant.name ?? "Selltns";
+  return {
+    title: { template: `%s · ${tenantName} · Admin`, default: `${tenantName} · Admin` },
+  };
+}
+
 export default async function AdminDashboardLayout({
   children,
 }: {

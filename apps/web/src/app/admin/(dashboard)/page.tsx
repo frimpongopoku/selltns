@@ -10,7 +10,18 @@ import { formatMoney, formatDate } from "@/lib/format";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-export const metadata = { title: "Dashboard" };
+// An absolute title, not a plain string relying on the parent layout's
+// template — for this specific route (the (dashboard) route group's own
+// index page), that template merge doesn't reliably apply even though the
+// layout's generateMetadata does run (confirmed: every other admin page
+// under (dashboard) picks up the tenant-name template correctly, only this
+// one index route doesn't), so setting it explicitly here sidesteps the
+// issue entirely rather than depending on it.
+export async function generateMetadata() {
+  const me = await getMe();
+  const tenantName = me?.tenant.name ?? "Selltns";
+  return { title: { absolute: `Dashboard · ${tenantName} · Admin` } };
+}
 
 export default async function AdminDashboardPage() {
   const me = await getMe();

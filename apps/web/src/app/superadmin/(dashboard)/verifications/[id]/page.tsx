@@ -5,7 +5,15 @@ import { RequestStatusBadge } from "@/components/superadmin/status-badges";
 import { formatDateTime } from "@/lib/format";
 import { VerificationReviewActions } from "@/components/superadmin/verification-review-actions";
 
-export const metadata = { title: "Verification — Superadmin" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const request = await getVerification(id).catch(() => null);
+  return { title: request ? `${request.tenant.name} verification` : "Verification" };
+}
 
 export default async function SuperAdminVerificationDetailPage({
   params,

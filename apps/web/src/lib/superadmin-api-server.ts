@@ -2,6 +2,7 @@
 // (see that file's comment): a Server Component needing superadmin-only
 // data on its *initial* render can't go through the relative /api/superadmin
 // proxy, so this calls the Nest API directly with the session token.
+import { cache } from "react";
 import { getSuperAdminSessionToken } from "./superadmin-session";
 import type {
   SuperAdminOverview,
@@ -37,13 +38,18 @@ export const listVerifications = (status?: VerificationRequestStatus) =>
   serverSuperAdminRequest<VerificationListItem[]>(
     `/verifications${status ? `?status=${status}` : ""}`,
   );
-export const getVerification = (id: string) =>
-  serverSuperAdminRequest<VerificationDetail>(`/verifications/${id}`);
+// cache()'d — both the page and its generateMetadata (for a title that
+// names the store being reviewed) fetch this within the same request.
+export const getVerification = cache((id: string) =>
+  serverSuperAdminRequest<VerificationDetail>(`/verifications/${id}`),
+);
 export const listSuperAdminTenants = (q?: string) =>
   serverSuperAdminRequest<SuperAdminTenant[]>(
     `/tenants${q ? `?q=${encodeURIComponent(q)}` : ""}`,
   );
-export const getSuperAdminTenant = (id: string) =>
-  serverSuperAdminRequest<SuperAdminTenantDetail>(`/tenants/${id}`);
+// cache()'d — see getVerification's comment above, same reason.
+export const getSuperAdminTenant = cache((id: string) =>
+  serverSuperAdminRequest<SuperAdminTenantDetail>(`/tenants/${id}`),
+);
 export const listAdmins = () =>
   serverSuperAdminRequest<SuperAdminAdmin[]>(`/admins`);
