@@ -51,6 +51,15 @@ happens without it. None of them block a first deploy; add them whenever.
    This is unrelated to `prisma db seed` (that command is demo/dev fixture
    data only — see step below — and shouldn't be run against production at
    all). Safe to re-run any time; it's an idempotent upsert.
+7. The API root (`/`) is now a branded landing page, and `/health` is a
+   live status page — real checks (DB query, R2 HeadBucket, Brevo account
+   auth, Vercel project auth), not just "is the env var set." Good for a
+   glance after any deploy; also returns JSON via `Accept: application/json`
+   for an uptime monitor. **Don't** wire this up as Railway's own health
+   check target — it round-trips to third-party APIs with a 3s timeout
+   each, so a Brevo/Vercel blip could make Railway think the whole app is
+   down and restart it. It's a diagnostic page for humans, not a liveness
+   probe.
 
 ## 2. Supporting services
 
@@ -109,6 +118,10 @@ the first deploy; if the number looks wrong, it's cosmetic only.
 ## Post-deploy smoke test
 
 - [ ] `https://yourdomain.com` loads the landing page
+- [ ] `https://api.yourdomain.com` loads the API's own landing page (not a 404/plain text)
+- [ ] `https://api.yourdomain.com/health` shows "All systems operational" —
+      if anything shows a warning, that fallback is expected in dev but
+      shouldn't be there in production (e.g. R2/Brevo not configured)
 - [ ] `https://yourdomain.com/akosua` (or your seeded/real tenant) loads a storefront
 - [ ] `/admin/login` → Google sign-in succeeds and lands in the dashboard
 - [ ] Create a product, place a test order, confirm it in admin, check the tracking link

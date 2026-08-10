@@ -15,8 +15,10 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('renders the landing page as HTML', () => {
+      const html = appController.getLandingPage();
+      expect(html).toContain('<!doctype html>');
+      expect(html).toContain('Selltns API');
     });
   });
 });
