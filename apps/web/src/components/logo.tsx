@@ -1,37 +1,26 @@
-import { useId } from "react";
+import Image from "next/image";
 
+// Renders /public/logo-mark.png (generated from the same gradient+"S"
+// design this used to render as an inline <svg><text>S</text></svg>) rather
+// than live SVG text. That inline text node sat directly next to the
+// adjacent "Selltns" wordmark almost everywhere this component is used —
+// aria-hidden stops assistive tech from reading it, but does nothing for
+// naive text-scraping crawlers, which read raw DOM text in document order
+// and concatenated it into "SSelltns". That's a real, external-facing
+// problem (confirmed via Google's OAuth homepage-verification checker
+// flagging the app name as not matching), not just a cosmetic one — a
+// raster image has no text content at all, so it can't happen regardless
+// of what tool is reading the page. alt="" is deliberate: the adjacent
+// visible wordmark already states the name, so a non-empty alt would just
+// reintroduce the same duplication via a different mechanism.
 export function Logo({ size = 32, className }: { size?: number; className?: string }) {
-  const gradientId = useId();
-
   return (
-    <svg
+    <Image
+      src="/logo-mark.png"
       width={size}
       height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+      alt=""
       className={className}
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#14C088" />
-          <stop offset="1" stopColor="#0B7A56" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="7" fill={`url(#${gradientId})`} />
-      <text
-        x="16"
-        y="22.5"
-        textAnchor="middle"
-        fontFamily="var(--font-manrope), sans-serif"
-        fontWeight={800}
-        fontSize="19"
-        fill="white"
-        letterSpacing="-0.5"
-      >
-        S
-      </text>
-    </svg>
+    />
   );
 }

@@ -328,6 +328,29 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Explicit, on-page statement of what Selltns is and why it asks for
+          Google account data — not just implied by the marketing copy above,
+          since that's a distinct, specific thing worth stating plainly. */}
+      <section className="border-t border-[#141414]/10 px-5 py-10 dark:border-[#F2F1EE]/10">
+        <div className="mx-auto max-w-2xl text-center text-sm leading-relaxed text-[#66605A] dark:text-[#A8A29B]">
+          <p>
+            Selltns is an e-commerce platform: sellers create a store, list
+            products, and share one link; customers browse and place orders
+            from it; sellers manage orders and get paid by Mobile Money or
+            bank transfer, tracked from request to delivery.
+          </p>
+          <p className="mt-3">
+            Selltns uses Google Sign-In to create and secure seller
+            accounts — we request only your name and email address to do
+            that, and never see or store your Google password. See our{" "}
+            <Link href="/privacy" className="underline decoration-dotted underline-offset-2 hover:text-[#141414] dark:hover:text-[#F2F1EE]">
+              privacy policy
+            </Link>{" "}
+            for the full detail.
+          </p>
+        </div>
+      </section>
+
       <footer className="border-t border-[#141414]/10 px-5 py-10 text-center text-xs text-[#66605A] sm:px-8 dark:border-[#F2F1EE]/10 dark:text-[#A8A29B]">
         © {new Date().getFullYear()} Selltns. Made for shops across Ghana. Built
         by the{" "}
