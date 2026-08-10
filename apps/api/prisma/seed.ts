@@ -15,13 +15,28 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // First superadmin, independent of tenant seeding below — see
-  // superadmin/superadmin-session.guard.ts for how this table gates access.
+  // First superadmin — always upserted, safe to run against any
+  // environment including production (this is the *only* way anyone gets
+  // into /superadmin, since self-registration is deliberately blocked —
+  // see superadmin/superadmin-session.guard.ts).
   await prisma.superAdmin.upsert({
     where: { email: 'mrfimpong@gmail.com' },
     update: {},
     create: { email: 'mrfimpong@gmail.com' },
   });
+
+  // Everything below is fake demo/dev fixture data (a made-up "Akosua &
+  // Co." tenant, *.test emails, sample orders) — opt-in only, so running
+  // `prisma db seed` against production (to bootstrap the superadmin row
+  // above) never accidentally dumps a fake store into real data. Set
+  // SEED_DEMO_DATA=true locally to get it, per apps/api/.env.example.
+  if (process.env.SEED_DEMO_DATA !== 'true') {
+    console.log(
+      'SEED_DEMO_DATA is not "true" — only the superadmin row was seeded. ' +
+        'Set SEED_DEMO_DATA=true (local dev only) to also seed the demo tenant/products/orders.',
+    );
+    return;
+  }
 
   const seededTenant = await prisma.tenant.upsert({
     where: { id: tenant.id },

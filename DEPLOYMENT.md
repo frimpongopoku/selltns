@@ -8,9 +8,12 @@ live API URL before its own env vars make sense.
 
 - [Railway](https://railway.app) — API + Postgres
 - [Vercel](https://vercel.com) — web app
-- [Cloudflare](https://dash.cloudflare.com) (R2) — product/collection/story media
-- [Brevo](https://www.brevo.com) — transactional email (order/invite notifications)
-- A [Firebase](https://console.firebase.google.com) project — Google sign-in
+- [Cloudflare](https://dash.cloudflare.com) (R2) — **two** buckets: one public
+  (product/collection/story media), one **not** public (vendor verification
+  documents — Ghana Card scans, selfies — must never get a public custom
+  domain attached, see `R2_PRIVATE_BUCKET_NAME` in `.env.example`)
+- [Brevo](https://www.brevo.com) — transactional email (order/invite/verification notifications)
+- A [Firebase](https://console.firebase.google.com) project — Google sign-in for both `/admin` and `/superadmin`
 - Optional but recommended: [Sentry](https://sentry.io) (error tracking), [PostHog](https://posthog.com) (analytics)
 
 Every optional integration above degrades gracefully when unset (falls back to
@@ -39,6 +42,14 @@ happens without it. None of them block a first deploy; add them whenever.
 5. Once deployed, note the public URL Railway gives the service (Settings →
    Networking → Generate Domain, or attach a custom subdomain like
    `api.yourdomain.com`) — this is `NEXT_PUBLIC_API_URL` for the web app.
+6. **Bootstrap the first superadmin** (one-time, after the first successful
+   deploy): run `npx prisma db seed` against the production service — e.g.
+   `railway run --service <api-service-name> npx prisma db seed` from your
+   machine, or via the Railway dashboard's one-off command runner. **Don't**
+   set `SEED_DEMO_DATA=true` on Railway — leave it unset, so this only
+   upserts the `mrfimpong@gmail.com` superadmin row and skips the fake demo
+   tenant entirely (see the comment at the top of `prisma/seed.ts`). Safe to
+   re-run any time; it's an idempotent upsert.
 
 ## 2. Supporting services
 
@@ -75,7 +86,8 @@ Do this once you have a real production domain (e.g. `selltns.com`):
 4. **Firebase Console** → Authentication → Settings → Authorized domains →
    add your production domain. Google sign-in silently fails on any domain
    not in this list — easy to miss, this is the #1 "login button does
-   nothing in production" cause.
+   nothing in production" cause. One domain covers both `/admin/login` and
+   `/superadmin/login` — same Firebase project, same web config.
 5. **Vendor custom domains** (optional, can wait): once you have
    `PLATFORM_APEX_IP`/`PLATFORM_CNAME_TARGET` (shown on Vercel's "add a
    domain" screen — add any placeholder domain there once to see them) and a
@@ -100,4 +112,12 @@ the first deploy; if the number looks wrong, it's cosmetic only.
 - [ ] `/admin/login` → Google sign-in succeeds and lands in the dashboard
 - [ ] Create a product, place a test order, confirm it in admin, check the tracking link
 - [ ] `/sitemap.xml` and `/robots.txt` resolve and list real tenant URLs
+- [ ] `/privacy` loads
+- [ ] `/superadmin/login` → sign in with `mrfimpong@gmail.com` (after the
+      bootstrap step above) → lands in the superadmin overview
+- [ ] Submit a test verification from `/admin/verification` on a real store,
+      approve it from `/superadmin/verifications`, confirm the Verified badge
+      shows on that store's `/pay` page and the ID photo actually renders in
+      the superadmin review view (confirms the private R2 bucket is wired
+      correctly, not falling back to local disk)
 - [ ] If Sentry is configured: trigger a deliberate error, confirm it shows up in the dashboard
