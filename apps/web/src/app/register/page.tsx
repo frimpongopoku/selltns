@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import * as Sentry from "@sentry/nextjs";
 import { Check, Loader2, X } from "lucide-react";
 import { BUILD_LABEL } from "@/lib/build-info";
 import { Card } from "@/components/ui/card";
@@ -100,7 +101,12 @@ export default function RegisterPage() {
       }
       const body = await res.json().catch(() => ({}) as { message?: string });
       toast.error(body.message ?? "Couldn't create your store. Please try again.");
-    } catch {
+    } catch (err) {
+      // The generic toast below tells the user nothing — this is the only
+      // place the actual Firebase error code (e.g. auth/unauthorized-domain,
+      // auth/popup-closed-by-user) is ever surfaced, so log it loudly.
+      console.error("Google sign-in failed", err);
+      Sentry.captureException(err);
       toast.error("Couldn't create your store. Please try again.");
     } finally {
       setLoading(false);

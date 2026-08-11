@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import * as Sentry from "@sentry/nextjs";
 import { ShieldCheck } from "lucide-react";
 import { BUILD_LABEL } from "@/lib/build-info";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,12 @@ export default function SuperAdminLoginPage() {
       }
       const body = await res.json().catch(() => ({}) as { message?: string });
       toast.error(body.message ?? "Not authorized for the superadmin dashboard.");
-    } catch {
+    } catch (err) {
+      // The generic toast below tells the user nothing — this is the only
+      // place the actual Firebase error code (e.g. auth/unauthorized-domain,
+      // auth/popup-closed-by-user) is ever surfaced, so log it loudly.
+      console.error("Google sign-in failed", err);
+      Sentry.captureException(err);
       toast.error("Sign-in failed. Please try again.");
     } finally {
       setLoading(false);
