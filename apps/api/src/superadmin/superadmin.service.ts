@@ -17,6 +17,7 @@ import {
   type PrivateStorageService,
 } from '../media/storage/private-storage.service';
 import type { Tenant } from '../common/types';
+import { DEMO_TENANT_ID } from '../common/seed-data';
 import type { VerificationRequestStatus } from '@prisma/client';
 
 @Injectable()
@@ -32,19 +33,28 @@ export class SuperAdminService {
   ) {}
 
   async overview() {
+    // The seeded "Akosua & Co." demo tenant (see common/seed-data.ts) is
+    // real data in the database — it powers the live "/demo" storefront
+    // linked from the landing page — but it's fixture content, not an
+    // actual store, so it's excluded here to keep these numbers honest.
     const [tenantCount, orderCount, gmv, pendingVerificationCount, signups] =
       await Promise.all([
-        this.prisma.tenant.count(),
-        this.prisma.order.count(),
+        this.prisma.tenant.count({ where: { id: { not: DEMO_TENANT_ID } } }),
+        this.prisma.order.count({
+          where: { tenantId: { not: DEMO_TENANT_ID } },
+        }),
         this.prisma.order.aggregate({
-          where: { status: 'COMPLETED' },
+          where: { status: 'COMPLETED', tenantId: { not: DEMO_TENANT_ID } },
           _sum: { total: true },
         }),
-        this.prisma.tenant.count({ where: { verificationStatus: 'PENDING' } }),
+        this.prisma.tenant.count({
+          where: { verificationStatus: 'PENDING', id: { not: DEMO_TENANT_ID } },
+        }),
         this.prisma.$queryRaw<{ day: Date; count: bigint }[]>`
           SELECT date_trunc('day', created_at) AS day, count(*) AS count
           FROM tenants
           WHERE created_at >= NOW() - INTERVAL '30 days'
+            AND id != ${DEMO_TENANT_ID}
           GROUP BY day
           ORDER BY day ASC
         `,
@@ -279,14 +289,17 @@ export class SuperAdminService {
   // --- Tenants -----------------------------------------------------------
 
   async listTenants(q?: string, cursor?: string) {
-    const where = q
-      ? {
-          OR: [
-            { name: { contains: q, mode: 'insensitive' as const } },
-            { slug: { contains: q, mode: 'insensitive' as const } },
-          ],
-        }
-      : undefined;
+    const where = {
+      id: { not: DEMO_TENANT_ID },
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: 'insensitive' as const } },
+              { slug: { contains: q, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
 
     return this.prisma.tenant.findMany({
       where,

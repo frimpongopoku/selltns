@@ -8,10 +8,13 @@ import {
   TeamMember,
 } from './types';
 
-const TENANT_ID = 'tenant_demo';
+// Exported so production code (superadmin overview stats, tenant listings)
+// can filter this fixture tenant out of real platform numbers — see
+// superadmin.service.ts.
+export const DEMO_TENANT_ID = 'tenant_demo';
 
 export const tenant: Tenant = {
-  id: TENANT_ID,
+  id: DEMO_TENANT_ID,
   name: 'Akosua & Co.',
   slug: 'akosua',
   customDomain: null,
@@ -47,7 +50,7 @@ export const tenant: Tenant = {
 export const teamMembers: TeamMember[] = [
   {
     id: 'user_1',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     name: 'Akosua Boateng',
     email: 'akosua@akosuaandco.test',
     role: 'OWNER',
@@ -56,7 +59,7 @@ export const teamMembers: TeamMember[] = [
   },
   {
     id: 'user_2',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     name: 'Kojo Mensah',
     email: 'kojo@akosuaandco.test',
     role: 'MANAGER',
@@ -65,7 +68,7 @@ export const teamMembers: TeamMember[] = [
   },
   {
     id: 'user_3',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     name: 'Efua Owusu',
     email: 'efua@akosuaandco.test',
     role: 'STAFF',
@@ -99,7 +102,7 @@ const gallery = [
 export const products: Product[] = [
   {
     id: 'prod_1',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'Adjoa Wax-Print Wrap Dress',
     slug: 'adjoa-wrap-dress',
     description:
@@ -116,7 +119,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_2',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'Nkuruma Woven Basket Bag',
     slug: 'nkuruma-basket-bag',
     description:
@@ -133,7 +136,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_3',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'Ama Beaded Statement Necklace',
     slug: 'ama-beaded-necklace',
     description:
@@ -150,7 +153,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_4',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'Kofi Leather Slide Sandals',
     slug: 'kofi-leather-sandals',
     description:
@@ -167,7 +170,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_5',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'Abena Kente-Trim Blazer',
     slug: 'abena-kente-blazer',
     description:
@@ -184,7 +187,7 @@ export const products: Product[] = [
   },
   {
     id: 'prod_6',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'Yaa Draped Midi Skirt',
     slug: 'yaa-draped-midi-skirt',
     description:
@@ -204,7 +207,7 @@ export const products: Product[] = [
 export const collections: Collection[] = [
   {
     id: 'col_1',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'New Arrivals',
     slug: 'new-arrivals',
     description: 'The latest pieces to land in the studio, fresh off the loom.',
@@ -223,7 +226,7 @@ export const collections: Collection[] = [
   },
   {
     id: 'col_2',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'Accessories',
     slug: 'accessories',
     description: 'Bags, jewelry and finishing touches for every outfit.',
@@ -241,7 +244,7 @@ export const collections: Collection[] = [
   },
   {
     id: 'col_3',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'The Minimal Edit',
     slug: 'minimal-edit',
     description:
@@ -271,7 +274,7 @@ export const collections: Collection[] = [
   },
   {
     id: 'col_4',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     title: 'Made-to-Order Kente',
     slug: 'made-to-order-kente',
     description:
@@ -294,7 +297,7 @@ export const collections: Collection[] = [
 export const paymentMethods: PaymentMethod[] = [
   {
     id: 'pay_1',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     type: 'MOMO',
     label: 'MTN Mobile Money',
     details: { network: 'MTN', number: '024 555 0134', name: 'Akosua Boateng' },
@@ -303,7 +306,7 @@ export const paymentMethods: PaymentMethod[] = [
   },
   {
     id: 'pay_2',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     type: 'MOMO',
     label: 'Telecel Cash',
     details: {
@@ -316,7 +319,7 @@ export const paymentMethods: PaymentMethod[] = [
   },
   {
     id: 'pay_3',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     type: 'BANK',
     label: 'GCB Bank',
     details: {
@@ -334,7 +337,7 @@ export const paymentMethods: PaymentMethod[] = [
 export const orders: Order[] = [
   {
     id: 'order_1',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     customerName: 'Naa Adjeley',
     customerContact: '055 234 1122',
     customerEmail: 'naa.adjeley@example.test',
@@ -381,7 +384,7 @@ export const orders: Order[] = [
   },
   {
     id: 'order_2',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     customerName: 'Kwabena Owusu',
     customerContact: '024 887 3310',
     customerEmail: 'kwabena.owusu@example.test',
@@ -427,7 +430,7 @@ export const orders: Order[] = [
   },
   {
     id: 'order_3',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     customerName: 'Efua Danso',
     customerContact: '050 776 2201',
     customerEmail: 'efua.danso@example.test',
@@ -484,7 +487,7 @@ export const orders: Order[] = [
   },
   {
     id: 'order_4',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     customerName: 'Yaw Boadi',
     customerContact: '027 445 9981',
     customerEmail: 'yaw.boadi@example.test',
@@ -535,7 +538,7 @@ export const orders: Order[] = [
   },
   {
     id: 'order_5',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     customerName: 'Abena Serwaa',
     customerContact: '059 002 7765',
     customerEmail: 'abena.serwaa@example.test',
@@ -581,7 +584,7 @@ export const orders: Order[] = [
   },
   {
     id: 'order_6',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     customerName: 'Kojo Mensah',
     customerContact: '024 118 5523',
     customerEmail: 'kojo.mensah@example.test',
@@ -630,21 +633,21 @@ export const orders: Order[] = [
 export const storyBlocks: ContentBlock[] = [
   {
     id: 'block_1',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     type: 'TEXT',
     heading: 'Behind Akosua & Co.',
     body: 'Every piece starts in a small studio, not a factory. This page is where the maker shares process, sourcing, and the people behind each order.',
   },
   {
     id: 'block_2',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     type: 'VIDEO',
     videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     caption: 'A day in the studio',
   },
   {
     id: 'block_3',
-    tenantId: TENANT_ID,
+    tenantId: DEMO_TENANT_ID,
     type: 'PHOTOS',
     heading: 'In the studio',
     imageUrls: [
