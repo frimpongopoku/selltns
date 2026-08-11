@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 4310",
+    "prebuild": "git fetch --unshallow --quiet 2>/dev/null || true",
     "build": "next build",
     "start": "next start -p 4310",
     "lint": "eslint"
