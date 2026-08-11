@@ -112,7 +112,12 @@ export default function RegisterPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-12">
       <Card className="w-full max-w-sm p-8">
-        <p className="text-center text-sm font-medium text-muted-foreground">Selltns</p>
+        <Link
+          href="/"
+          className="block text-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Selltns
+        </Link>
         <h1 className="mt-1 text-center text-2xl font-semibold">Create your store</h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
           Set up your shop, then sign in with Google to finish.

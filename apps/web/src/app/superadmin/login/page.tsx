@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { ShieldCheck } from "lucide-react";
 import { BUILD_LABEL } from "@/lib/build-info";
@@ -48,7 +49,11 @@ export default function SuperAdminLoginPage() {
         <p className="mt-4 font-mono text-xs font-semibold tracking-[0.15em] text-primary uppercase">
           Superadmin
         </p>
-        <h1 className="mt-1 text-2xl font-semibold">Selltns</h1>
+        <h1 className="mt-1 text-2xl font-semibold">
+          <Link href="/" className="transition-colors hover:text-primary">
+            Selltns
+          </Link>
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Restricted to authorized platform administrators.
         </p>

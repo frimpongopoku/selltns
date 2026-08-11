@@ -60,7 +60,11 @@ export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boo
           <OwnershipCredit tenant={tenant} />
         </div>
         <p className="store-muted mt-3 text-xs">
-          © {new Date().getFullYear()} {tenant.name}. Built on Selltns, by the{" "}
+          © {new Date().getFullYear()} {tenant.name}. Built on{" "}
+          <Link href="/" className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[var(--store-primary)]">
+            Selltns
+          </Link>
+          , by the{" "}
           <a
             href="https://biibisoft.com"
             target="_blank"

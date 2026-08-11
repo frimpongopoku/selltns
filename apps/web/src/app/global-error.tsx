@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import * as Sentry from "@sentry/nextjs";
 
 // Only fires if the ROOT layout itself throws (very rare) — must render its
@@ -28,12 +29,20 @@ export default function GlobalError({
           {error.digest && (
             <p className="font-mono text-xs text-muted-foreground/70">{error.digest}</p>
           )}
-          <button
-            onClick={reset}
-            className="mt-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background"
-          >
-            Try again
-          </button>
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              onClick={reset}
+              className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background"
+            >
+              Try again
+            </button>
+            <Link
+              href="/"
+              className="rounded-lg border px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              Back to home
+            </Link>
+          </div>
         </div>
       </body>
     </html>

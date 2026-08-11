@@ -15,7 +15,12 @@ export default async function AccessDeniedPage({
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
         <Card className="w-full max-w-sm p-8 text-center">
-          <p className="text-sm font-medium text-muted-foreground">Selltns</p>
+          <Link
+            href="/"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Selltns
+          </Link>
           <h1 className="mt-1 text-2xl font-semibold">You don&apos;t have access to this</h1>
           <p className="mt-3 text-sm text-muted-foreground">
             Your role on this store doesn&apos;t include this page. Ask the store
@@ -32,7 +37,12 @@ export default async function AccessDeniedPage({
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <Card className="w-full max-w-sm p-8 text-center">
-        <p className="text-sm font-medium text-muted-foreground">Selltns</p>
+        <Link
+          href="/"
+          className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Selltns
+        </Link>
         <h1 className="mt-1 text-2xl font-semibold">This account isn&apos;t linked</h1>
         <p className="mt-3 text-sm text-muted-foreground">
           That Google account isn&apos;t linked to a Selltns store yet. Ask your
