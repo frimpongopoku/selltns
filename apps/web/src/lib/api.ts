@@ -260,6 +260,11 @@ export const getOrder = (id: string, tenantId: string) =>
   adminRequest<Order>(`/orders/${id}?tenantId=${tenantId}`);
 export const getOrderByToken = (token: string) =>
   request<Order>(`/orders/track/${token}`);
+export const cancelOrderByToken = (token: string, paymentReference: string) =>
+  request<Order>(`/orders/track/${token}/cancel`, {
+    method: "PATCH",
+    body: JSON.stringify({ paymentReference }),
+  });
 export const createOrder = (input: {
   tenantId: string;
   customerName: string;

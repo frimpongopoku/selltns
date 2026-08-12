@@ -2,7 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getOrderByToken, getPaymentMethods, getProduct, getTenantBySlug } from "@/lib/api";
+import {
+  getCollection,
+  getOrderByToken,
+  getPaymentMethods,
+  getProduct,
+  getTenantBySlug,
+} from "@/lib/api";
 import { formatMoney, formatDateTime } from "@/lib/format";
 import { StatusBadge } from "@/components/storefront/status-badge";
 import { TrackerActions } from "@/components/storefront/order-tracker";
@@ -47,11 +53,14 @@ export default async function TrackOrderPage({
   ]);
   if (!order || !tenant) notFound();
 
-  const [paymentMethods, itemProducts] = await Promise.all([
+  const [paymentMethods, itemProducts, collection] = await Promise.all([
     getPaymentMethods(tenant.id),
     Promise.all(
       order.items.map((item) => getProduct(item.productId, tenant.id).catch(() => null)),
     ),
+    order.preorderCollectionId
+      ? getCollection(order.preorderCollectionId, tenant.id).catch(() => null)
+      : Promise.resolve(null),
   ]);
   const productByItem = new Map<string, Product | null>(
     order.items.map((item, i) => [item.productId, itemProducts[i]]),
@@ -231,6 +240,7 @@ export default async function TrackOrderPage({
           order={order}
           tenant={{ ...tenant, whatsappNumber: null }}
           whatsappNumberEncoded={tenant.whatsappNumber ? obscurePhone(tenant.whatsappNumber) : null}
+          collectionTitle={collection?.title ?? null}
         />
       </div>
     </div>
