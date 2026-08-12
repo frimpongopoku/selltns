@@ -86,16 +86,24 @@ export function ThemePicker({
                 type="button"
                 onClick={() => setPalette(i)}
                 aria-label={`Palette option ${i + 1}`}
-                className={`relative h-11 w-11 overflow-hidden rounded-full border-2 transition-all duration-150 hover:scale-105 active:scale-95 ${
+                className={`relative h-11 w-11 overflow-hidden rounded-full border-2 ring-1 ring-border transition-all duration-150 hover:scale-105 active:scale-95 ${
                   palette === i ? "border-foreground" : "border-transparent"
                 }`}
-                style={{ backgroundColor: p.primary }}
+                style={{
+                  // Split into primary/accent halves — some presets (like
+                  // Clean) reuse the same near-black primary across every
+                  // palette option, so a solid-primary swatch would render
+                  // as an invisible black circle on a dark background with
+                  // no way to tell the options apart.
+                  background: `linear-gradient(135deg, ${p.primary} 50%, ${p.accent} 50%)`,
+                }}
               >
                 {palette === i && (
-                  <Check
-                    className="absolute inset-0 m-auto h-4 w-4 animate-in zoom-in-50 duration-150"
-                    style={{ color: p.accent }}
-                  />
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white shadow-sm animate-in zoom-in-50 duration-150">
+                      <Check className="h-3 w-3 text-black" />
+                    </span>
+                  </span>
                 )}
               </button>
             ))}
@@ -115,7 +123,7 @@ export function ThemePicker({
             Small-batch, handmade pieces — requested here, confirmed by us.
           </p>
           <div className="store-btn-primary mt-5 inline-block px-5 py-2.5 text-sm font-medium">
-            Shop the collection
+            Shop now
           </div>
           <div className="mt-7 grid grid-cols-2 gap-3">
             {[1, 2].map((i) => (
