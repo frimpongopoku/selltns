@@ -33,6 +33,8 @@ export const tenant: Tenant = {
   suspended: false,
   suspendedAt: null,
   suspendedReason: null,
+  plan: 'PRO',
+  planUpdatedAt: null,
   themeTokens: {
     template: 'FASHION',
     primary: '#17140F',

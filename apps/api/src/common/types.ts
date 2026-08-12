@@ -41,6 +41,8 @@ export interface Tenant {
   suspended: boolean;
   suspendedAt: string | null;
   suspendedReason: string | null;
+  plan: 'FREE' | 'GROWTH' | 'PRO';
+  planUpdatedAt: string | null;
 }
 
 export interface TeamMember {

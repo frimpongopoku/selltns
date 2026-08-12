@@ -17,6 +17,7 @@ import { StoryModule } from './story/story.module';
 import { SupportModule } from './support/support.module';
 import { VerificationModule } from './verification/verification.module';
 import { SuperAdminModule } from './superadmin/superadmin.module';
+import { BillingModule } from './billing/billing.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { HealthModule } from './health/health.module';
     SupportModule,
     VerificationModule,
     SuperAdminModule,
+    BillingModule,
     HealthModule,
   ],
   controllers: [AppController],

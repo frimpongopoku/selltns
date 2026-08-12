@@ -85,6 +85,8 @@ function mapTenant(row: PrismaTenant): Tenant {
     suspended: row.suspended,
     suspendedAt: row.suspendedAt?.toISOString() ?? null,
     suspendedReason: row.suspendedReason,
+    plan: row.plan,
+    planUpdatedAt: row.planUpdatedAt?.toISOString() ?? null,
   };
 }
 

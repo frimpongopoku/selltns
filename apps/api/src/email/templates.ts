@@ -344,14 +344,16 @@ export function teamInviteEmail(
 export function userVerifiedEmail(tenantNames: string[]) {
   const shopsList = tenantNames.join(', ');
   const plural = tenantNames.length > 1;
-  const subject = plural ? `Your Selltns stores are now Verified` : `${tenantNames[0]} is now Verified on Selltns`;
+  const subject = plural
+    ? `Your Selltns stores are now Verified`
+    : `${tenantNames[0]} is now Verified on Selltns`;
   const html = layout(
     'Selltns',
     `
     <h1 style="font-size: 20px; margin: 0 0 8px;">You're verified</h1>
     <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 16px;">
       We've confirmed your identity. The Verified badge is now live on
-      ${plural ? "every store you run on Selltns" : "your storefront"}
+      ${plural ? 'every store you run on Selltns' : 'your storefront'}
       (${shopsList}), and the payment-page caution notice has been replaced
       with it.
     </p>`,
@@ -372,6 +374,75 @@ export function verificationRejectedEmail(tenant: Tenant, reason: string) {
     </p>`,
   );
   const text = `Your Selltns verification application for ${tenant.name} wasn't approved: ${reason}. You can submit again from your dashboard.`;
+  return { subject, html, text };
+}
+
+const PLAN_LABEL: Record<string, string> = {
+  FREE: 'Free',
+  GROWTH: 'Growth',
+  PRO: 'Pro',
+};
+
+export function upgradeRequestReceivedEmail(
+  tenant: Tenant,
+  requestedPlan: string,
+  billingUrl: string,
+) {
+  const planLabel = PLAN_LABEL[requestedPlan] ?? requestedPlan;
+  const subject = `We've got your ${planLabel} upgrade request`;
+  const html = layout(
+    tenant.name,
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">Thanks — we're reviewing it</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 16px;">
+      We've received your request to move ${tenant.name} to the <strong>${planLabel}</strong> plan,
+      along with the payment reference you submitted. We check these by hand, so it usually
+      takes up to a day — we'll email you as soon as it's approved.
+    </p>
+    ${button(billingUrl, 'View request status')}`,
+  );
+  const text = `We've received your ${planLabel} upgrade request for ${tenant.name}. We review these manually — usually within a day. Check status: ${billingUrl}`;
+  return { subject, html, text };
+}
+
+export function upgradeApprovedEmail(
+  tenant: Tenant,
+  plan: string,
+  billingUrl: string,
+) {
+  const planLabel = PLAN_LABEL[plan] ?? plan;
+  const subject = `${tenant.name} is now on the ${planLabel} plan`;
+  const html = layout(
+    tenant.name,
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">You're upgraded</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
+      Your payment's been confirmed and ${tenant.name} is now on the <strong>${planLabel}</strong> plan.
+      Everything that comes with it is live on your dashboard right away.
+    </p>
+    ${button(billingUrl, 'Go to your dashboard')}`,
+  );
+  const text = `${tenant.name} is now on the ${planLabel} plan. Everything is live on your dashboard.`;
+  return { subject, html, text };
+}
+
+export function upgradeRejectedEmail(
+  tenant: Tenant,
+  reason: string,
+  billingUrl: string,
+) {
+  const subject = `Your Selltns upgrade request needs another look`;
+  const html = layout(
+    tenant.name,
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">We couldn't confirm this one</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 16px;">${reason}</p>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
+      You can submit a new request with the correct details any time.
+    </p>
+    ${button(billingUrl, 'Submit again')}`,
+  );
+  const text = `Your Selltns upgrade request for ${tenant.name} wasn't approved: ${reason}. You can submit again: ${billingUrl}`;
   return { subject, html, text };
 }
 
