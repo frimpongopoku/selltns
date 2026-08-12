@@ -83,9 +83,12 @@ export function orderPlacedCustomerEmail(
     ${button(trackUrl, 'Track your order')}
     <p style="font-size: 12px; color: #888; margin-top: 16px;">
       Save this link — it's the only way to check your order status, since you don't need an account.
+    </p>
+    <p style="font-size: 12px; color: #888; margin-top: 8px;">
+      Your reference: <strong style="color: #444;">${order.paymentReference}</strong> — you'll need this if you ever want to cancel the order.
     </p>`,
   );
-  const text = `Your order request to ${tenant.name} (${formatGHS(order.total)}) has been received. Track it: ${trackUrl}`;
+  const text = `Your order request to ${tenant.name} (${formatGHS(order.total)}) has been received. Track it: ${trackUrl}\nYour reference: ${order.paymentReference} (needed to cancel)`;
   return { subject, html, text };
 }
 

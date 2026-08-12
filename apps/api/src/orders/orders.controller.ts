@@ -38,6 +38,17 @@ export class OrdersController {
     return this.ordersService.findByTrackingToken(token);
   }
 
+  // Public — anyone with the tracking link can view the order, but cancelling
+  // it also requires the payment reference emailed to the customer, so a
+  // forwarded/leaked link alone isn't enough to cancel someone else's order.
+  @Patch('track/:token/cancel')
+  cancelByToken(
+    @Param('token') token: string,
+    @Body() body: { paymentReference: string },
+  ) {
+    return this.ordersService.cancelByToken(token, body.paymentReference);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Get(':id')

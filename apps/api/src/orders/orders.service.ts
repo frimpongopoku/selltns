@@ -306,6 +306,28 @@ export class OrdersService {
     });
   }
 
+  // Public self-cancel: the tracking link alone only proves you know the
+  // order exists, not that you're the customer, so we also require the
+  // payment reference that was emailed to them at checkout.
+  async cancelByToken(token: string, paymentReference: string): Promise<Order> {
+    const existing = await this.findByTrackingToken(token);
+    const submitted = (paymentReference ?? '').trim().toUpperCase();
+    if (!submitted || submitted !== existing.paymentReference.toUpperCase()) {
+      throw new BadRequestException(
+        "That reference doesn't match this order. Check the email we sent you and try again.",
+      );
+    }
+    if (existing.status !== 'PENDING' && existing.status !== 'CONFIRMED') {
+      throw new BadRequestException('This order can no longer be cancelled.');
+    }
+    return this.updateStatus(
+      existing.id,
+      existing.tenantId,
+      'CANCELLED',
+      'Cancelled by customer',
+    );
+  }
+
   async updateStatus(
     id: string,
     tenantId: string,
