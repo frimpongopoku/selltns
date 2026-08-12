@@ -46,7 +46,7 @@ export function OrdersTable({
   return (
     <>
       <Tabs value={tab} onValueChange={(v) => setTab(v as OrderStatus | "ALL")}>
-        <TabsList className="flex-wrap">
+        <TabsList className="h-auto flex-wrap gap-y-1.5 group-data-horizontal/tabs:h-auto">
           {TABS.map((t) => (
             <TabsTrigger key={t.value} value={t.value}>
               {t.label}

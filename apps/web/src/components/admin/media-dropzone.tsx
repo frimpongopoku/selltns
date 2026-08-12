@@ -187,9 +187,9 @@ export function MediaDropzone({
                     </div>
                   )}
                 </div>
-                <div className="flex-1 space-y-1.5">
+                <div className="min-w-0 flex-1 space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-xs text-muted-foreground" title={item.file.name}>
+                    <p className="min-w-0 truncate text-xs text-muted-foreground" title={item.file.name}>
                       {item.file.name} · {formatBytes(item.file.size)}
                     </p>
                     {item.status !== "uploading" && (
