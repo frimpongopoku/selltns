@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Logo } from "@/components/logo";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4310";
-const EFFECTIVE_DATE = "10 August 2026";
+const EFFECTIVE_DATE = "12 August 2026";
 
 export const metadata: Metadata = {
   title: "Terms of Service — Selltns",
@@ -136,10 +136,24 @@ export default function TermsPage() {
 
         <Section title="Fees">
           <p>
-            Using Selltns to run a store is currently free — we don&apos;t
-            take a cut of your sales or charge a subscription. If that
-            changes, we&apos;ll give existing vendors advance notice before
-            any fee applies to them.
+            Using Selltns to run a store is free today — we don&apos;t take a
+            cut of your sales or charge a subscription. We&apos;re building
+            paid plans with more room to grow as your store does, but
+            they&apos;re not available yet.
+          </p>
+          <p>
+            When they are, here&apos;s how billing will work: you&apos;d send
+            payment directly to Selltns (Mobile Money or bank transfer) and
+            submit a reference for our team to confirm by hand — we
+            won&apos;t auto-charge a card or Mobile Money account. If a paid
+            plan ever lapsed, you&apos;d keep everything already on your
+            store; you&apos;d just not be able to add more until you&apos;re
+            back on a plan that covers it. A plan we&apos;ve confirmed as
+            approved would be non-refundable, except where required by law.
+          </p>
+          <p>
+            If that changes, we&apos;ll give existing vendors advance notice
+            before any fee applies to a feature they&apos;re already using.
           </p>
         </Section>
 

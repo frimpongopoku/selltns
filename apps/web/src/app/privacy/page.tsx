@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Logo } from "@/components/logo";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4310";
-const EFFECTIVE_DATE = "10 August 2026";
+const EFFECTIVE_DATE = "12 August 2026";
 
 export const metadata: Metadata = {
   title: "Privacy policy — Selltns",
@@ -129,6 +129,21 @@ export default function PrivacyPage() {
             add integrated payment processing in the future — if we do,
             this policy will be updated first to explain exactly what
             changes and what new information that involves.
+          </p>
+        </Section>
+
+        <Section title="Plan billing">
+          <p>
+            Selltns doesn&apos;t have paid plans yet. When it does, requesting
+            one will mean sending payment directly to Selltns and submitting
+            a reference or note describing it — we won&apos;t collect or
+            store your card, Mobile Money PIN, or any transaction
+            credentials through this, you&apos;d send the payment yourself
+            the same way you&apos;d send anyone else money. That
+            reference/note would be reviewed by authorized Selltns staff to
+            confirm the payment and approve or reject the request, and kept
+            as a record of your plan history. This policy will be updated
+            first when paid plans launch.
           </p>
         </Section>
 
