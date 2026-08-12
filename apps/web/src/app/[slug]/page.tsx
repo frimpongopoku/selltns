@@ -14,7 +14,8 @@ export async function generateMetadata({
   const { slug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) return { title: "Store not found" };
-  const description = tenant.heroTagline;
+  const description =
+    tenant.heroTagline || tenant.footerTagline || `Shop with ${tenant.name} on Selltns.`;
   const canonical = getCanonicalUrl(tenant);
   return {
     title: tenant.name,
@@ -61,7 +62,7 @@ export default async function StoreHomePage({
             href="#products"
             className="store-btn-primary mt-9 inline-block px-7 py-3.5 text-sm font-medium"
           >
-            Shop the collection
+            Shop now
           </Link>
         </div>
       </section>
@@ -110,7 +111,7 @@ export default async function StoreHomePage({
         {activeProducts.length === 0 ? (
           <p className="store-muted mt-8">No products yet. Check back soon.</p>
         ) : (
-          <div className="mt-7 grid grid-cols-3 gap-3 sm:gap-5 lg:grid-cols-4">
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
             {activeProducts.map((product, i) => (
               <div
                 key={product.id}

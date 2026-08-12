@@ -166,7 +166,7 @@ export default async function ProductPage({
               <p className="store-muted mt-1.5 text-sm">Other pieces from this shop.</p>
             </div>
             <Link
-              href={`/${slug}/products`}
+              href={`/${slug}#products`}
               className="store-nav-link store-accent-text shrink-0 text-sm font-medium"
             >
               View all

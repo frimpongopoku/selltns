@@ -19,7 +19,11 @@ export async function generateMetadata({
   if (!collection) return { title: "Collection not found" };
   const title = collection.seoTitle || `${collection.title} — ${tenant.name}`;
   const description =
-    collection.seoDescription || collection.description || `${collection.title}, from ${tenant.name}.`;
+    collection.seoDescription ||
+    collection.description ||
+    tenant.heroTagline ||
+    tenant.footerTagline ||
+    `Browse ${collection.title} from ${tenant.name} on Selltns.`;
   const canonical = getCanonicalUrl(tenant, `/collections/${collection.slug}`);
   return {
     title,
@@ -64,7 +68,7 @@ export default async function CollectionPage({
         <h1 className="store-heading text-3xl font-semibold">{collection.title}</h1>
         <p className="store-muted mt-3 max-w-lg leading-relaxed">{collection.description}</p>
         <PreorderBanner collection={collection} />
-        <div className="mt-9 grid grid-cols-3 gap-3 sm:gap-5 lg:grid-cols-4">
+        <div className="mt-9 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
           {activeProducts.map((product, i) => (
             <div
               key={product.id}
