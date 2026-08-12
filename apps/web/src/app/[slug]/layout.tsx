@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
-import { getStoryBlocks, getTenantBySlug } from "@/lib/api";
+import { getCollections, getStoryBlocks, getTenantBySlug } from "@/lib/api";
 import { hasStoryContent } from "@/lib/story";
 import { ThemeScope } from "@/components/theme/theme-scope";
 import { StoreProvider } from "@/components/storefront/store-context";
@@ -22,7 +22,12 @@ export default async function StorefrontLayout({
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
   if (tenant.suspended) return <SuspendedStoreNotice tenant={tenant} />;
-  const hasStory = hasStoryContent(await getStoryBlocks(tenant.id).catch(() => []));
+  const [storyBlocks, collections] = await Promise.all([
+    getStoryBlocks(tenant.id).catch(() => []),
+    getCollections(tenant.id).catch(() => []),
+  ]);
+  const hasStory = hasStoryContent(storyBlocks);
+  const hasCollections = collections.some((c) => c.isActive);
   Sentry.setTag("tenant", slug);
 
   // SiteHeader/SiteFooter are Client Components rendered on every storefront
@@ -38,9 +43,9 @@ export default async function StorefrontLayout({
         <CartProvider>
           <SentryUserContext tenantId={tenant.id} tenantSlug={slug} />
           <PostHogIdentify tenantId={tenant.id} tenantSlug={slug} />
-          <SiteHeader tenant={publicTenant} hasStory={hasStory} />
+          <SiteHeader tenant={publicTenant} hasStory={hasStory} hasCollections={hasCollections} />
           <main className="flex-1">{children}</main>
-          <SiteFooter tenant={publicTenant} hasStory={hasStory} />
+          <SiteFooter tenant={publicTenant} hasStory={hasStory} hasCollections={hasCollections} />
         </CartProvider>
       </ThemeScope>
     </StoreProvider>

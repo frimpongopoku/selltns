@@ -9,7 +9,15 @@ import { BUILD_LABEL } from "@/lib/build-info";
 
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
 
-export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boolean }) {
+export function SiteFooter({
+  tenant,
+  hasStory,
+  hasCollections,
+}: {
+  tenant: Tenant;
+  hasStory: boolean;
+  hasCollections: boolean;
+}) {
   const slug = useStoreSlug();
 
   return (
@@ -31,9 +39,11 @@ export function SiteFooter({ tenant, hasStory }: { tenant: Tenant; hasStory: boo
               <Link href={`/${slug}`} className="transition-colors hover:text-[var(--store-primary)]">
                 All products
               </Link>
-              <Link href={`/${slug}/collections`} className="transition-colors hover:text-[var(--store-primary)]">
-                Collections
-              </Link>
+              {hasCollections && (
+                <Link href={`/${slug}/collections`} className="transition-colors hover:text-[var(--store-primary)]">
+                  Collections
+                </Link>
+              )}
             </div>
             <div className="flex flex-col gap-3">
               <span className="text-xs font-semibold tracking-wide uppercase store-muted">Store</span>

@@ -10,14 +10,22 @@ import { useStoreSlug } from "./store-context";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { VerifiedBadge } from "./verified-badge";
 
-export function SiteHeader({ tenant, hasStory }: { tenant: Tenant; hasStory: boolean }) {
+export function SiteHeader({
+  tenant,
+  hasStory,
+  hasCollections,
+}: {
+  tenant: Tenant;
+  hasStory: boolean;
+  hasCollections: boolean;
+}) {
   const pathname = usePathname();
   const slug = useStoreSlug();
   const [open, setOpen] = useState(false);
 
   const navLinks = [
     { href: `/${slug}`, label: "Shop" },
-    { href: `/${slug}/collections`, label: "Collections" },
+    ...(hasCollections ? [{ href: `/${slug}/collections`, label: "Collections" }] : []),
     ...(hasStory ? [{ href: `/${slug}/story`, label: "Our Story" }] : []),
   ];
 
