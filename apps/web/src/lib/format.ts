@@ -6,6 +6,13 @@ export function formatMoney(amount: number) {
   }).format(amount);
 }
 
+// jsPDF's built-in fonts only support WinAnsi encoding, which has no glyph
+// for the Ghana Cedi sign (₵) — it renders as garbled characters. The PDF
+// booklet uses this ASCII-safe variant instead of formatMoney().
+export function formatMoneyAscii(amount: number) {
+  return `GHS ${new Intl.NumberFormat("en-GH", { maximumFractionDigits: 0 }).format(amount)}`;
+}
+
 export function formatDate(iso: string) {
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",

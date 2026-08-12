@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { formatMoney, formatDateTime } from "./format";
+import { formatMoneyAscii, formatDateTime } from "./format";
 import type { Order, Tenant } from "./types";
 
 const MARGIN = 48;
@@ -20,8 +20,20 @@ function statusLabel(status: Order["status"]) {
   }
 }
 
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
 /** Generates and downloads a one-page order/pre-order receipt as a PDF. */
-export function generateOrderBookletPdf(order: Order, tenant: Tenant) {
+export function generateOrderBookletPdf(
+  order: Order,
+  tenant: Tenant,
+  collectionTitle?: string | null,
+) {
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const isPreorder = order.type === "PREORDER";
   let y = MARGIN;
@@ -34,7 +46,8 @@ export function generateOrderBookletPdf(order: Order, tenant: Tenant) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(110);
-  doc.text(isPreorder ? "Pre-order booklet" : "Order booklet", MARGIN, y);
+  const bookletLabel = isPreorder ? "Pre-order booklet" : "Order booklet";
+  doc.text(collectionTitle ? `${bookletLabel} · ${collectionTitle}` : bookletLabel, MARGIN, y);
   doc.text(statusLabel(order.status), PAGE_WIDTH - MARGIN, y, { align: "right" });
   y += 24;
 
@@ -64,16 +77,18 @@ export function generateOrderBookletPdf(order: Order, tenant: Tenant) {
   doc.text(order.customerEmail, MARGIN, y);
   y += 28;
 
-  // Items table
+  // Items table — Qty/Price/Total are all right-aligned to their column edge
+  // so long amounts grow leftward into their own gap instead of colliding
+  // with the neighboring right-aligned column.
   const colTitle = MARGIN;
-  const colQty = PAGE_WIDTH - MARGIN - 160;
-  const colPrice = PAGE_WIDTH - MARGIN - 90;
+  const colQty = PAGE_WIDTH - MARGIN - 170;
+  const colPrice = PAGE_WIDTH - MARGIN - 95;
   const colTotal = PAGE_WIDTH - MARGIN;
 
   doc.setFont("helvetica", "bold");
   doc.text("Item", colTitle, y);
-  doc.text("Qty", colQty, y);
-  doc.text("Price", colPrice, y);
+  doc.text("Qty", colQty, y, { align: "right" });
+  doc.text("Price", colPrice, y, { align: "right" });
   doc.text("Total", colTotal, y, { align: "right" });
   y += 8;
   doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
@@ -85,11 +100,11 @@ export function generateOrderBookletPdf(order: Order, tenant: Tenant) {
       doc.addPage();
       y = MARGIN;
     }
-    const titleLines = doc.splitTextToSize(item.title, colQty - colTitle - 12);
+    const titleLines = doc.splitTextToSize(item.title, colQty - 40 - colTitle - 12);
     doc.text(titleLines, colTitle, y);
-    doc.text(String(item.quantity), colQty, y);
-    doc.text(formatMoney(item.priceAtOrder), colPrice, y);
-    doc.text(formatMoney(item.priceAtOrder * item.quantity), colTotal, y, { align: "right" });
+    doc.text(String(item.quantity), colQty, y, { align: "right" });
+    doc.text(formatMoneyAscii(item.priceAtOrder), colPrice, y, { align: "right" });
+    doc.text(formatMoneyAscii(item.priceAtOrder * item.quantity), colTotal, y, { align: "right" });
     y += 14 * titleLines.length + 6;
   }
 
@@ -100,7 +115,7 @@ export function generateOrderBookletPdf(order: Order, tenant: Tenant) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   doc.text("Total", colPrice, y);
-  doc.text(formatMoney(order.total), colTotal, y, { align: "right" });
+  doc.text(formatMoneyAscii(order.total), colTotal, y, { align: "right" });
   y += 22;
 
   if (isPreorder) {
@@ -111,12 +126,12 @@ export function generateOrderBookletPdf(order: Order, tenant: Tenant) {
         ? `Deposit (${order.depositPercentage}%)`
         : "Deposit";
     doc.text(depositLabel, colPrice, y);
-    doc.text(formatMoney(order.depositAmount ?? 0), colTotal, y, { align: "right" });
+    doc.text(formatMoneyAscii(order.depositAmount ?? 0), colTotal, y, { align: "right" });
     y += 16;
     if ((order.balanceAmount ?? 0) > 0) {
       doc.text("Balance", colPrice, y);
       doc.text(
-        `${formatMoney(order.balanceAmount ?? 0)}${order.balancePaid ? " (paid)" : ""}`,
+        `${formatMoneyAscii(order.balanceAmount ?? 0)}${order.balancePaid ? " (paid)" : ""}`,
         colTotal,
         y,
         { align: "right" },
@@ -140,5 +155,8 @@ export function generateOrderBookletPdf(order: Order, tenant: Tenant) {
   y += 14;
   doc.text(`Generated ${formatDateTime(new Date().toISOString())} via Selltns`, MARGIN, y);
 
-  doc.save(`${order.paymentReference}-booklet.pdf`);
+  const nameSlug = slugify(collectionTitle || tenant.name);
+  const customerSlug = slugify(order.customerName.split(" ")[0] || "");
+  const filenameParts = [order.paymentReference, nameSlug, customerSlug, "booklet"].filter(Boolean);
+  doc.save(`${filenameParts.join("-")}.pdf`);
 }
