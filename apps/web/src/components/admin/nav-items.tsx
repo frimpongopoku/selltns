@@ -12,8 +12,10 @@ import {
   Store,
   PackageSearch,
   ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
+import { BILLING_ENABLED } from "@/lib/feature-flags";
 
 // `roles` omitted = every role can see it. Kept in sync with the backend
 // role matrix (apps/api's per-route @Roles(...) — see products/collections/
@@ -32,6 +34,9 @@ export const NAV_ITEMS = [
 
 export const SETTINGS_NAV_ITEMS = [
   { href: "/admin/verification", label: "Get verified", icon: ShieldCheck, roles: ["OWNER"] as Role[] },
+  ...(BILLING_ENABLED
+    ? [{ href: "/admin/upgrade", label: "Upgrade plan", icon: CreditCard, roles: ["OWNER"] as Role[] }]
+    : []),
   { href: "/admin/settings/store", label: "Store profile", icon: Store, roles: ["OWNER"] as Role[] },
   { href: "/admin/settings/theme", label: "Storefront theme", icon: Palette, roles: ["OWNER"] as Role[] },
   { href: "/admin/settings/team", label: "Team & roles", icon: Users, roles: ["OWNER"] as Role[] },

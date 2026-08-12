@@ -11,11 +11,13 @@ import type {
   OrderItem,
   OrderStatus,
   PaymentMethod,
+  PlanTier,
   Product,
   ProductPage,
   Tenant,
   TeamMember,
   ThemeTokens,
+  UpgradeRequest,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
@@ -356,4 +358,15 @@ export const updateStoryBlocks = (tenantId: string, blocks: ContentBlock[]) =>
   adminRequest<ContentBlock[]>("/story", {
     method: "PATCH",
     body: JSON.stringify({ tenantId, blocks }),
+  });
+
+// Billing — submitting an upgrade request (client-side, from the dialog's
+// button click). Reading platform payment methods/message/request history
+// on a Server Component's initial render goes through lib/api-server.ts
+// instead — see that file's comment for why adminRequest() can't be used
+// there.
+export const submitUpgradeRequest = (requestedPlan: PlanTier, referenceNote: string) =>
+  adminRequest<UpgradeRequest>("/billing/requests", {
+    method: "POST",
+    body: JSON.stringify({ requestedPlan, referenceNote }),
   });

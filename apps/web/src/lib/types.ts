@@ -52,7 +52,11 @@ export interface Tenant {
   verifiedAt: string | null;
   suspended: boolean;
   suspendedReason: string | null;
+  plan: PlanTier;
+  planUpdatedAt: string | null;
 }
+
+export type PlanTier = "FREE" | "GROWTH" | "PRO";
 
 export type VerificationStatus = "NONE" | "PENDING" | "VERIFIED" | "REJECTED";
 
@@ -173,6 +177,28 @@ export interface PaymentMethod {
   details: Record<string, string>;
   isEnabled: boolean;
   isPreferred: boolean;
+}
+
+export interface PlatformPaymentMethod {
+  id: string;
+  type: "MOMO" | "BANK";
+  label: string;
+  details: Record<string, string>;
+  isEnabled: boolean;
+  isPreferred: boolean;
+}
+
+export type UpgradeRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface UpgradeRequest {
+  id: string;
+  tenantId: string;
+  requestedPlan: PlanTier;
+  referenceNote: string;
+  status: UpgradeRequestStatus;
+  rejectionReason: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
 }
 
 export interface OrderItem {
