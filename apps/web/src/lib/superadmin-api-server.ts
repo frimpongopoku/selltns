@@ -12,6 +12,9 @@ import type {
   SuperAdminTenant,
   SuperAdminTenantDetail,
   SuperAdminAdmin,
+  PlatformPaymentMethod,
+  UpgradeRequestListItem,
+  UpgradeRequestStatus,
 } from "./superadmin-types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
@@ -53,3 +56,12 @@ export const getSuperAdminTenant = cache((id: string) =>
 );
 export const listAdmins = () =>
   serverSuperAdminRequest<SuperAdminAdmin[]>(`/admins`);
+
+export const listPlatformPaymentMethods = () =>
+  serverSuperAdminRequest<PlatformPaymentMethod[]>(`/billing/payment-methods`);
+export const getBillingMessage = () =>
+  serverSuperAdminRequest<{ message: string }>(`/billing/message`);
+export const listUpgradeRequests = (status?: UpgradeRequestStatus) =>
+  serverSuperAdminRequest<UpgradeRequestListItem[]>(
+    `/billing/requests${status ? `?status=${status}` : ""}`,
+  );

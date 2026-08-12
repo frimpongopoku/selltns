@@ -36,6 +36,7 @@ export interface SuperAdminTenant {
   suspended: boolean;
   suspendedReason: string | null;
   createdAt: string;
+  plan: PlanTier;
 }
 
 export interface SuperAdminTenantOwner {
@@ -55,4 +56,29 @@ export interface SuperAdminAdmin {
   name: string | null;
   invitedAt: string;
   acceptedAt: string | null;
+}
+
+export type PlanTier = "FREE" | "GROWTH" | "PRO";
+
+export interface PlatformPaymentMethod {
+  id: string;
+  type: "MOMO" | "BANK";
+  label: string;
+  details: Record<string, string>;
+  isEnabled: boolean;
+  isPreferred: boolean;
+}
+
+export type UpgradeRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface UpgradeRequestListItem {
+  id: string;
+  tenantId: string;
+  requestedPlan: PlanTier;
+  referenceNote: string;
+  status: UpgradeRequestStatus;
+  rejectionReason: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
+  tenant: { name: string; slug: string; plan: PlanTier };
 }

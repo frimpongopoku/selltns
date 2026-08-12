@@ -1,4 +1,4 @@
-import type { SuperAdminAdmin } from "./superadmin-types";
+import type { PlatformPaymentMethod, SuperAdminAdmin } from "./superadmin-types";
 
 async function parseFailure(path: string, res: Response): Promise<never> {
   const body = await res.text();
@@ -48,3 +48,49 @@ export const verifyUser = (userId: string) =>
   superAdminRequest<{ ok: true }>(`/users/${userId}/verify`, { method: "POST" });
 export const unverifyUser = (userId: string) =>
   superAdminRequest<{ ok: true }>(`/users/${userId}/unverify`, { method: "POST" });
+
+// Billing — Selltns' own payment details, the message shown alongside them,
+// and reviewing vendors' upgrade requests.
+export const createPlatformPaymentMethod = (input: {
+  type: "MOMO" | "BANK";
+  label: string;
+  details: Record<string, string>;
+  isEnabled?: boolean;
+}) =>
+  superAdminRequest<PlatformPaymentMethod>(`/billing/payment-methods`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+export const updatePlatformPaymentMethod = (
+  id: string,
+  input: Partial<{
+    type: "MOMO" | "BANK";
+    label: string;
+    details: Record<string, string>;
+    isEnabled: boolean;
+    isPreferred: boolean;
+  }>,
+) =>
+  superAdminRequest<PlatformPaymentMethod>(`/billing/payment-methods/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+export const deletePlatformPaymentMethod = (id: string) =>
+  superAdminRequest<{ id: string }>(`/billing/payment-methods/${id}`, { method: "DELETE" });
+export const setBillingMessage = (message: string) =>
+  superAdminRequest<{ message: string }>(`/billing/message`, {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  });
+export const approveUpgradeRequest = (id: string) =>
+  superAdminRequest<{ ok: true }>(`/billing/requests/${id}/approve`, { method: "POST" });
+export const rejectUpgradeRequest = (id: string, reason: string) =>
+  superAdminRequest<{ ok: true }>(`/billing/requests/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+export const setTenantPlan = (tenantId: string, plan: "FREE" | "GROWTH" | "PRO") =>
+  superAdminRequest<{ ok: true }>(`/billing/tenants/${tenantId}/plan`, {
+    method: "POST",
+    body: JSON.stringify({ plan }),
+  });

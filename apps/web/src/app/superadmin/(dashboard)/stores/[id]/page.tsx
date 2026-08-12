@@ -6,6 +6,7 @@ import { VerifiedPill } from "@/components/superadmin/status-badges";
 import { formatDate } from "@/lib/format";
 import { TenantSuspendActions } from "@/components/superadmin/tenant-suspend-actions";
 import { UserVerifyActions } from "@/components/superadmin/user-verify-actions";
+import { TenantPlanActions } from "@/components/superadmin/tenant-plan-actions";
 
 export async function generateMetadata({
   params,
@@ -55,6 +56,21 @@ export default async function SuperAdminStoreDetailPage({
         <p className="text-xs text-muted-foreground">Store actions</p>
         <div className="mt-2">
           <TenantSuspendActions tenantId={tenant.id} suspended={tenant.suspended} />
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-xl border p-5">
+        <p className="text-xs text-muted-foreground">Plan</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Sets the plan directly — for arrangements made outside the self-serve upgrade flow.
+          Check{" "}
+          <Link href="/superadmin/billing" className="underline">
+            Billing
+          </Link>{" "}
+          for requests submitted through the app.
+        </p>
+        <div className="mt-3">
+          <TenantPlanActions tenantId={tenant.id} plan={tenant.plan} />
         </div>
       </div>
 
