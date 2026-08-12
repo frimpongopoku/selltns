@@ -53,6 +53,18 @@ enum VerificationRequestStatus {
   REJECTED
 }
 
+enum PlanTier {
+  FREE
+  GROWTH
+  PRO
+}
+
+enum UpgradeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Tenant {
   id               String   @id @default(cuid())
   name             String
@@ -76,6 +88,13 @@ model Tenant {
   suspendedAt        DateTime?          @map("suspended_at")
   suspendedReason    String?            @map("suspended_reason")
 
+  // Billing is enforced nowhere yet — this just records which plan a tenant
+  // is on so the limits can be turned on later without another migration.
+  // Tenants that existed before plan billing shipped are backfilled to PRO
+  // (see the add_billing_plans migration) so nothing changes for them.
+  plan          PlanTier  @default(FREE)
+  planUpdatedAt DateTime? @map("plan_updated_at")
+
   memberships         TenantMembership[]
   mediaAssets         MediaAsset[]
   products            Product[]
@@ -83,6 +102,7 @@ model Tenant {
   paymentMethods      PaymentMethod[]
   orders              Order[]
   verificationRequest VerificationRequest?
+  upgradeRequests     UpgradeRequest[]
 
   @@map("tenants")
 }
@@ -297,6 +317,57 @@ model SuperAdmin {
   createdAt  DateTime  @default(now()) @map("created_at")
 
   @@map("super_admins")
+}
+
+// Selltns' own MoMo/bank details, shown to vendors on the Upgrade page so
+// they know where to send payment for a plan — the mirror image of the
+// per-tenant PaymentMethod model, but global to the platform rather than
+// scoped to one store. Same `type`/`details` shape as PaymentMethod.
+model PlatformPaymentMethod {
+  id          String            @id @default(cuid())
+  type        PaymentMethodType
+  label       String
+  details     Json
+  isEnabled   Boolean           @default(true) @map("is_enabled")
+  isPreferred Boolean           @default(false) @map("is_preferred")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  @@map("platform_payment_methods")
+}
+
+// A single editable row of free-text instructions shown alongside the
+// platform payment methods on the Upgrade page (e.g. "include your shop
+// name as the payment reference"). Always exactly one row — the service
+// creates it on first read if it doesn't exist yet.
+model PlatformBillingSettings {
+  id        String   @id @default(cuid())
+  message   String   @default("")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_billing_settings")
+}
+
+// A vendor's claim that they've paid Selltns for a plan — unlike
+// VerificationRequest (one row per tenant, overwritten on resubmit), this
+// keeps one row per submission so upgrade/renewal history isn't lost.
+// Reviewed manually by a SuperAdmin against the reference/note the vendor
+// typed in; approving sets Tenant.plan.
+model UpgradeRequest {
+  id                     String               @id @default(cuid())
+  tenantId               String               @map("tenant_id")
+  requestedPlan          PlanTier             @map("requested_plan")
+  referenceNote          String               @map("reference_note")
+  status                 UpgradeRequestStatus @default(PENDING)
+  rejectionReason        String?              @map("rejection_reason")
+  reviewedBySuperAdminId String?              @map("reviewed_by_super_admin_id")
+  reviewedAt             DateTime?            @map("reviewed_at")
+  submittedAt            DateTime             @default(now()) @map("submitted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("upgrade_requests")
 }
 
 // Submissions from the platform-level help/contact page (apps/web's
