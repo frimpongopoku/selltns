@@ -34,16 +34,30 @@ async function parseFailure(path: string, res: Response): Promise<never> {
   throw new Error(parsedMessage ?? `API ${path} failed (${res.status}): ${body}`);
 }
 
+const TRANSIENT_STATUS_CODES = new Set([502, 503, 504]);
+const RETRYABLE_METHODS = new Set([undefined, "GET"]);
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // For public, unauthenticated reads/writes the storefront makes directly
 // against the Nest API (product/collection listings, checkout, tracking).
+// GETs are retried once on a transient gateway error (502/503/504) — a
+// storefront page shouldn't hard-fail a visitor over a momentary blip
+// upstream. Writes are never retried here since they aren't idempotent.
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    cache: "no-store",
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  if (!res.ok) return parseFailure(path, res);
-  return res.json() as Promise<T>;
+  const isRetryable = RETRYABLE_METHODS.has(init?.method?.toUpperCase());
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      cache: "no-store",
+      headers: { "Content-Type": "application/json", ...init?.headers },
+    });
+    if (res.ok) return res.json() as Promise<T>;
+    if (!isRetryable || attempt > 0 || !TRANSIENT_STATUS_CODES.has(res.status)) {
+      return parseFailure(path, res);
+    }
+    await sleep(300);
+  }
 }
 
 // For admin-only calls. Goes through the same-origin /api/admin/* proxy
