@@ -80,16 +80,19 @@ function LogoCard({ tenant }: { tenant: Tenant }) {
   const [logoUrl, setLogoUrl] = useState(tenant.logoUrl);
   const [saving, setSaving] = useState(false);
 
-  const dirty = logoUrl !== tenant.logoUrl;
-
-  async function handleSave() {
+  // Persists on every change — a logo picker that only feels "applied" on
+  // upload but silently needs a separate Save click is exactly the kind of
+  // two-step flow vendors miss, so there's deliberately no Save button here.
+  async function handleChange(url: string | null) {
+    setLogoUrl(url);
     setSaving(true);
     try {
-      await updateTenantProfile(tenant.id, { logoUrl });
-      toast.success("Logo updated");
+      await updateTenantProfile(tenant.id, { logoUrl: url });
+      toast.success(url ? "Logo updated" : "Logo removed");
       router.refresh();
     } catch {
-      toast.error("Couldn't save changes. Please try again.");
+      toast.error("Couldn't save your logo. Please try again.");
+      setLogoUrl(tenant.logoUrl);
     } finally {
       setSaving(false);
     }
@@ -106,12 +109,7 @@ function LogoCard({ tenant }: { tenant: Tenant }) {
         on {tenant.customDomain ?? "your selltns.com link"} too.
       </p>
       <div className="mt-4">
-        <LogoPicker tenantId={tenant.id} logoUrl={logoUrl} onChange={setLogoUrl} />
-      </div>
-      <div className="mt-4">
-        <Button onClick={handleSave} disabled={!dirty || saving}>
-          {saving ? "Saving…" : "Save"}
-        </Button>
+        <LogoPicker tenantId={tenant.id} logoUrl={logoUrl} saving={saving} onChange={handleChange} />
       </div>
     </Card>
   );

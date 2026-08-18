@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { ADMIN_SESSION_COOKIE } from "@/lib/auth-constants";
 import { isPlatformHost } from "@/lib/is-platform-host";
+import { CUSTOM_DOMAIN_HEADER } from "@/lib/custom-domain-header";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
 
@@ -41,6 +42,18 @@ async function handleCustomDomainRewrite(request: NextRequest) {
     }
     const { slug } = (await res.json()) as { slug: string };
     const { pathname } = request.nextUrl;
+
+    // Stamp a request header confirming this is a genuine, verified custom
+    // domain match — Server Components read this (see request-host.ts)
+    // instead of re-deriving the same conclusion via isPlatformHost(),
+    // which only proves the host ISN'T the platform's own domain, not that
+    // it IS a real tenant's custom domain. Re-deriving it independently
+    // means it can silently misfire as "custom domain" for the platform's
+    // own domain too, if NEXT_PUBLIC_APP_DOMAIN ever drifts from the real
+    // production hostname — breaking every storefront nav link there.
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(CUSTOM_DOMAIN_HEADER, "1");
+
     // Next's own file-convention metadata routes (e.g. opengraph-image,
     // generated under app/[slug]/opengraph-image.tsx) build their absolute
     // URL from the app directory's route structure, which already includes
@@ -50,11 +63,11 @@ async function handleCustomDomainRewrite(request: NextRequest) {
     // app's own [slug] dynamic segment resolves it directly. Re-prefixing
     // it here would double up the slug and 404.
     if (pathname === `/${slug}` || pathname.startsWith(`/${slug}/`)) {
-      return NextResponse.next();
+      return NextResponse.next({ request: { headers: requestHeaders } });
     }
     const url = request.nextUrl.clone();
     url.pathname = `/${slug}${pathname}`;
-    return NextResponse.rewrite(url);
+    return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
   } catch {
     return NextResponse.next();
   }
