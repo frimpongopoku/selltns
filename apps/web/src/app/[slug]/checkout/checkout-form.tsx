@@ -6,13 +6,14 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/components/storefront/cart-provider";
-import { useStoreSlug } from "@/components/storefront/store-context";
+import { useStoreHref, useStoreLinkBuilder } from "@/components/storefront/store-context";
 import { createOrder } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 
 export function CheckoutForm({ tenantId }: { tenantId: string }) {
   const { lines, total, clear } = useCart();
-  const slug = useStoreSlug();
+  const homeHref = useStoreHref();
+  const buildHref = useStoreLinkBuilder();
   const router = useRouter();
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -26,7 +27,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
       <div className="mx-auto max-w-2xl animate-in fade-in-0 px-4 py-24 text-center duration-500 sm:px-6">
         <h1 className="store-heading text-2xl font-semibold">Nothing to request yet</h1>
         <p className="store-muted mt-3">Your cart is empty.</p>
-        <Link href={`/${slug}`} className="store-btn-primary mt-7 inline-block px-6 py-3 text-sm font-medium">
+        <Link href={homeHref} className="store-btn-primary mt-7 inline-block px-6 py-3 text-sm font-medium">
           Continue shopping
         </Link>
       </div>
@@ -59,7 +60,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
         })),
       });
       clear();
-      router.push(`/${slug}/track/${order.trackingToken}?new=1`);
+      router.push(`${buildHref(`/track/${order.trackingToken}`)}?new=1`);
     } catch {
       toast.error("Couldn't submit your order request. Please try again.");
       setSubmitting(false);

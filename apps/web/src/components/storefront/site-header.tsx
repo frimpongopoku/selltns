@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import type { Tenant } from "@/lib/types";
 import { CartIndicator } from "./cart-indicator";
-import { useStoreSlug } from "./store-context";
+import { useStoreHref } from "./store-context";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { VerifiedBadge } from "./verified-badge";
 
@@ -20,20 +20,22 @@ export function SiteHeader({
   hasCollections: boolean;
 }) {
   const pathname = usePathname();
-  const slug = useStoreSlug();
+  const homeHref = useStoreHref();
+  const collectionsHref = useStoreHref("/collections");
+  const storyHref = useStoreHref("/story");
   const [open, setOpen] = useState(false);
 
   const navLinks = [
-    { href: `/${slug}`, label: "Shop" },
-    ...(hasCollections ? [{ href: `/${slug}/collections`, label: "Collections" }] : []),
-    ...(hasStory ? [{ href: `/${slug}/story`, label: "Our Story" }] : []),
+    { href: homeHref, label: "Shop" },
+    ...(hasCollections ? [{ href: collectionsHref, label: "Collections" }] : []),
+    ...(hasStory ? [{ href: storyHref, label: "Our Story" }] : []),
   ];
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--store-border)] bg-[var(--store-bg)]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
         <Link
-          href={`/${slug}`}
+          href={homeHref}
           className="store-heading flex items-center gap-2 text-xl font-semibold tracking-tight"
         >
           {tenant.name}

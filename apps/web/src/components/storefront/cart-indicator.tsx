@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "./cart-provider";
-import { useStoreSlug } from "./store-context";
+import { useStoreHref } from "./store-context";
 
 export function CartIndicator() {
   const { count } = useCart();
-  const slug = useStoreSlug();
+  const href = useStoreHref("/cart");
   return (
     <Link
-      href={`/${slug}/cart`}
+      href={href}
       className="relative flex items-center gap-2 rounded-full px-3 py-2 transition-colors duration-150 hover:bg-[var(--store-hover-bg)]"
     >
       <ShoppingBag className="h-5 w-5" />

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { Tenant } from "@/lib/types";
-import { useStoreSlug } from "./store-context";
+import { useStoreHref, useStoreSlug } from "./store-context";
 import { OwnershipCredit } from "./ownership-credit";
 import { VerifiedBadge } from "./verified-badge";
 import { BUILD_LABEL } from "@/lib/build-info";
@@ -19,6 +19,10 @@ export function SiteFooter({
   hasCollections: boolean;
 }) {
   const slug = useStoreSlug();
+  const homeHref = useStoreHref();
+  const collectionsHref = useStoreHref("/collections");
+  const storyHref = useStoreHref("/story");
+  const helpHref = useStoreHref("/help");
 
   return (
     <footer className="mt-auto border-t border-[var(--store-border)] bg-[var(--store-bg)]">
@@ -36,11 +40,11 @@ export function SiteFooter({
           <div className="flex gap-12 text-sm sm:gap-16">
             <div className="flex flex-col gap-3">
               <span className="text-xs font-semibold tracking-wide uppercase store-muted">Shop</span>
-              <Link href={`/${slug}`} className="transition-colors hover:text-[var(--store-primary)]">
+              <Link href={homeHref} className="transition-colors hover:text-[var(--store-primary)]">
                 All products
               </Link>
               {hasCollections && (
-                <Link href={`/${slug}/collections`} className="transition-colors hover:text-[var(--store-primary)]">
+                <Link href={collectionsHref} className="transition-colors hover:text-[var(--store-primary)]">
                   Collections
                 </Link>
               )}
@@ -48,11 +52,11 @@ export function SiteFooter({
             <div className="flex flex-col gap-3">
               <span className="text-xs font-semibold tracking-wide uppercase store-muted">Store</span>
               {hasStory && (
-                <Link href={`/${slug}/story`} className="transition-colors hover:text-[var(--store-primary)]">
+                <Link href={storyHref} className="transition-colors hover:text-[var(--store-primary)]">
                   Our Story
                 </Link>
               )}
-              <Link href={`/${slug}/help`} className="transition-colors hover:text-[var(--store-primary)]">
+              <Link href={helpHref} className="transition-colors hover:text-[var(--store-primary)]">
                 Help
               </Link>
               <Link href="/privacy" className="transition-colors hover:text-[var(--store-primary)]">

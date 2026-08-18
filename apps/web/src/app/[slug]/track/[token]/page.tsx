@@ -16,6 +16,8 @@ import { CopyValue } from "@/components/storefront/copy-value";
 import { PaymentMethodCard } from "@/components/storefront/payment-method-card";
 import { PaymentSafetyNotice } from "@/components/storefront/payment-safety-notice";
 import { obscurePaymentMethodPhone, obscurePhone } from "@/lib/phone";
+import { isCustomDomainRequest } from "@/lib/request-host";
+import { storeHref } from "@/lib/store-href";
 import type { Product } from "@/lib/types";
 
 export async function generateMetadata({
@@ -53,7 +55,7 @@ export default async function TrackOrderPage({
   ]);
   if (!order || !tenant) notFound();
 
-  const [paymentMethods, itemProducts, collection] = await Promise.all([
+  const [paymentMethods, itemProducts, collection, isCustomDomain] = await Promise.all([
     getPaymentMethods(tenant.id),
     Promise.all(
       order.items.map((item) => getProduct(item.productId, tenant.id).catch(() => null)),
@@ -61,6 +63,7 @@ export default async function TrackOrderPage({
     order.preorderCollectionId
       ? getCollection(order.preorderCollectionId, tenant.id).catch(() => null)
       : Promise.resolve(null),
+    isCustomDomainRequest(),
   ]);
   const productByItem = new Map<string, Product | null>(
     order.items.map((item, i) => [item.productId, itemProducts[i]]),
@@ -124,7 +127,7 @@ export default async function TrackOrderPage({
           return (
             <div key={item.productId} className="flex items-center gap-3 py-3.5 text-sm">
               {isLive && product ? (
-                <Link href={`/${slug}/products/${product.slug}`} className="group flex flex-1 items-center gap-3">
+                <Link href={storeHref(slug, isCustomDomain, `/products/${product.slug}`)} className="group flex flex-1 items-center gap-3">
                   {content}
                 </Link>
               ) : (
@@ -212,7 +215,7 @@ export default async function TrackOrderPage({
           </div>
 
           <Link
-            href={`/${slug}/pay`}
+            href={storeHref(slug, isCustomDomain, "/pay")}
             className="store-btn-primary mt-4 flex items-center justify-center py-3.5 text-sm font-medium"
           >
             Pay now on {tenant.name}&apos;s payment page

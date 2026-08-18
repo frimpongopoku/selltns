@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Minus, Plus, X } from "lucide-react";
 import { useCart } from "@/components/storefront/cart-provider";
-import { useStoreSlug } from "@/components/storefront/store-context";
+import { useStoreHref } from "@/components/storefront/store-context";
 import { formatMoney } from "@/lib/format";
 
 // Matches the fade/slide-out below — the actual removal is deferred until
@@ -13,7 +13,8 @@ const REMOVE_TRANSITION_MS = 180;
 
 export default function CartPage() {
   const { lines, total, updateQuantity, removeItem, preorderCollectionId } = useCart();
-  const slug = useStoreSlug();
+  const homeHref = useStoreHref();
+  const checkoutHref = useStoreHref("/checkout");
   const [removingId, setRemovingId] = useState<string | null>(null);
   const isPreorder = !!preorderCollectionId;
 
@@ -30,7 +31,7 @@ export default function CartPage() {
       <div className="mx-auto max-w-2xl animate-in fade-in-0 px-4 py-24 text-center duration-500 sm:px-6">
         <h1 className="store-heading text-2xl font-semibold">Your cart is empty</h1>
         <p className="store-muted mt-3">Add something you love to get started.</p>
-        <Link href={`/${slug}`} className="store-btn-primary mt-7 inline-block px-6 py-3 text-sm font-medium">
+        <Link href={homeHref} className="store-btn-primary mt-7 inline-block px-6 py-3 text-sm font-medium">
           Continue shopping
         </Link>
       </div>
@@ -153,7 +154,7 @@ export default function CartPage() {
       </div>
       <div className="mt-6 flex justify-end">
         <Link
-          href={`/${slug}/checkout`}
+          href={checkoutHref}
           className="store-btn-primary inline-flex items-center justify-center px-8 py-3.5 text-base font-medium"
         >
           {isPreorder ? "Continue to pre-order request" : "Submit order request"}

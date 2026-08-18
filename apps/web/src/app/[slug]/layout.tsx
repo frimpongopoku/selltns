@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
 import { getCollections, getStoryBlocks, getTenantBySlug } from "@/lib/api";
 import { hasStoryContent } from "@/lib/story";
+import { isCustomDomainRequest } from "@/lib/request-host";
 import { ThemeScope } from "@/components/theme/theme-scope";
 import { StoreProvider } from "@/components/storefront/store-context";
 import { CartProvider } from "@/components/storefront/cart-provider";
@@ -22,9 +23,10 @@ export default async function StorefrontLayout({
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
   if (tenant.suspended) return <SuspendedStoreNotice tenant={tenant} />;
-  const [storyBlocks, collections] = await Promise.all([
+  const [storyBlocks, collections, isCustomDomain] = await Promise.all([
     getStoryBlocks(tenant.id).catch(() => []),
     getCollections(tenant.id).catch(() => []),
+    isCustomDomainRequest(),
   ]);
   const hasStory = hasStoryContent(storyBlocks);
   const hasCollections = collections.some((c) => c.isActive);
@@ -38,7 +40,7 @@ export default async function StorefrontLayout({
   const publicTenant = { ...tenant, whatsappNumber: null };
 
   return (
-    <StoreProvider slug={slug}>
+    <StoreProvider slug={slug} isCustomDomain={isCustomDomain}>
       <ThemeScope tokens={tenant.themeTokens} className="flex min-h-full flex-col">
         <CartProvider>
           <SentryUserContext tenantId={tenant.id} tenantSlug={slug} />

@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCollections, getTenantBySlug } from "@/lib/api";
 import { getCanonicalUrl } from "@/lib/canonical";
+import { isCustomDomainRequest } from "@/lib/request-host";
+import { storeHref } from "@/lib/store-href";
 
 export async function generateMetadata({
   params,
@@ -31,7 +33,10 @@ export default async function CollectionsIndexPage({
   const { slug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
-  const collections = (await getCollections(tenant.id)).filter((c) => c.isActive);
+  const [collections, isCustomDomain] = await Promise.all([
+    getCollections(tenant.id).then((cs) => cs.filter((c) => c.isActive)),
+    isCustomDomainRequest(),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
@@ -46,7 +51,7 @@ export default async function CollectionsIndexPage({
         {collections.map((collection, i) => (
           <Link
             key={collection.id}
-            href={`/${slug}/collections/${collection.slug}`}
+            href={storeHref(slug, isCustomDomain, `/collections/${collection.slug}`)}
             style={{ animationDelay: `${i * 60}ms` }}
             className="store-card group relative block aspect-[16/9] animate-in fade-in-0 slide-in-from-bottom-2 overflow-hidden fill-mode-both duration-500"
           >

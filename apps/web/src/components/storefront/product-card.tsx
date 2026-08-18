@@ -6,11 +6,10 @@ import { CalendarClock } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import { AddToCartButton } from "./add-to-cart-button";
-import { useStoreSlug } from "./store-context";
+import { useStoreHref } from "./store-context";
 
 export function ProductCard({ product }: { product: Product }) {
-  const slug = useStoreSlug();
-  const href = `/${slug}/products/${product.slug}`;
+  const href = useStoreHref(`/products/${product.slug}`);
 
   return (
     <div className="store-card group flex h-full flex-col overflow-hidden bg-[var(--store-bg)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">

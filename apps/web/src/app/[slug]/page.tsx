@@ -5,6 +5,8 @@ import { getCollections, getProducts, getTenantBySlug } from "@/lib/api";
 import { ProductCard } from "@/components/storefront/product-card";
 import { getCanonicalUrl } from "@/lib/canonical";
 import { jsonLdScriptProps, storeJsonLd } from "@/lib/structured-data";
+import { isCustomDomainRequest } from "@/lib/request-host";
+import { storeHref } from "@/lib/store-href";
 
 export async function generateMetadata({
   params,
@@ -34,9 +36,10 @@ export default async function StoreHomePage({
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
 
-  const [products, collections] = await Promise.all([
+  const [products, collections, isCustomDomain] = await Promise.all([
     getProducts(tenant.id),
     getCollections(tenant.id),
+    isCustomDomainRequest(),
   ]);
   const activeProducts = products.filter((p) => p.isActive);
   const activeCollections = collections.filter((c) => c.isActive);
@@ -74,7 +77,7 @@ export default async function StoreHomePage({
             {activeCollections.map((collection, i) => (
               <Link
                 key={collection.id}
-                href={`/${slug}/collections/${collection.slug}`}
+                href={storeHref(slug, isCustomDomain, `/collections/${collection.slug}`)}
                 style={{ animationDelay: `${i * 60}ms` }}
                 className="store-card group relative block aspect-[16/10] animate-in fade-in-0 slide-in-from-bottom-2 overflow-hidden fill-mode-both duration-500"
               >

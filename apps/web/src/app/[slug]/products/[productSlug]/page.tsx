@@ -9,6 +9,8 @@ import { ProductGallery } from "@/components/storefront/product-gallery";
 import { ProductCard } from "@/components/storefront/product-card";
 import { getCanonicalUrl } from "@/lib/canonical";
 import { jsonLdScriptProps, productJsonLd } from "@/lib/structured-data";
+import { isCustomDomainRequest } from "@/lib/request-host";
+import { storeHref } from "@/lib/store-href";
 
 export async function generateMetadata({
   params,
@@ -47,9 +49,10 @@ export default async function ProductPage({
   const product = await getProduct(productSlug, tenant.id).catch(() => null);
   if (!product) notFound();
 
-  const [allProducts, allCollections] = await Promise.all([
+  const [allProducts, allCollections, isCustomDomain] = await Promise.all([
     getProducts(tenant.id).catch(() => []),
     getCollections(tenant.id).catch(() => []),
+    isCustomDomainRequest(),
   ]);
   const otherProducts = allProducts
     .filter((p) => p.id !== product.id && p.isActive)
@@ -134,7 +137,7 @@ export default async function ProductPage({
             {featuredIn.map((collection, i) => (
               <Link
                 key={collection.id}
-                href={`/${slug}/collections/${collection.slug}`}
+                href={storeHref(slug, isCustomDomain, `/collections/${collection.slug}`)}
                 style={{ animationDelay: `${i * 60}ms` }}
                 className="store-card group relative block aspect-[16/10] animate-in fade-in-0 slide-in-from-bottom-2 overflow-hidden fill-mode-both duration-500"
               >
@@ -166,7 +169,7 @@ export default async function ProductPage({
               <p className="store-muted mt-1.5 text-sm">Other pieces from this shop.</p>
             </div>
             <Link
-              href={`/${slug}#products`}
+              href={`${storeHref(slug, isCustomDomain, "")}#products`}
               className="store-nav-link store-accent-text shrink-0 text-sm font-medium"
             >
               View all
