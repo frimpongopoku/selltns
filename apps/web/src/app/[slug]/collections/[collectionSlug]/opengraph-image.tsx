@@ -1,6 +1,11 @@
 import { ImageResponse } from "next/og";
 import { getCollection, getTenantBySlug } from "@/lib/api";
 
+// Only ever rendered as a fallback — when a collection (or one of its
+// products) has a photo, generateMetadata in page.tsx supplies that as
+// the OG image directly and Next skips this file entirely for that
+// request. No embedded images here, ever, by design — see the note in
+// ../../opengraph-image.tsx for why.
 export const alt = "Collection";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -16,15 +21,10 @@ export default async function Image({
     ? await getCollection(collectionSlug, tenant.id).catch(() => null)
     : null;
 
-  const title = collection?.title ?? tenant?.name ?? "Selltns";
+  const name = collection?.title ?? tenant?.name ?? "Selltns";
   const bg = tenant?.themeTokens.background ?? "#111111";
+  const fg = tenant?.themeTokens.foreground ?? "#ffffff";
   const accent = tenant?.themeTokens.accent ?? "#E8C468";
-  // See the NOTE in ../../opengraph-image.tsx — WebP product photos render
-  // blank here rather than crashing, pending a non-native re-encode fix.
-  const featured = (collection?.products ?? [])
-    .filter((p) => p.isActive && p.images[0])
-    .slice(0, 4);
-  const tileWidth = featured.length > 0 ? Math.floor(size.width / featured.length) : 0;
 
   return new ImageResponse(
     (
@@ -33,50 +33,37 @@ export default async function Image({
           width: "100%",
           height: "100%",
           display: "flex",
-          position: "relative",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
           backgroundColor: bg,
+          color: fg,
           fontFamily: "sans-serif",
         }}
       >
-        {featured.length > 0 ? (
-          featured.map((p) => (
-            <img
-              key={p.id}
-              src={p.images[0]}
-              alt=""
-              width={tileWidth}
-              height={size.height}
-              style={{ objectFit: "cover" }}
-            />
-          ))
-        ) : collection?.coverImage ? (
-          <img
-            src={collection.coverImage}
-            alt=""
-            width={size.width}
-            height={size.height}
-            style={{ objectFit: "cover" }}
-          />
-        ) : null}
-
         <div
           style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
             display: "flex",
-            flexDirection: "column",
-            padding: "44px 56px",
-            background: "linear-gradient(0deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0) 100%)",
+            fontSize: 28,
+            letterSpacing: 6,
+            textTransform: "uppercase",
+            color: accent,
+            marginBottom: 28,
           }}
         >
-          <div style={{ display: "flex", fontSize: 18, letterSpacing: 4, textTransform: "uppercase", color: accent }}>
-            {tenant?.name ?? "Collection"}
-          </div>
-          <div style={{ display: "flex", fontSize: 50, fontWeight: 700, color: "#ffffff", marginTop: 8 }}>
-            {title}
-          </div>
+          {tenant?.name ?? "Collection"}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 76,
+            fontWeight: 700,
+            textAlign: "center",
+            padding: "0 80px",
+            lineHeight: 1.15,
+          }}
+        >
+          {name}
         </div>
       </div>
     ),

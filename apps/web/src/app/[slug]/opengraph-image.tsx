@@ -1,33 +1,37 @@
 import { ImageResponse } from "next/og";
-import { getProducts, getTenantBySlug } from "@/lib/api";
+import { getTenantBySlug } from "@/lib/api";
 
+// Only ever rendered as a fallback — when a tenant has a logo,
+// generateMetadata in page.tsx supplies that as the OG image directly and
+// Next skips this file entirely for that request. So this never has a
+// photo to work with by design, not just by circumstance: no embedded
+// images here, ever, which is deliberate — next/og's Satori renderer
+// can't reliably composite a fetched remote image (WebP especially, which
+// is what every upload on this platform becomes), so keeping this file
+// pure typography/gradients sidesteps that whole class of failure.
 export const alt = "Storefront";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+// Fit a wide range of store names into one composition without ever
+// overflowing or looking sparse — a two-word name and a five-word one
+// should both look intentional.
+function fontSizeFor(name: string): number {
+  if (name.length <= 10) return 108;
+  if (name.length <= 16) return 88;
+  if (name.length <= 24) return 68;
+  return 52;
+}
+
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
-  const products = tenant ? await getProducts(tenant.id).catch(() => []) : [];
 
   const name = tenant?.name ?? "Selltns";
   const bg = tenant?.themeTokens.background ?? "#111111";
+  const fg = tenant?.themeTokens.foreground ?? "#ffffff";
   const accent = tenant?.themeTokens.accent ?? "#E8C468";
-  // Image-first: a handful of product photos filling the whole canvas, with
-  // just the store name as a caption — not the store name, owner credit,
-  // tagline, AND per-product captions all crammed into one 1200x630 frame.
-  //
-  // NOTE: Satori (what ImageResponse renders through) can't reliably
-  // decode WebP — our own upload pipeline's output format — so a WebP
-  // product/logo photo currently renders as a blank tile here rather than
-  // the actual photo, though it no longer crashes the route. A prior
-  // attempt re-encoded these to JPEG server-side via `sharp`, but sharp's
-  // native binary failed to load in the Vercel Linux runtime and took the
-  // whole route down — reverted. Needs a non-native re-encoding approach
-  // (e.g. a WASM decoder, or proxying through Next's own image optimizer)
-  // before product photos will reliably show here again.
-  const featured = products.filter((p) => p.isActive && p.images[0]).slice(0, 4);
-  const tileWidth = featured.length > 0 ? Math.floor(size.width / featured.length) : 0;
+  const initial = name.trim().charAt(0).toUpperCase() || "S";
 
   return new ImageResponse(
     (
@@ -37,65 +41,64 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           height: "100%",
           display: "flex",
           position: "relative",
+          alignItems: "center",
           backgroundColor: bg,
+          color: fg,
           fontFamily: "sans-serif",
+          overflow: "hidden",
         }}
       >
-        {featured.length > 0 ? (
-          featured.map((p) => (
-            <img
-              key={p.id}
-              src={p.images[0]}
-              alt=""
-              width={tileWidth}
-              height={size.height}
-              style={{ objectFit: "cover" }}
-            />
-          ))
-        ) : tenant?.logoUrl ? (
-          <div style={{ display: "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center" }}>
-            <img
-              src={tenant.logoUrl}
-              alt=""
-              width={280}
-              height={280}
-              style={{ borderRadius: "50%", objectFit: "cover" }}
-            />
-          </div>
-        ) : null}
-
         <div
           style={{
             position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
+            right: -70,
+            top: -140,
             display: "flex",
-            alignItems: "center",
-            gap: 18,
-            padding: "44px 56px",
-            background: "linear-gradient(0deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0) 100%)",
+            fontSize: 620,
+            fontWeight: 800,
+            lineHeight: 1,
+            color: accent,
+            opacity: 0.14,
           }}
         >
-          {tenant?.logoUrl && featured.length > 0 && (
-            <img
-              src={tenant.logoUrl}
-              alt=""
-              width={60}
-              height={60}
-              style={{ borderRadius: "50%", objectFit: "cover" }}
-            />
-          )}
-          <div style={{ display: "flex", fontSize: 46, fontWeight: 700, color: "#ffffff" }}>{name}</div>
+          {initial}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", padding: "0 88px", zIndex: 1 }}>
+          <div
+            style={{
+              display: "flex",
+              fontSize: 22,
+              letterSpacing: 8,
+              textTransform: "uppercase",
+              color: accent,
+              marginBottom: 26,
+            }}
+          >
+            Shop now
+          </div>
+          <div
+            style={{
+              display: "flex",
+              fontSize: fontSizeFor(name),
+              fontWeight: 800,
+              lineHeight: 1.08,
+              maxWidth: 880,
+            }}
+          >
+            {name}
+          </div>
           {tenant?.verificationStatus === "VERIFIED" && (
             <div
               style={{
                 display: "flex",
-                fontSize: 16,
+                marginTop: 30,
+                width: "fit-content",
+                fontSize: 20,
                 color: accent,
                 border: `2px solid ${accent}`,
                 borderRadius: 999,
-                padding: "4px 14px",
+                padding: "6px 20px",
               }}
             >
               ✓ Verified

@@ -32,6 +32,13 @@ export async function generateMetadata({
       // rather than merging with it, so siteName has to be set here too —
       // otherwise Discord/etc. show the card with no publisher line.
       siteName: tenant.name,
+      // Point straight at the vendor's own logo when there is one — real
+      // social crawlers decode it fine (WebP included; that limitation is
+      // specific to compositing it through next/og's Satori renderer, not
+      // to how Facebook/WhatsApp/Discord fetch an og:image directly).
+      // Skips opengraph-image.tsx entirely for this request; that file is
+      // the fallback for when there's no logo to show instead.
+      images: tenant.logoUrl ? [{ url: tenant.logoUrl }] : undefined,
     },
   };
 }
