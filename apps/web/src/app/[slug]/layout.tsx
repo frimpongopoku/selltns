@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import * as Sentry from "@sentry/nextjs";
 import { getCollections, getStoryBlocks, getTenantBySlug } from "@/lib/api";
 import { hasStoryContent } from "@/lib/story";
@@ -11,6 +12,20 @@ import { SiteFooter } from "@/components/storefront/site-footer";
 import { SentryUserContext } from "@/components/sentry-context";
 import { PostHogIdentify } from "@/components/analytics/posthog-identify";
 import { SuspendedStoreNotice } from "@/components/storefront/suspended-store-notice";
+
+// Only set when the tenant has a logo — otherwise leave `icons` unset so
+// the platform's default favicon (app/icon.tsx) keeps applying, same as
+// before this existed.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const tenant = await getTenantBySlug(slug).catch(() => null);
+  if (!tenant?.logoUrl) return {};
+  return { icons: { icon: `/api/favicon?slug=${slug}` } };
+}
 
 export default async function StorefrontLayout({
   children,

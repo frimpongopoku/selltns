@@ -65,12 +65,15 @@ export class TenantsService {
 
   async updateProfile(
     tenantId: string,
-    input: { whatsappNumber?: string | null },
+    input: { whatsappNumber?: string | null; logoUrl?: string | null },
   ): Promise<Tenant> {
     const tenant = await this.prisma.tenant
       .update({
         where: { id: tenantId },
-        data: { whatsappNumber: input.whatsappNumber },
+        data: {
+          whatsappNumber: input.whatsappNumber,
+          logoUrl: input.logoUrl,
+        },
       })
       .catch(() => {
         throw new NotFoundException(`Tenant ${tenantId} not found`);

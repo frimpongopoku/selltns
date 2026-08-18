@@ -17,6 +17,7 @@ export const tenant: Tenant = {
   id: DEMO_TENANT_ID,
   name: 'Akosua & Co.',
   slug: 'akosua',
+  logoUrl: null,
   customDomain: null,
   domainVerified: false,
   whatsappNumber: '233245550134',

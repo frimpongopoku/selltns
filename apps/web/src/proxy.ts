@@ -40,8 +40,20 @@ async function handleCustomDomainRewrite(request: NextRequest) {
       return NextResponse.next();
     }
     const { slug } = (await res.json()) as { slug: string };
+    const { pathname } = request.nextUrl;
+    // Next's own file-convention metadata routes (e.g. opengraph-image,
+    // generated under app/[slug]/opengraph-image.tsx) build their absolute
+    // URL from the app directory's route structure, which already includes
+    // the slug segment — unlike every hand-written storefront <Link>, which
+    // deliberately stays slug-free on a custom domain (see storeHref()).
+    // A pathname that already starts with /{slug} needs no rewrite: the
+    // app's own [slug] dynamic segment resolves it directly. Re-prefixing
+    // it here would double up the slug and 404.
+    if (pathname === `/${slug}` || pathname.startsWith(`/${slug}/`)) {
+      return NextResponse.next();
+    }
     const url = request.nextUrl.clone();
-    url.pathname = `/${slug}${request.nextUrl.pathname}`;
+    url.pathname = `/${slug}${pathname}`;
     return NextResponse.rewrite(url);
   } catch {
     return NextResponse.next();

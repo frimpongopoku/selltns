@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
@@ -36,8 +37,13 @@ export function SiteHeader({
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
         <Link
           href={homeHref}
-          className="store-heading flex items-center gap-2 text-xl font-semibold tracking-tight"
+          className="store-heading flex items-center gap-2.5 text-xl font-semibold tracking-tight"
         >
+          {tenant.logoUrl && (
+            <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full">
+              <Image src={tenant.logoUrl} alt="" fill sizes="32px" className="object-cover" />
+            </span>
+          )}
           {tenant.name}
           {tenant.verificationStatus === "VERIFIED" && <VerifiedBadge />}
         </Link>

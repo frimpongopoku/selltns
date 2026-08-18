@@ -69,6 +69,7 @@ model Tenant {
   id               String   @id @default(cuid())
   name             String
   slug             String   @unique
+  logoUrl          String?  @map("logo_url")
   customDomain     String?  @map("custom_domain")
   domainVerified   Boolean  @default(false) @map("domain_verified")
   whatsappNumber   String?  @map("whatsapp_number")

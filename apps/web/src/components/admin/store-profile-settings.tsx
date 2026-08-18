@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MessageCircle, UserRound } from "lucide-react";
+import { ImageIcon, MessageCircle, UserRound } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { LogoPicker } from "@/components/admin/logo-picker";
 import { updateTenantProfile, updateTenantOwnershipInfo } from "@/lib/api";
 import { toWhatsAppNumber } from "@/lib/phone";
 import type { Tenant } from "@/lib/types";
@@ -41,6 +42,8 @@ export function StoreProfileSettings({ tenant }: { tenant: Tenant }) {
 
   return (
     <div className="flex max-w-xl flex-col gap-6">
+      <LogoCard tenant={tenant} />
+
       <Card className="p-5">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-emerald-600" />
@@ -69,6 +72,48 @@ export function StoreProfileSettings({ tenant }: { tenant: Tenant }) {
 
       <OwnershipInfoCard tenant={tenant} />
     </div>
+  );
+}
+
+function LogoCard({ tenant }: { tenant: Tenant }) {
+  const router = useRouter();
+  const [logoUrl, setLogoUrl] = useState(tenant.logoUrl);
+  const [saving, setSaving] = useState(false);
+
+  const dirty = logoUrl !== tenant.logoUrl;
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await updateTenantProfile(tenant.id, { logoUrl });
+      toast.success("Logo updated");
+      router.refresh();
+    } catch {
+      toast.error("Couldn't save changes. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-2">
+        <ImageIcon className="h-4 w-4 text-emerald-600" />
+        <p className="text-sm font-medium">Logo</p>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Shown in your storefront&apos;s header and footer, and used as the browser-tab icon —
+        on {tenant.customDomain ?? "your selltns.com link"} too.
+      </p>
+      <div className="mt-4">
+        <LogoPicker tenantId={tenant.id} logoUrl={logoUrl} onChange={setLogoUrl} />
+      </div>
+      <div className="mt-4">
+        <Button onClick={handleSave} disabled={!dirty || saving}>
+          {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </Card>
   );
 }
 

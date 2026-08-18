@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { Tenant } from "@/lib/types";
 import { useStoreHref, useStoreSlug } from "./store-context";
@@ -30,6 +31,11 @@ export function SiteFooter({
         <div className="flex flex-col gap-10 sm:flex-row sm:justify-between">
           <div>
             <p className="store-heading flex items-center gap-2 text-lg font-semibold">
+              {tenant.logoUrl && (
+                <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full">
+                  <Image src={tenant.logoUrl} alt="" fill sizes="28px" className="object-cover" />
+                </span>
+              )}
               {tenant.name}
               {tenant.verificationStatus === "VERIFIED" && <VerifiedBadge />}
             </p>

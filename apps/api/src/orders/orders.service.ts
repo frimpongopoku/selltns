@@ -69,6 +69,7 @@ function mapTenant(row: PrismaTenant): Tenant {
     id: row.id,
     name: row.name,
     slug: row.slug,
+    logoUrl: row.logoUrl,
     customDomain: row.customDomain,
     domainVerified: row.domainVerified,
     whatsappNumber: row.whatsappNumber,

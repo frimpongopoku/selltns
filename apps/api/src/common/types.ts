@@ -25,6 +25,7 @@ export interface Tenant {
   id: string;
   name: string;
   slug: string;
+  logoUrl: string | null;
   customDomain: string | null;
   domainVerified: boolean;
   whatsappNumber: string | null;
