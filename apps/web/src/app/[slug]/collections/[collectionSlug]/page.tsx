@@ -34,6 +34,7 @@ export async function generateMetadata({
       description,
       url: canonical,
       type: "website",
+      siteName: tenant.name,
     },
   };
 }

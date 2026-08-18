@@ -1,5 +1,10 @@
 import { ImageResponse } from "next/og";
 import { getProducts, getTenantBySlug } from "@/lib/api";
+import { toEmbeddableImage } from "@/lib/og-image";
+
+// sharp (used to re-encode images for Satori — see og-image.ts) needs
+// Node's native module system, unavailable on the Edge runtime.
+export const runtime = "nodejs";
 
 export const alt = "Storefront";
 export const size = { width: 1200, height: 630 };
@@ -12,13 +17,18 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   const name = tenant?.name ?? "Selltns";
   const bg = tenant?.themeTokens.background ?? "#111111";
-  const fg = tenant?.themeTokens.foreground ?? "#ffffff";
   const accent = tenant?.themeTokens.accent ?? "#E8C468";
-  const ownerLine =
-    tenant?.ownerInfoVisible && tenant.ownerDisplayName
-      ? `By ${tenant.ownerDisplayName}${tenant.ownerTitle ? ` · ${tenant.ownerTitle}` : ""}`
-      : null;
-  const featured = products.filter((p) => p.isActive && p.images[0]).slice(0, 4);
+  // Image-first: a handful of product photos filling the whole canvas, with
+  // just the store name as a caption — not the store name, owner credit,
+  // tagline, AND per-product captions all crammed into one 1200x630 frame.
+  const candidates = products.filter((p) => p.isActive && p.images[0]).slice(0, 4);
+  const tileWidth = candidates.length > 0 ? Math.floor(size.width / candidates.length) : 0;
+
+  const [tileImages, logoImage] = await Promise.all([
+    Promise.all(candidates.map((p) => toEmbeddableImage(p.images[0], tileWidth, size.height))),
+    tenant?.logoUrl ? toEmbeddableImage(tenant.logoUrl, 280, 280) : Promise.resolve(null),
+  ]);
+  const tiles = tileImages.filter((src): src is string => !!src);
 
   return new ImageResponse(
     (
@@ -27,75 +37,53 @@ export default async function Image({ params }: { params: Promise<{ slug: string
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
+          position: "relative",
           backgroundColor: bg,
-          color: fg,
           fontFamily: "sans-serif",
-          padding: "64px 72px",
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 26 }}>
-            {tenant?.logoUrl && (
-              <img
-                src={tenant.logoUrl}
-                alt=""
-                width={84}
-                height={84}
-                style={{ borderRadius: "50%", objectFit: "cover" }}
-              />
-            )}
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ fontSize: 56, fontWeight: 700, lineHeight: 1.1 }}>{name}</div>
-                {tenant?.verificationStatus === "VERIFIED" && (
-                  <div
-                    style={{
-                      display: "flex",
-                      fontSize: 18,
-                      color: accent,
-                      border: `2px solid ${accent}`,
-                      borderRadius: 999,
-                      padding: "4px 14px",
-                    }}
-                  >
-                    ✓ Verified
-                  </div>
-                )}
-              </div>
-              {ownerLine && (
-                <div style={{ display: "flex", fontSize: 24, opacity: 0.75, marginTop: 8 }}>
-                  {ownerLine}
-                </div>
-              )}
-            </div>
+        {tiles.length > 0 ? (
+          tiles.map((src, i) => (
+            <img key={i} src={src} alt="" width={tileWidth} height={size.height} style={{ objectFit: "cover" }} />
+          ))
+        ) : logoImage ? (
+          <div style={{ display: "flex", width: "100%", height: "100%", alignItems: "center", justifyContent: "center" }}>
+            <img src={logoImage} alt="" width={280} height={280} style={{ borderRadius: "50%", objectFit: "cover" }} />
           </div>
-          {tenant?.heroTagline && (
-            <div style={{ display: "flex", fontSize: 26, opacity: 0.85, marginTop: 30, maxWidth: 960, lineHeight: 1.4 }}>
-              {tenant.heroTagline}
+        ) : null}
+
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 18,
+            padding: "44px 56px",
+            background: "linear-gradient(0deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0) 100%)",
+          }}
+        >
+          {logoImage && tiles.length > 0 && (
+            <img src={logoImage} alt="" width={60} height={60} style={{ borderRadius: "50%", objectFit: "cover" }} />
+          )}
+          <div style={{ display: "flex", fontSize: 46, fontWeight: 700, color: "#ffffff" }}>{name}</div>
+          {tenant?.verificationStatus === "VERIFIED" && (
+            <div
+              style={{
+                display: "flex",
+                fontSize: 16,
+                color: accent,
+                border: `2px solid ${accent}`,
+                borderRadius: 999,
+                padding: "4px 14px",
+              }}
+            >
+              ✓ Verified
             </div>
           )}
         </div>
-
-        {featured.length > 0 && (
-          <div style={{ display: "flex", gap: 22 }}>
-            {featured.map((p) => (
-              <div key={p.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 190 }}>
-                <img
-                  src={p.images[0]}
-                  alt=""
-                  width={190}
-                  height={190}
-                  style={{ borderRadius: 16, objectFit: "cover" }}
-                />
-                <div style={{ display: "flex", fontSize: 20, marginTop: 10, opacity: 0.9 }}>
-                  {p.title.length > 22 ? `${p.title.slice(0, 22)}…` : p.title}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     ),
     size,

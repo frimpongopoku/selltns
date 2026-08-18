@@ -23,7 +23,16 @@ export async function generateMetadata({
     title: tenant.name,
     description,
     alternates: { canonical },
-    openGraph: { title: tenant.name, description, url: canonical, type: "website" },
+    openGraph: {
+      title: tenant.name,
+      description,
+      url: canonical,
+      type: "website",
+      // A page-level openGraph object replaces the root layout's entirely
+      // rather than merging with it, so siteName has to be set here too —
+      // otherwise Discord/etc. show the card with no publisher line.
+      siteName: tenant.name,
+    },
   };
 }
 
