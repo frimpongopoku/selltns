@@ -50,16 +50,14 @@ function StorefrontLink({ tenant }: { tenant: Tenant }) {
         <Store className="h-4 w-4" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          <span className="text-sm font-medium">Visit storefront</span>
-          {isLiveOnCustomDomain && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Custom domain
-            </span>
-          )}
-        </span>
+        <span className="block text-sm font-medium">Visit storefront</span>
         <span className="block truncate text-xs text-muted-foreground">{displayUrl}</span>
+        {isLiveOnCustomDomain && (
+          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Custom domain
+          </span>
+        )}
       </span>
       <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
     </a>

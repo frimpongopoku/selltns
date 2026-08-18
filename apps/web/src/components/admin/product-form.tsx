@@ -85,17 +85,6 @@ export function ProductForm({
       </div>
 
       <div>
-        <Label>Videos</Label>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Add YouTube or TikTok links to show alongside your photos — great for fit,
-          styling, or a quick demo.
-        </p>
-        <div className="mt-1.5">
-          <VideoLinksInput videos={videoUrls} onChange={setVideoUrls} />
-        </div>
-      </div>
-
-      <div>
         <Label htmlFor="title">Title</Label>
         <Input id="title" required value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1.5" />
       </div>
@@ -118,6 +107,17 @@ export function ProductForm({
         </p>
         <div className="mt-1.5">
           <TagInput tags={tags} onChange={setTags} placeholder="Add a tag…" />
+        </div>
+      </div>
+
+      <div>
+        <Label>Videos</Label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Add YouTube or TikTok links to show alongside your photos — great for fit,
+          styling, or a quick demo.
+        </p>
+        <div className="mt-1.5">
+          <VideoLinksInput videos={videoUrls} onChange={setVideoUrls} />
         </div>
       </div>
 

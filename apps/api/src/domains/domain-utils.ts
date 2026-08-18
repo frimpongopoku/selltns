@@ -13,8 +13,12 @@ export function isApexDomain(domain: string): boolean {
 
 export function instructionsFor(domain: string): DnsInstruction[] {
   if (isApexDomain(domain)) {
+    // A bare domain needs the apex A record to resolve at all, plus a www
+    // CNAME so the common "www.yourshop.com" variant also works — vendors
+    // shouldn't have to come back and add that themselves.
     return [
       { type: 'A', host: '@', value: process.env.PLATFORM_APEX_IP ?? '' },
+      { type: 'CNAME', host: 'www', value: process.env.PLATFORM_CNAME_TARGET ?? '' },
     ];
   }
   const host = domain.split('.')[0];

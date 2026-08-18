@@ -39,15 +39,32 @@ export class VercelDomainProvider implements DomainProvider {
   }
 
   async getStatus(domain: string): Promise<DomainStatus> {
+    const instructions = instructionsFor(domain);
     const res = await fetch(
       `https://api.vercel.com/v9/projects/${this.projectId}/domains/${domain}${this.teamQuery}`,
       { headers: this.headers() },
     );
     if (!res.ok) {
-      return { verified: false, instructions: instructionsFor(domain) };
+      return { verified: false, instructions };
     }
     const data = (await res.json()) as { verified?: boolean };
-    return { verified: !!data.verified, instructions: instructionsFor(domain) };
+    // `verified` here is ownership verification (relevant only if the domain
+    // is already claimed elsewhere) — a fresh, unclaimed domain comes back
+    // verified:true the instant it's added, well before DNS points at us.
+    // Whether it's actually live has to come from the separate domain-config
+    // check below, which reflects real DNS state.
+    if (!data.verified) {
+      return { verified: false, instructions };
+    }
+    const configRes = await fetch(
+      `https://api.vercel.com/v6/domains/${domain}/config${this.teamQuery}`,
+      { headers: this.headers() },
+    );
+    if (!configRes.ok) {
+      return { verified: false, instructions };
+    }
+    const config = (await configRes.json()) as { misconfigured?: boolean };
+    return { verified: !config.misconfigured, instructions };
   }
 
   async removeDomain(domain: string): Promise<void> {

@@ -233,8 +233,8 @@ export function DomainSettings({ tenant }: { tenant: Tenant }) {
 }
 
 function DnsInstructions({ status }: { status: DomainStatus }) {
-  const instruction = status.instructions[0];
-  if (!instruction || !instruction.value) {
+  const instructions = status.instructions.filter((i) => i.value);
+  if (instructions.length === 0) {
     return (
       <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
         We&apos;re finishing setup on our end for custom domains — check back shortly, or contact
@@ -243,40 +243,42 @@ function DnsInstructions({ status }: { status: DomainStatus }) {
     );
   }
 
-  const isApex = instruction.type === "A";
+  const hasApex = instructions.some((i) => i.type === "A");
 
   return (
     <div className="rounded-lg border p-3.5">
-      <p className="text-xs font-medium">
-        {isApex ? "Using the bare domain (no www)?" : "Using www or a subdomain?"}
-      </p>
+      <p className="text-xs font-medium">Add these DNS records</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {isApex
-          ? "A bare domain like yourshop.com needs an A record — it points your domain straight at an IP address."
+        {hasApex
+          ? "The A record points your bare domain straight at an IP address; the CNAME does the same for the www version, so both work."
           : "A domain like www.yourshop.com needs a CNAME record — it points your domain at another hostname instead of an IP."}
       </p>
 
       <ol className="mt-3 flex list-decimal flex-col gap-1.5 pl-4 text-xs text-muted-foreground">
         <li>Log into wherever you bought the domain (GoDaddy, Namecheap, etc.).</li>
-        <li>
-          Find its DNS settings and add a{" "}
-          <span className="font-medium text-foreground">{instruction.type} record</span>:
-        </li>
+        <li>Find its DNS settings and add each record below:</li>
       </ol>
 
-      <div className="mt-2 grid grid-cols-3 gap-2 rounded-md bg-muted/40 p-2.5 font-mono text-xs">
-        <div>
-          <p className="text-muted-foreground">Type</p>
-          <p>{instruction.type}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Name/Host</p>
-          <p>{instruction.host}</p>
-        </div>
-        <div className="col-span-1 min-w-0">
-          <p className="text-muted-foreground">Value</p>
-          <p className="truncate">{instruction.value}</p>
-        </div>
+      <div className="mt-2 flex flex-col gap-2">
+        {instructions.map((instruction) => (
+          <div
+            key={`${instruction.type}-${instruction.host}`}
+            className="grid grid-cols-3 gap-2 rounded-md bg-muted/40 p-2.5 font-mono text-xs"
+          >
+            <div>
+              <p className="text-muted-foreground">Type</p>
+              <p>{instruction.type}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Name/Host</p>
+              <p>{instruction.host}</p>
+            </div>
+            <div className="col-span-1 min-w-0">
+              <p className="text-muted-foreground">Value</p>
+              <p className="truncate">{instruction.value}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       <p className="mt-3 text-xs text-muted-foreground">
