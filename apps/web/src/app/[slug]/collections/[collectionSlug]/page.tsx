@@ -34,7 +34,6 @@ export async function generateMetadata({
       description,
       url: canonical,
       type: "website",
-      images: collection.coverImage ? [{ url: collection.coverImage }] : undefined,
     },
   };
 }
