@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Circle, Loader2, ExternalLink, Trash2 } from "lucide-react";
+import { Check, CheckCircle2, Circle, Copy, Loader2, ExternalLink, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -263,19 +263,24 @@ function DnsInstructions({ status }: { status: DomainStatus }) {
         {instructions.map((instruction) => (
           <div
             key={`${instruction.type}-${instruction.host}`}
-            className="grid grid-cols-3 gap-2 rounded-md bg-muted/40 p-2.5 font-mono text-xs"
+            className="rounded-md bg-muted/40 p-2.5 font-mono text-xs"
           >
-            <div>
-              <p className="text-muted-foreground">Type</p>
-              <p>{instruction.type}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-muted-foreground">Type</p>
+                <p>{instruction.type}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Name/Host</p>
+                <p>{instruction.host}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-muted-foreground">Name/Host</p>
-              <p>{instruction.host}</p>
-            </div>
-            <div className="col-span-1 min-w-0">
+            <div className="mt-2">
               <p className="text-muted-foreground">Value</p>
-              <p className="truncate">{instruction.value}</p>
+              <div className="mt-0.5 flex items-start justify-between gap-2">
+                <p className="min-w-0 break-all">{instruction.value}</p>
+                <CopyValueButton value={instruction.value} />
+              </div>
             </div>
           </div>
         ))}
@@ -286,5 +291,35 @@ function DnsInstructions({ status }: { status: DomainStatus }) {
         minutes to 48 hours to take effect.
       </p>
     </div>
+  );
+}
+
+function CopyValueButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      toast.success("Copied");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy. Try selecting the text manually.");
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex shrink-0 items-center gap-1 rounded-md border bg-background px-1.5 py-1 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+    >
+      {copied ? (
+        <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+      ) : (
+        <Copy className="h-3 w-3" />
+      )}
+      {copied ? "Copied" : "Copy"}
+    </button>
   );
 }
