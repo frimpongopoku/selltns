@@ -1,10 +1,5 @@
 import { ImageResponse } from "next/og";
 import { getCollection, getTenantBySlug } from "@/lib/api";
-import { toEmbeddableImage } from "@/lib/og-image";
-
-// sharp (used to re-encode images for Satori — see og-image.ts) needs
-// Node's native module system, unavailable on the Edge runtime.
-export const runtime = "nodejs";
 
 export const alt = "Collection";
 export const size = { width: 1200, height: 630 };
@@ -24,18 +19,12 @@ export default async function Image({
   const title = collection?.title ?? tenant?.name ?? "Selltns";
   const bg = tenant?.themeTokens.background ?? "#111111";
   const accent = tenant?.themeTokens.accent ?? "#E8C468";
-  const candidates = (collection?.products ?? [])
+  // See the NOTE in ../../opengraph-image.tsx — WebP product photos render
+  // blank here rather than crashing, pending a non-native re-encode fix.
+  const featured = (collection?.products ?? [])
     .filter((p) => p.isActive && p.images[0])
     .slice(0, 4);
-  const tileWidth = candidates.length > 0 ? Math.floor(size.width / candidates.length) : 0;
-
-  const [tileImages, coverImage] = await Promise.all([
-    Promise.all(candidates.map((p) => toEmbeddableImage(p.images[0], tileWidth, size.height))),
-    collection?.coverImage
-      ? toEmbeddableImage(collection.coverImage, size.width, size.height)
-      : Promise.resolve(null),
-  ]);
-  const tiles = tileImages.filter((src): src is string => !!src);
+  const tileWidth = featured.length > 0 ? Math.floor(size.width / featured.length) : 0;
 
   return new ImageResponse(
     (
@@ -49,12 +38,25 @@ export default async function Image({
           fontFamily: "sans-serif",
         }}
       >
-        {tiles.length > 0 ? (
-          tiles.map((src, i) => (
-            <img key={i} src={src} alt="" width={tileWidth} height={size.height} style={{ objectFit: "cover" }} />
+        {featured.length > 0 ? (
+          featured.map((p) => (
+            <img
+              key={p.id}
+              src={p.images[0]}
+              alt=""
+              width={tileWidth}
+              height={size.height}
+              style={{ objectFit: "cover" }}
+            />
           ))
-        ) : coverImage ? (
-          <img src={coverImage} alt="" width={size.width} height={size.height} style={{ objectFit: "cover" }} />
+        ) : collection?.coverImage ? (
+          <img
+            src={collection.coverImage}
+            alt=""
+            width={size.width}
+            height={size.height}
+            style={{ objectFit: "cover" }}
+          />
         ) : null}
 
         <div
