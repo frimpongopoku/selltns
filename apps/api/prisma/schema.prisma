@@ -65,6 +65,25 @@ enum UpgradeRequestStatus {
   REJECTED
 }
 
+enum AffiliateStatus {
+  PENDING
+  ACTIVE
+  DECLINED
+  TERMINATED
+}
+
+// FIXED = a flat GHS ceiling the affiliate can add on top of the owner's
+// price; PERCENTAGE = a ceiling expressed as a percentage of it instead.
+enum AffiliateCapType {
+  FIXED
+  PERCENTAGE
+}
+
+enum OrderSource {
+  DIRECT
+  AFFILIATE
+}
+
 model Tenant {
   id               String   @id @default(cuid())
   name             String
@@ -77,6 +96,11 @@ model Tenant {
   ownerTitle       String   @default("") @map("owner_title")
   ownerBio         String   @default("") @map("owner_bio")
   ownerInfoVisible Boolean  @default(false) @map("owner_info_visible")
+  // Whether this tenant's own storefront footer discloses its affiliate
+  // relationships (both directions — shops it resells for, and shops
+  // reselling its products). Each tenant only ever controls disclosure of
+  // its own relationships, never the other party's.
+  affiliateDisclosureVisible Boolean @default(true) @map("affiliate_disclosure_visible")
   heroTagline      String   @default("Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.") @map("hero_tagline")
   footerTagline    String   @default("Handmade, made-to-order pieces. Requested here, confirmed by us, paid your way.") @map("footer_tagline")
   storyBlocks      Json     @default("[]") @map("story_blocks")
@@ -104,6 +128,9 @@ model Tenant {
   orders              Order[]
   verificationRequest VerificationRequest?
   upgradeRequests     UpgradeRequest[]
+
+  affiliateRelationshipsAsOwner     AffiliateRelationship[] @relation("AffiliateAsOwner")
+  affiliateRelationshipsAsAffiliate AffiliateRelationship[] @relation("AffiliateAsAffiliate")
 
   @@map("tenants")
 }
@@ -183,6 +210,9 @@ model Product {
   tenant      Tenant              @relation(fields: [tenantId], references: [id])
   collections CollectionProduct[]
 
+  affiliateExemptions AffiliateProductExemption[]
+  affiliateListings   AffiliateProductListing[]   @relation("AffiliateListedProduct")
+
   @@unique([tenantId, slug])
   @@index([tenantId])
   @@map("products")
@@ -209,6 +239,8 @@ model Collection {
 
   tenant   Tenant              @relation(fields: [tenantId], references: [id])
   products CollectionProduct[]
+
+  affiliateItems AffiliateCollectionItem[] @relation("AffiliateCollectionItems")
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -272,10 +304,117 @@ model Order {
   completedAt          DateTime?    @map("completed_at")
   seenByAdminAt        DateTime?    @map("seen_by_admin_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  // AFFILIATE orders are auto-created on the owner's tenant alongside the
+  // affiliate's own customer-facing (DIRECT) order — see AffiliatesService/
+  // OrdersService.create. originatingOrderId is only set on that owner-side
+  // mirror row, pointing back at the affiliate's order; affiliateTenantId is
+  // set on both rows.
+  source             OrderSource @default(DIRECT)
+  affiliateTenantId  String?     @map("affiliate_tenant_id")
+  originatingOrderId String?     @unique @map("originating_order_id")
+
+  tenant           Tenant @relation(fields: [tenantId], references: [id])
+  originatingOrder Order? @relation("MirroredOrder", fields: [originatingOrderId], references: [id])
+  mirroredOrder    Order? @relation("MirroredOrder")
 
   @@index([tenantId])
   @@map("orders")
+}
+
+// The relationship between a product owner ("owner tenant") and a reselling
+// shop ("affiliate tenant"). One row per pair — re-inviting after a DECLINED
+// or TERMINATED relationship reuses this same row (status flips back to
+// PENDING) rather than creating a duplicate, so `history` always holds the
+// full lifecycle for a given pair.
+model AffiliateRelationship {
+  id                  String           @id @default(cuid())
+  ownerTenantId       String           @map("owner_tenant_id")
+  affiliateTenantId   String           @map("affiliate_tenant_id")
+  status              AffiliateStatus  @default(PENDING)
+  capType             AffiliateCapType @map("cap_type")
+  capValue            Int              @map("cap_value")
+  invitedAt           DateTime         @default(now()) @map("invited_at")
+  invitedByUserId     String           @map("invited_by_user_id")
+  respondedAt         DateTime?        @map("responded_at")
+  respondedByUserId   String?          @map("responded_by_user_id")
+  terminatedAt        DateTime?        @map("terminated_at")
+  terminatedByUserId  String?          @map("terminated_by_user_id")
+  // Append-only audit trail — same {status/event, note, at}[] convention as
+  // Order.history. Drives the in-app activity feed; no separate
+  // notifications table.
+  history             Json             @default("[]")
+  createdAt           DateTime         @default(now()) @map("created_at")
+  updatedAt           DateTime         @updatedAt @map("updated_at")
+
+  ownerTenant     Tenant @relation("AffiliateAsOwner", fields: [ownerTenantId], references: [id])
+  affiliateTenant Tenant @relation("AffiliateAsAffiliate", fields: [affiliateTenantId], references: [id])
+
+  exemptions AffiliateProductExemption[]
+  listings   AffiliateProductListing[]
+
+  @@unique([ownerTenantId, affiliateTenantId])
+  @@index([affiliateTenantId, status])
+  @@index([ownerTenantId, status])
+  @@map("affiliate_relationships")
+}
+
+// A row here means the owner has hidden this product from this specific
+// affiliate — default is "all visible", exemption is the opt-out.
+model AffiliateProductExemption {
+  id             String   @id @default(cuid())
+  relationshipId String   @map("relationship_id")
+  productId      String   @map("product_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  relationship AffiliateRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  product      Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([relationshipId, productId])
+  @@map("affiliate_product_exemptions")
+}
+
+// "This owner product is shown on the affiliate's own shop" — created in
+// bulk when a relationship is accepted (one row per non-exempt owner
+// product), independent of any collection placement.
+model AffiliateProductListing {
+  id             String   @id @default(cuid())
+  relationshipId String   @map("relationship_id")
+  productId      String   @map("product_id")
+  // null = affiliate hasn't set a markup yet, so the effective price simply
+  // floats with the owner's live price — see AffiliatesService.
+  priceOverride  Int?     @map("price_override")
+  isActive       Boolean  @default(true) @map("is_active")
+  displayOrder   Int      @default(0) @map("display_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  relationship    AffiliateRelationship      @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  product         Product                    @relation("AffiliateListedProduct", fields: [productId], references: [id], onDelete: Cascade)
+  collectionItems AffiliateCollectionItem[]
+
+  @@unique([relationshipId, productId])
+  @@index([relationshipId])
+  @@map("affiliate_product_listings")
+}
+
+// "This affiliate-listed product is also placed inside the affiliate's own
+// Collection X" — kept separate from CollectionProduct (rather than reusing
+// it with a cross-tenant productId) so the affiliate's native collections
+// never need to know about cross-tenant products; termination is then a
+// single deleteMany on AffiliateProductListing, cascading here for free.
+model AffiliateCollectionItem {
+  id           String   @id @default(cuid())
+  listingId    String   @map("listing_id")
+  collectionId String   @map("collection_id")
+  position     Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  listing    AffiliateProductListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  collection Collection              @relation("AffiliateCollectionItems", fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, collectionId])
+  @@index([collectionId])
+  @@map("affiliate_collection_items")
 }
 
 // A vendor's application for the "Verified" badge — full legal name, Ghana

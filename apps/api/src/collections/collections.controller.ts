@@ -49,14 +49,25 @@ export class CollectionsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.collectionsService.findOne(id, tenantId);
+  findOne(
+    @Param('id') id: string,
+    @Query('tenantId') tenantId: string,
+    @Query('includeAffiliate') includeAffiliate?: string,
+  ) {
+    return this.collectionsService.findOne(
+      id,
+      tenantId,
+      includeAffiliate === 'true',
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER')
   @Post()
-  create(@CurrentUser() user: SessionPayload, @Body() body: Partial<Collection>) {
+  create(
+    @CurrentUser() user: SessionPayload,
+    @Body() body: Partial<Collection>,
+  ) {
     return this.collectionsService.create({ ...body, tenantId: user.tenantId });
   }
 

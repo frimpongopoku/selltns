@@ -13,6 +13,7 @@ import {
 } from './collections.constants';
 import type { Collection, ThemeTokens } from '../common/types';
 import { getPreorderInfoMap } from '../common/preorder-info';
+import { AffiliatesService } from '../affiliates/affiliates.service';
 
 const PRODUCTS_INCLUDE = {
   products: {
@@ -122,7 +123,10 @@ export interface FindAllPaginatedParams {
 
 @Injectable()
 export class CollectionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly affiliatesService: AffiliatesService,
+  ) {}
 
   // A collection's own `type: 'PREORDER'` only marks the collection —
   // nothing on Product itself says "I'm a pre-order item", so the storefront
@@ -232,7 +236,11 @@ export class CollectionsService {
     return rows.map((r) => r.tag);
   }
 
-  async findOne(idOrSlug: string, tenantId: string) {
+  // includeAffiliate merges in active affiliate-listed products this
+  // collection's owner has placed here — only the storefront passes this;
+  // the admin edit page stays native-only, since its product picker only
+  // knows how to add/remove this tenant's own products.
+  async findOne(idOrSlug: string, tenantId: string, includeAffiliate = false) {
     const collection = await this.prisma.collection.findFirst({
       where: { tenantId, OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
       include: PRODUCTS_INCLUDE,
@@ -242,7 +250,19 @@ export class CollectionsService {
     const [withPreorder] = await this.withProductPreorderInfo([
       mapCollection(collection),
     ]);
-    return withPreorder;
+    if (!includeAffiliate) return withPreorder;
+
+    const affiliateProducts =
+      await this.affiliatesService.getActiveCollectionItems(withPreorder.id);
+    if (affiliateProducts.length === 0) return withPreorder;
+    return {
+      ...withPreorder,
+      productIds: [
+        ...withPreorder.productIds,
+        ...affiliateProducts.map((p) => p.id),
+      ],
+      products: [...withPreorder.products, ...affiliateProducts],
+    };
   }
 
   async create(input: Partial<Collection> & { tenantId: string }) {

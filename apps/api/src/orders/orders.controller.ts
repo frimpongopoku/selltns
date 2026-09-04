@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import type { OrderItem, OrderStatus } from '../common/types';
+import type { OrderItem, OrderStatus, OrderSource } from '../common/types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -28,8 +28,11 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Get()
-  findAll(@CurrentUser() user: SessionPayload) {
-    return this.ordersService.findAll(user.tenantId);
+  findAll(
+    @CurrentUser() user: SessionPayload,
+    @Query('source') source?: OrderSource,
+  ) {
+    return this.ordersService.findAll(user.tenantId, source);
   }
 
   // Public — the customer-facing tracking page reads by token, no login.
@@ -88,7 +91,12 @@ export class OrdersController {
     @CurrentUser() user: SessionPayload,
     @Body() body: { status: OrderStatus; note?: string },
   ) {
-    return this.ordersService.updateStatus(id, user.tenantId, body.status, body.note);
+    return this.ordersService.updateStatus(
+      id,
+      user.tenantId,
+      body.status,
+      body.note,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -106,7 +114,12 @@ export class OrdersController {
     @CurrentUser() user: SessionPayload,
     @Body() body: { items: OrderItem[]; note?: string },
   ) {
-    return this.ordersService.modifyItems(id, user.tenantId, body.items, body.note);
+    return this.ordersService.modifyItems(
+      id,
+      user.tenantId,
+      body.items,
+      body.note,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -130,7 +143,10 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Patch(':id/balance-paid')
-  markBalancePaid(@Param('id') id: string, @CurrentUser() user: SessionPayload) {
+  markBalancePaid(
+    @Param('id') id: string,
+    @CurrentUser() user: SessionPayload,
+  ) {
     return this.ordersService.markBalancePaid(id, user.tenantId);
   }
 }

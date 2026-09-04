@@ -1,5 +1,10 @@
 import { cache } from "react";
 import type {
+  AffiliateCapType,
+  AffiliateEligibleProduct,
+  AffiliateListing,
+  AffiliatePublicSummary,
+  AffiliateRelationship,
   Collection,
   CollectionPage,
   CollectionWithProducts,
@@ -121,6 +126,11 @@ export const updateTenantStorefrontCopy = (
     method: "PATCH",
     body: JSON.stringify(input),
   });
+export const updateAffiliateDisclosure = (tenantId: string, visible: boolean) =>
+  adminRequest<Tenant>(`/tenants/${tenantId}/affiliate-disclosure`, {
+    method: "PATCH",
+    body: JSON.stringify({ visible }),
+  });
 export const getDomainStatus = (tenantId: string) =>
   adminRequest<DomainStatus>(`/tenants/${tenantId}/domain`);
 export const setDomain = (tenantId: string, domain: string) =>
@@ -132,8 +142,13 @@ export const removeDomain = (tenantId: string) =>
   adminRequest<void>(`/tenants/${tenantId}/domain`, { method: "DELETE" });
 
 // Products
-export const getProducts = (tenantId: string) =>
-  request<Product[]>(`/products?tenantId=${tenantId}`);
+// includeAffiliate merges in active affiliate-listed products from shops
+// that made this tenant an affiliate — pass true from storefront reads
+// only; the admin product-management table stays native-only.
+export const getProducts = (tenantId: string, includeAffiliate = false) =>
+  request<Product[]>(
+    `/products?tenantId=${tenantId}${includeAffiliate ? "&includeAffiliate=true" : ""}`,
+  );
 export interface GetProductsPageParams {
   cursor?: string;
   limit?: number;
@@ -192,8 +207,14 @@ export const getCollectionsPage = (tenantId: string, params: GetCollectionsPageP
 };
 export const getCollectionTags = (tenantId: string) =>
   request<string[]>(`/collections/tags?tenantId=${tenantId}`);
-export const getCollection = (idOrSlug: string, tenantId: string) =>
-  request<CollectionWithProducts>(`/collections/${idOrSlug}?tenantId=${tenantId}`);
+export const getCollection = (
+  idOrSlug: string,
+  tenantId: string,
+  includeAffiliate = false,
+) =>
+  request<CollectionWithProducts>(
+    `/collections/${idOrSlug}?tenantId=${tenantId}${includeAffiliate ? "&includeAffiliate=true" : ""}`,
+  );
 export const createCollection = (tenantId: string, input: Partial<Collection>) =>
   adminRequest<CollectionWithProducts>("/collections", {
     method: "POST",
@@ -373,6 +394,96 @@ export const updateStoryBlocks = (tenantId: string, blocks: ContentBlock[]) =>
     method: "PATCH",
     body: JSON.stringify({ tenantId, blocks }),
   });
+
+// Public — feeds SiteFooter with a tenant's own affiliate relationships,
+// gated server-side by that tenant's own disclosure setting.
+export const getAffiliatePublicSummary = (tenantId: string) =>
+  request<AffiliatePublicSummary>(`/affiliates/public-summary/${tenantId}`);
+
+// Affiliates — entirely admin-only. Reads used from client components
+// (e.g. after a mutation, via router.refresh() + re-fetch) go through
+// adminRequest here; a Server Component's *initial* render instead uses
+// lib/api-server.ts, same split as Team/Orders.
+export const inviteAffiliate = (
+  tenantId: string,
+  input: { affiliateSlug: string; capType: AffiliateCapType; capValue: number },
+) =>
+  adminRequest<AffiliateRelationship>(`/affiliates/invite?tenantId=${tenantId}`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+export const getOutgoingAffiliates = (tenantId: string) =>
+  adminRequest<AffiliateRelationship[]>(`/affiliates/outgoing?tenantId=${tenantId}`);
+export const getIncomingAffiliates = (tenantId: string) =>
+  adminRequest<AffiliateRelationship[]>(`/affiliates/incoming?tenantId=${tenantId}`);
+export const acceptAffiliate = (id: string, tenantId: string) =>
+  adminRequest<AffiliateRelationship>(`/affiliates/${id}/accept?tenantId=${tenantId}`, {
+    method: "PATCH",
+  });
+export const declineAffiliate = (id: string, tenantId: string) =>
+  adminRequest<AffiliateRelationship>(`/affiliates/${id}/decline?tenantId=${tenantId}`, {
+    method: "PATCH",
+  });
+export const terminateAffiliate = (id: string, tenantId: string) =>
+  adminRequest<AffiliateRelationship>(`/affiliates/${id}/terminate?tenantId=${tenantId}`, {
+    method: "PATCH",
+  });
+export const getAffiliateEligibleProducts = (id: string, tenantId: string) =>
+  adminRequest<AffiliateEligibleProduct[]>(
+    `/affiliates/${id}/eligible-products?tenantId=${tenantId}`,
+  );
+export const exemptAffiliateProduct = (id: string, tenantId: string, productId: string) =>
+  adminRequest<{ id: string }>(
+    `/affiliates/${id}/exemptions/${productId}?tenantId=${tenantId}`,
+    { method: "POST" },
+  );
+export const unexemptAffiliateProduct = (id: string, tenantId: string, productId: string) =>
+  adminRequest<{ id: string }>(
+    `/affiliates/${id}/exemptions/${productId}?tenantId=${tenantId}`,
+    { method: "DELETE" },
+  );
+export const getAffiliateListings = (id: string, tenantId: string) =>
+  adminRequest<AffiliateListing[]>(`/affiliates/${id}/listings?tenantId=${tenantId}`);
+export const setAffiliateListingPrice = (
+  id: string,
+  tenantId: string,
+  productId: string,
+  price: number,
+) =>
+  adminRequest<AffiliateListing>(
+    `/affiliates/${id}/listings/${productId}?tenantId=${tenantId}`,
+    { method: "PATCH", body: JSON.stringify({ price }) },
+  );
+export const toggleAffiliateListing = (
+  id: string,
+  tenantId: string,
+  productId: string,
+  isActive: boolean,
+) =>
+  adminRequest<{ id: string; isActive: boolean }>(
+    `/affiliates/${id}/listings/${productId}/toggle?tenantId=${tenantId}`,
+    { method: "PATCH", body: JSON.stringify({ isActive }) },
+  );
+export const addAffiliateCollectionItem = (
+  id: string,
+  tenantId: string,
+  collectionId: string,
+  productId: string,
+) =>
+  adminRequest<{ id: string }>(
+    `/affiliates/${id}/collections/${collectionId}/items/${productId}?tenantId=${tenantId}`,
+    { method: "POST" },
+  );
+export const removeAffiliateCollectionItem = (
+  id: string,
+  tenantId: string,
+  collectionId: string,
+  productId: string,
+) =>
+  adminRequest<{ id: string }>(
+    `/affiliates/${id}/collections/${collectionId}/items/${productId}?tenantId=${tenantId}`,
+    { method: "DELETE" },
+  );
 
 // Billing — submitting an upgrade request (client-side, from the dialog's
 // button click). Reading platform payment methods/message/request history

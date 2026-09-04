@@ -25,6 +25,7 @@ export const tenant: Tenant = {
   ownerTitle: 'Founder & Designer',
   ownerBio: 'Handcrafted in Accra, one piece at a time.',
   ownerInfoVisible: false,
+  affiliateDisclosureVisible: true,
   heroTagline:
     "Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.",
   footerTagline:
@@ -337,7 +338,10 @@ export const paymentMethods: PaymentMethod[] = [
   },
 ];
 
-export const orders: Order[] = [
+const ordersBase: Omit<
+  Order,
+  'source' | 'affiliateTenantId' | 'originatingOrderId'
+>[] = [
   {
     id: 'order_1',
     tenantId: DEMO_TENANT_ID,
@@ -632,6 +636,14 @@ export const orders: Order[] = [
     preorderCollectionId: 'col_4',
   },
 ];
+
+// All seed orders are direct (non-affiliate) sales.
+export const orders: Order[] = ordersBase.map((o) => ({
+  ...o,
+  source: 'DIRECT',
+  affiliateTenantId: null,
+  originatingOrderId: null,
+}));
 
 export const storyBlocks: ContentBlock[] = [
   {

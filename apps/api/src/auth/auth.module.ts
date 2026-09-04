@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { FirebaseVerifierService } from './firebase-verifier.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard } from './roles.guard';
+import { EmailModule } from '../email/email.module';
 
 // Global so every other module's controllers can reference JwtAuthGuard /
 // RolesGuard via @UseGuards(...) without each importing AuthModule — those
@@ -18,6 +19,7 @@ import { RolesGuard } from './roles.guard';
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '7d' },
     }),
+    EmailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, FirebaseVerifierService, JwtAuthGuard, RolesGuard],

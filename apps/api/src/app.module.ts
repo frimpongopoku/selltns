@@ -19,6 +19,7 @@ import { VerificationModule } from './verification/verification.module';
 import { SuperAdminModule } from './superadmin/superadmin.module';
 import { BillingModule } from './billing/billing.module';
 import { HealthModule } from './health/health.module';
+import { AffiliatesModule } from './affiliates/affiliates.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { HealthModule } from './health/health.module';
     SuperAdminModule,
     BillingModule,
     HealthModule,
+    AffiliatesModule,
   ],
   controllers: [AppController],
   providers: [

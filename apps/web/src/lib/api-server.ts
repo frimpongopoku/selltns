@@ -11,6 +11,7 @@
 // from the httpOnly cookie the same way lib/get-me.ts already does.
 import { getSessionToken } from "./session";
 import type {
+  AffiliateRelationship,
   Order,
   PlatformPaymentMethod,
   TeamMember,
@@ -57,3 +58,7 @@ export const getBillingMessage = () =>
   serverAdminRequest<{ message: string }>(`/billing/message`);
 export const getUpgradeRequests = () =>
   serverAdminRequest<UpgradeRequest[]>(`/billing/requests`);
+export const getOutgoingAffiliates = () =>
+  serverAdminRequest<AffiliateRelationship[]>(`/affiliates/outgoing`);
+export const getIncomingAffiliates = () =>
+  serverAdminRequest<AffiliateRelationship[]>(`/affiliates/incoming`);

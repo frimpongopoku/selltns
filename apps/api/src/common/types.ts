@@ -7,6 +7,10 @@ export type CollectionType = 'STANDARD' | 'PREORDER';
 export type OrderType = 'STANDARD' | 'PREORDER';
 export type DepositType = 'FULL' | 'PERCENTAGE';
 
+export type AffiliateStatus = 'PENDING' | 'ACTIVE' | 'DECLINED' | 'TERMINATED';
+export type AffiliateCapType = 'FIXED' | 'PERCENTAGE';
+export type OrderSource = 'DIRECT' | 'AFFILIATE';
+
 export type ThemeTemplate = 'FASHION' | 'GENERAL' | 'CLEAN';
 
 export interface ThemeTokens {
@@ -33,6 +37,7 @@ export interface Tenant {
   ownerTitle: string;
   ownerBio: string;
   ownerInfoVisible: boolean;
+  affiliateDisclosureVisible: boolean;
   heroTagline: string;
   footerTagline: string;
   themeTokens: ThemeTokens;
@@ -80,6 +85,16 @@ export interface Product {
   displayOrder: number;
   createdAt: string;
   preorder?: PreorderInfo | null;
+  // Set only when this product is being shown on an affiliate's storefront —
+  // `price` above is already the affiliate's effective (marked-up) price in
+  // that case; `tenantId` stays the owner's, since that's who actually owns
+  // and fulfills the product. See AffiliatesService/ProductsService merge.
+  affiliateSource?: {
+    listingId: string;
+    relationshipId: string;
+    ownerTenantId: string;
+    ownerTenantName: string;
+  } | null;
 }
 
 export interface Collection {
@@ -145,6 +160,47 @@ export interface Order {
   whatsappNumber: string | null;
   deliveryAddress: string | null;
   preorderCollectionId: string | null;
+  source: OrderSource;
+  affiliateTenantId: string | null;
+  originatingOrderId: string | null;
+}
+
+export interface AffiliateRelationship {
+  id: string;
+  ownerTenantId: string;
+  affiliateTenantId: string;
+  status: AffiliateStatus;
+  capType: AffiliateCapType;
+  capValue: number;
+  invitedAt: string;
+  invitedByUserId: string;
+  respondedAt: string | null;
+  respondedByUserId: string | null;
+  terminatedAt: string | null;
+  terminatedByUserId: string | null;
+  history: { event: string; note: string; at: string }[];
+  createdAt: string;
+  updatedAt: string;
+  ownerTenant: { id: string; name: string; slug: string } | null;
+  affiliateTenant: { id: string; name: string; slug: string } | null;
+}
+
+export interface AffiliateListing {
+  id: string;
+  relationshipId: string;
+  productId: string;
+  priceOverride: number | null;
+  isActive: boolean;
+  displayOrder: number;
+  product: Product | null;
+  ownerPrice: number;
+  effectivePrice: number;
+  capCeiling: number;
+}
+
+export interface AffiliateEligibleProduct {
+  product: Product;
+  exempt: boolean;
 }
 
 export type ContentBlockType = 'TEXT' | 'VIDEO' | 'PHOTOS';

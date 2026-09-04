@@ -123,7 +123,7 @@ export function ThemePicker({
             Small-batch, handmade pieces — requested here, confirmed by us.
           </p>
           <div className="store-btn-primary mt-5 inline-block px-5 py-2.5 text-sm font-medium">
-            Shop now
+            Shop Now
           </div>
           <div className="mt-7 grid grid-cols-2 gap-3">
             {[1, 2].map((i) => (

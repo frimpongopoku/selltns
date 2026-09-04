@@ -17,7 +17,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
 
 async function tenantEntries(tenant: Tenant): Promise<MetadataRoute.Sitemap> {
   const [products, collections, storyBlocks] = await Promise.all([
-    getProducts(tenant.id).catch(() => []),
+    getProducts(tenant.id, true).catch(() => []),
     getCollections(tenant.id).catch(() => []),
     getStoryBlocks(tenant.id).catch(() => []),
   ]);

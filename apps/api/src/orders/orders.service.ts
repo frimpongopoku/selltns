@@ -12,8 +12,10 @@ import type {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
+import { AffiliatesService } from '../affiliates/affiliates.service';
 import { EMAIL_SERVICE, type EmailService } from '../email/email.service';
 import {
+  affiliateMirrorOrderVendorEmail,
   newOrderVendorEmail,
   orderCancelledCustomerEmail,
   orderCompletedCustomerEmail,
@@ -56,6 +58,9 @@ function mapOrder(row: PrismaOrder): Order {
     whatsappNumber: row.whatsappNumber,
     deliveryAddress: row.deliveryAddress,
     preorderCollectionId: row.preorderCollectionId,
+    source: row.source,
+    affiliateTenantId: row.affiliateTenantId,
+    originatingOrderId: row.originatingOrderId,
   };
 }
 
@@ -77,6 +82,7 @@ function mapTenant(row: PrismaTenant): Tenant {
     ownerTitle: row.ownerTitle,
     ownerBio: row.ownerBio,
     ownerInfoVisible: row.ownerInfoVisible,
+    affiliateDisclosureVisible: row.affiliateDisclosureVisible,
     heroTagline: row.heroTagline,
     footerTagline: row.footerTagline,
     themeTokens: row.themeTokens as unknown as Tenant['themeTokens'],
@@ -102,6 +108,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly productsService: ProductsService,
+    private readonly affiliatesService: AffiliatesService,
     @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
   ) {}
 
@@ -128,9 +135,12 @@ export class OrdersService {
     };
   }
 
-  async findAll(tenantId: string): Promise<Order[]> {
+  async findAll(
+    tenantId: string,
+    source?: 'DIRECT' | 'AFFILIATE',
+  ): Promise<Order[]> {
     const rows = await this.prisma.order.findMany({
-      where: { tenantId },
+      where: { tenantId, source },
       orderBy: { createdAt: 'desc' },
     });
     return rows.map(mapOrder);
@@ -159,25 +169,79 @@ export class OrdersService {
     deliveryAddress?: string;
     items: { productId: string; quantity: number }[];
   }): Promise<Order> {
-    const products = await Promise.all(
-      input.items.map(({ productId }) =>
-        this.productsService.findOne(productId, input.tenantId),
-      ),
+    // Each cart line item is either native to the buying tenant, or an
+    // affiliate-listed product from a shop that made this tenant an
+    // affiliate — resolved the same "price at order time, never trust the
+    // client" way either way.
+    const resolvedItems = await Promise.all(
+      input.items.map(async (item) => {
+        try {
+          const product = await this.productsService.findOne(
+            item.productId,
+            input.tenantId,
+          );
+          return {
+            productId: product.id,
+            title: product.title,
+            quantity: item.quantity,
+            priceAtOrder: product.price,
+            preorder: product.preorder ?? null,
+            affiliateOwnerTenantId: null as string | null,
+            affiliateOwnerPrice: null as number | null,
+          };
+        } catch (err) {
+          const resolved = await this.affiliatesService.resolveOrderableListing(
+            item.productId,
+            input.tenantId,
+          );
+          if (!resolved) throw err;
+          return {
+            productId: resolved.product.id,
+            title: resolved.product.title,
+            quantity: item.quantity,
+            priceAtOrder: resolved.effectivePrice,
+            preorder: resolved.product.preorder ?? null,
+            affiliateOwnerTenantId: resolved.relationship.ownerTenantId,
+            affiliateOwnerPrice: resolved.product.price,
+          };
+        }
+      }),
     );
-    const items: OrderItem[] = products.map((product, i) => ({
-      productId: product.id,
-      title: product.title,
-      quantity: input.items[i].quantity,
-      priceAtOrder: product.price,
+    const items: OrderItem[] = resolvedItems.map((r) => ({
+      productId: r.productId,
+      title: r.title,
+      quantity: r.quantity,
+      priceAtOrder: r.priceAtOrder,
     }));
+
+    const affiliateItems = resolvedItems.filter(
+      (
+        r,
+      ): r is typeof r & {
+        affiliateOwnerTenantId: string;
+        affiliateOwnerPrice: number;
+      } => r.affiliateOwnerTenantId !== null,
+    );
+    const affiliateOwnerTenantIds = new Set(
+      affiliateItems.map((r) => r.affiliateOwnerTenantId),
+    );
+    if (affiliateOwnerTenantIds.size > 1) {
+      throw new BadRequestException(
+        'An order can only include affiliate products from a single shop at a time.',
+      );
+    }
+    const affiliateOwnerTenantId =
+      affiliateOwnerTenantIds.size === 1
+        ? [...affiliateOwnerTenantIds][0]
+        : null;
 
     // A pre-order's deposit rules come from exactly one PREORDER collection —
     // reject anything that would make the deposit math ambiguous (mixing
     // preorder items from two different collections, or mixing preorder
     // items with regular in-stock ones in the same order).
     const preorderCollectionIds = new Set(
-      products
-        .map((p) => p.preorder?.collectionId)
+      resolvedItems
+        .map((r) => r.preorder?.collectionId)
         .filter((id): id is string => !!id),
     );
     if (preorderCollectionIds.size > 1) {
@@ -185,8 +249,8 @@ export class OrdersService {
         'A pre-order can only include items from a single pre-order collection.',
       );
     }
-    const preorder = products.find((p) => p.preorder)?.preorder ?? null;
-    if (preorder && products.some((p) => !p.preorder)) {
+    const preorder = resolvedItems.find((r) => r.preorder)?.preorder ?? null;
+    if (preorder && resolvedItems.some((r) => !r.preorder)) {
       throw new BadRequestException(
         'Pre-order items cannot be mixed with regular items in the same order.',
       );
@@ -223,36 +287,98 @@ export class OrdersService {
       },
     ];
 
+    // Affiliate-sourced items also need a mirror order auto-created on the
+    // owner's tenant, at the owner's own price — that's their actual
+    // receivable, not the affiliate's marked-up price. Its buyer fields
+    // deliberately withhold the real customer's contact/delivery info
+    // (that stays between the affiliate and their customer) and instead
+    // point the owner at the affiliate to coordinate fulfillment.
+    let ownerMirrorItems: OrderItem[] = [];
+    let ownerMirrorTotal = 0;
+    let affiliateTenant: Tenant | null = null;
+    if (affiliateOwnerTenantId) {
+      ownerMirrorItems = affiliateItems.map((r) => ({
+        productId: r.productId,
+        title: r.title,
+        quantity: r.quantity,
+        priceAtOrder: r.affiliateOwnerPrice,
+      }));
+      ownerMirrorTotal = ownerMirrorItems.reduce(
+        (sum, item) => sum + item.priceAtOrder * item.quantity,
+        0,
+      );
+      affiliateTenant = await this.getTenant(input.tenantId);
+    }
+
     // Collisions are astronomically unlikely (random tokens/refs), but retry
     // a few times against the unique-constraint error rather than trust luck.
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
-        const row = await this.prisma.order.create({
-          data: {
-            tenantId: input.tenantId,
-            customerName: input.customerName,
-            customerContact: input.customerContact,
-            customerEmail: input.customerEmail,
-            status: 'PENDING',
-            items: items as unknown as Prisma.InputJsonValue,
-            total,
-            trackingToken: generateTrackingToken(),
-            paymentReference: generatePaymentReference(),
-            history: history,
-            type: preorder ? 'PREORDER' : 'STANDARD',
-            depositType: preorder?.depositType,
-            depositPercentage: preorder?.depositPercentage ?? undefined,
-            depositAmount,
-            balanceAmount,
-            whatsappNumber: input.whatsappNumber?.trim() || undefined,
-            deliveryAddress: input.deliveryAddress?.trim() || undefined,
-            preorderCollectionId: preorder?.collectionId,
-          },
+        const { affiliateRow } = await this.prisma.$transaction(async (tx) => {
+          const affiliateRow = await tx.order.create({
+            data: {
+              tenantId: input.tenantId,
+              customerName: input.customerName,
+              customerContact: input.customerContact,
+              customerEmail: input.customerEmail,
+              status: 'PENDING',
+              items: items as unknown as Prisma.InputJsonValue,
+              total,
+              trackingToken: generateTrackingToken(),
+              paymentReference: generatePaymentReference(),
+              history: history,
+              type: preorder ? 'PREORDER' : 'STANDARD',
+              depositType: preorder?.depositType,
+              depositPercentage: preorder?.depositPercentage ?? undefined,
+              depositAmount,
+              balanceAmount,
+              whatsappNumber: input.whatsappNumber?.trim() || undefined,
+              deliveryAddress: input.deliveryAddress?.trim() || undefined,
+              preorderCollectionId: preorder?.collectionId,
+            },
+          });
+
+          if (!affiliateOwnerTenantId || !affiliateTenant) {
+            return { affiliateRow, mirrorRow: null };
+          }
+
+          const mirrorRow = await tx.order.create({
+            data: {
+              tenantId: affiliateOwnerTenantId,
+              customerName: `Sold via ${affiliateTenant.name}`,
+              customerContact:
+                affiliateTenant.whatsappNumber ||
+                `Contact ${affiliateTenant.name} via their Selltns dashboard`,
+              customerEmail: input.customerEmail,
+              status: 'PENDING',
+              items: ownerMirrorItems as unknown as Prisma.InputJsonValue,
+              total: ownerMirrorTotal,
+              trackingToken: generateTrackingToken(),
+              paymentReference: generatePaymentReference(),
+              history: [
+                {
+                  status: 'PENDING',
+                  note: `Auto-created — sold via affiliate ${affiliateTenant.name}`,
+                  at: now.toISOString(),
+                },
+              ],
+              type: 'STANDARD',
+              source: 'AFFILIATE',
+              affiliateTenantId: input.tenantId,
+              originatingOrderId: affiliateRow.id,
+            },
+          });
+          return { affiliateRow, mirrorRow };
         });
-        const order = mapOrder(row);
+
+        const order = mapOrder(affiliateRow);
         void this.sendOrderPlacedEmails(order).catch((err) =>
           this.logger.error('Failed to send order-placed emails', err),
         );
+        // The owner isn't emailed about the mirror order yet — not until
+        // the affiliate reviews and confirms their own order with the
+        // customer (see updateStatus below). A record exists on the
+        // owner's tenant immediately either way, just silently.
         return order;
       } catch (err) {
         const isUniqueConflict =
@@ -264,6 +390,46 @@ export class OrdersService {
     throw new Error(
       'Could not generate a unique order reference — please try again.',
     );
+  }
+
+  // The mirrored order withholds the customer's own contact details (see
+  // above) — this is what actually tells the owner who made the sale and
+  // to coordinate fulfillment with them.
+  private async sendAffiliateMirrorOrderEmail(
+    mirrorOrder: Order,
+  ): Promise<void> {
+    if (!mirrorOrder.affiliateTenantId) return;
+    const [ownerTenant, affiliateTenant, vendorEmails] = await Promise.all([
+      this.getTenant(mirrorOrder.tenantId),
+      this.getTenant(mirrorOrder.affiliateTenantId),
+      this.getVendorEmails(mirrorOrder.tenantId),
+    ]);
+    if (vendorEmails.length === 0) return;
+    const { adminUrl } = this.urls(ownerTenant, mirrorOrder);
+    await this.emailService.send({
+      to: vendorEmails,
+      ...affiliateMirrorOrderVendorEmail(
+        mirrorOrder,
+        ownerTenant,
+        affiliateTenant.name,
+        adminUrl,
+      ),
+    });
+  }
+
+  // Called when an affiliate's own (source: DIRECT) order transitions to
+  // CONFIRMED — that's "the affiliate has reviewed and confirmed" the sale,
+  // which is when the owner should first hear about it, not the instant
+  // the customer placed it.
+  private async sendAffiliateMirrorOrderEmailIfAny(
+    order: Order,
+  ): Promise<void> {
+    if (order.source !== 'DIRECT') return;
+    const mirror = await this.prisma.order.findUnique({
+      where: { originatingOrderId: order.id },
+    });
+    if (!mirror) return;
+    await this.sendAffiliateMirrorOrderEmail(mapOrder(mirror));
   }
 
   private async sendOrderPlacedEmails(order: Order): Promise<void> {
@@ -366,6 +532,9 @@ export class OrdersService {
       if (status === 'CONFIRMED') {
         void this.sendOrderConfirmedEmail(order).catch((err) =>
           this.logger.error('Failed to send order-confirmed email', err),
+        );
+        void this.sendAffiliateMirrorOrderEmailIfAny(order).catch((err) =>
+          this.logger.error('Failed to send affiliate mirror-order email', err),
         );
       } else if (status === 'COMPLETED') {
         void this.sendOrderCompletedEmail(order).catch((err) =>

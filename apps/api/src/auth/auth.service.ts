@@ -2,7 +2,9 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -11,11 +13,14 @@ import { FirebaseVerifierService } from './firebase-verifier.service';
 import { DEFAULT_THEME_TOKENS } from '../common/default-theme';
 import { RESERVED_SLUGS } from '../common/reserved-slugs';
 import { slugify } from '../common/slugify';
+import { EMAIL_SERVICE, type EmailService } from '../email/email.service';
+import { welcomeEmail } from '../email/templates';
 import type { SessionPayload } from './jwt-auth.guard';
 import type { RegisterDto } from './dto/register.dto';
 import type { GoogleLoginDto } from './dto/google-login.dto';
 import type { CreateSpaceDto } from './dto/create-space.dto';
 import type { Role, Tenant } from '@prisma/client';
+import type { Tenant as PublicTenant } from '../common/types';
 
 class NotAllowlistedException extends ForbiddenException {
   constructor() {
@@ -37,10 +42,15 @@ interface MembershipWithTenant {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  private readonly webOrigin =
+    process.env.WEB_ORIGIN ?? 'http://localhost:4310';
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly googleVerifier: FirebaseVerifierService,
+    @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
   ) {}
 
   private issueSession(
@@ -141,6 +151,22 @@ export class AuthService {
       tenant.id,
       membership.role,
     );
+
+    void this.emailService
+      .send({
+        to: user.email,
+        ...welcomeEmail(
+          tenant as unknown as PublicTenant,
+          `${this.webOrigin}/admin`,
+          `${this.webOrigin}/${tenant.slug}`,
+        ),
+      })
+      .catch((err) => {
+        this.logger.error(
+          `Failed to send welcome email to ${user.email}: ${err}`,
+        );
+      });
+
     return {
       token,
       user: { id: user.id, name: user.name, email: user.email },

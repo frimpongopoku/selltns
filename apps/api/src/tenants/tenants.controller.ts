@@ -123,6 +123,18 @@ export class TenantsController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER')
+  @Patch(':id/affiliate-disclosure')
+  updateAffiliateDisclosure(
+    @Param('id') id: string,
+    @CurrentUser() user: SessionPayload,
+    @Body() body: { visible: boolean },
+  ) {
+    this.assertOwnTenant(id, user);
+    return this.tenantsService.updateAffiliateDisclosure(id, body.visible);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER')
   @Patch(':id/ownership-info')
   updateOwnershipInfo(
     @Param('id') id: string,

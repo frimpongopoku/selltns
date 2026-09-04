@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { slugify } from '../common/slugify';
@@ -14,6 +14,7 @@ import {
 import type { Product, PreorderInfo } from '../common/types';
 import { attachPreorderInfo } from '../common/preorder-info';
 import type { Product as PrismaProduct } from '@prisma/client';
+import { AffiliatesService } from '../affiliates/affiliates.service';
 
 export interface FindAllPaginatedParams {
   cursor?: string;
@@ -67,7 +68,12 @@ function videoUrlsOf(input: Partial<Product>): string[] {
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ProductsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly affiliatesService: AffiliatesService,
+  ) {}
 
   async findAll(tenantId: string): Promise<ProductWithPreorder[]> {
     const products = await this.prisma.product.findMany({
@@ -75,6 +81,65 @@ export class ProductsService {
       orderBy: { displayOrder: 'asc' },
     });
     return attachPreorderInfo(this.prisma, tenantId, products);
+  }
+
+  // The storefront's variant of findAll: this tenant's own products, plus
+  // any active affiliate-listed products from shops that made this tenant
+  // an affiliate — merged into one list, same shape either way. Only used
+  // for public storefront reads (see ProductsController's includeAffiliate
+  // flag) — the admin product-management table stays native-only, since a
+  // resold product isn't something this tenant can edit or delete.
+  async findAllForStorefront(tenantId: string): Promise<Product[]> {
+    const [native, affiliateProducts] = await Promise.all([
+      this.findAll(tenantId),
+      this.affiliatesService.getActiveListingsForAffiliateTenant(tenantId),
+    ]);
+    const nativeAsProducts: Product[] = native.map((p) => ({
+      id: p.id,
+      tenantId: p.tenantId,
+      title: p.title,
+      slug: p.slug,
+      description: p.description,
+      price: p.price,
+      sku: p.sku,
+      stock: p.stock,
+      isActive: p.isActive,
+      images: p.images,
+      videoUrls: p.videoUrls,
+      tags: p.tags,
+      displayOrder: p.displayOrder,
+      createdAt: p.createdAt.toISOString(),
+      preorder: p.preorder,
+    }));
+    return [...nativeAsProducts, ...affiliateProducts].sort(
+      (a, b) => a.displayOrder - b.displayOrder,
+    );
+  }
+
+  // Public product-detail fallback for a productId that isn't native to
+  // `tenantId` — i.e. it's an owner's product being shown on an affiliate's
+  // storefront. Kept separate from findOne() (native-only) so callers that
+  // need to know whether a lookup was a real hit (OrdersService.create) can
+  // still tell the two apart.
+  async findAffiliateListedProduct(
+    productId: string,
+    affiliateTenantId: string,
+  ): Promise<Product | null> {
+    const resolved = await this.affiliatesService.resolveOrderableListing(
+      productId,
+      affiliateTenantId,
+    );
+    if (!resolved) return null;
+    return {
+      ...resolved.product,
+      price: resolved.effectivePrice,
+      affiliateSource: {
+        listingId: resolved.listingId,
+        relationshipId: resolved.relationship.id,
+        ownerTenantId: resolved.relationship.ownerTenantId,
+        ownerTenantName: resolved.relationship.ownerTenant?.name ?? '',
+      },
+    };
   }
 
   async findAllPaginated(
@@ -199,7 +264,7 @@ export class ProductsService {
         ? await this.uniqueSlug(tenantId, input.slug, existing.id)
         : existing.slug;
 
-    return this.prisma.product.update({
+    const row = await this.prisma.product.update({
       where: { id: existing.id },
       data: {
         title: input.title ?? existing.title,
@@ -218,6 +283,19 @@ export class ProductsService {
         displayOrder: input.displayOrder ?? existing.displayOrder,
       },
     });
+
+    // The owner's price is always the source of truth for any affiliate
+    // reselling this product — a change here must trickle down, clamping
+    // any affiliate price that would now exceed its relationship's cap.
+    if (input.price !== undefined && input.price !== existing.price) {
+      void this.affiliatesService
+        .recalculateAffiliatePricesForProduct(row.id, row.price)
+        .catch((err) =>
+          this.logger.error('Failed to recalculate affiliate prices', err),
+        );
+    }
+
+    return row;
   }
 
   async remove(id: string, tenantId: string): Promise<{ id: string }> {

@@ -75,7 +75,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
               marginBottom: 26,
             }}
           >
-            Shop now
+            Shop Now
           </div>
           <div
             style={{

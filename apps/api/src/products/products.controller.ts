@@ -22,6 +22,10 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   // Public — the storefront reads products straight from these GETs.
+  // includeAffiliate=true also merges in active affiliate-listed products
+  // from shops that made `tenantId` an affiliate — only the storefront
+  // passes this; the admin product-management table stays native-only,
+  // since a resold product isn't something this tenant can edit or delete.
   @Get()
   findAll(
     @Query('tenantId') tenantId: string,
@@ -31,6 +35,7 @@ export class ProductsController {
     @Query('q') q?: string,
     @Query('status') status?: 'active' | 'inactive' | 'all',
     @Query('tag') tag?: string,
+    @Query('includeAffiliate') includeAffiliate?: string,
   ) {
     if (paginate === 'true') {
       return this.productsService.findAllPaginated(tenantId, {
@@ -40,6 +45,9 @@ export class ProductsController {
         status,
         tag,
       });
+    }
+    if (includeAffiliate === 'true') {
+      return this.productsService.findAllForStorefront(tenantId);
     }
     return this.productsService.findAll(tenantId);
   }
@@ -51,8 +59,15 @@ export class ProductsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
-    return this.productsService.findOne(id, tenantId);
+  async findOne(@Param('id') id: string, @Query('tenantId') tenantId: string) {
+    try {
+      return await this.productsService.findOne(id, tenantId);
+    } catch (err) {
+      const affiliateProduct =
+        await this.productsService.findAffiliateListedProduct(id, tenantId);
+      if (affiliateProduct) return affiliateProduct;
+      throw err;
+    }
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

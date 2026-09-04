@@ -15,7 +15,7 @@ export async function generateMetadata({
   const { slug, collectionSlug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) return { title: "Store not found" };
-  const collection = await getCollection(collectionSlug, tenant.id).catch(() => null);
+  const collection = await getCollection(collectionSlug, tenant.id, true).catch(() => null);
   if (!collection) return { title: "Collection not found" };
   const title = collection.seoTitle || `${collection.title} — ${tenant.name}`;
   const description =
@@ -57,7 +57,7 @@ export default async function CollectionPage({
   const { slug, collectionSlug } = await params;
   const tenant = await getTenantBySlug(slug).catch(() => null);
   if (!tenant) notFound();
-  const collection = await getCollection(collectionSlug, tenant.id).catch(() => null);
+  const collection = await getCollection(collectionSlug, tenant.id, true).catch(() => null);
   if (!collection) notFound();
 
   const tokens = collection.themeOverride ?? tenant.themeTokens;

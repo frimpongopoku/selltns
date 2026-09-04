@@ -53,7 +53,7 @@ export default async function StoreHomePage({
   if (!tenant) notFound();
 
   const [products, collections, isCustomDomain] = await Promise.all([
-    getProducts(tenant.id),
+    getProducts(tenant.id, true),
     getCollections(tenant.id),
     isCustomDomainRequest(),
   ]);
@@ -81,7 +81,7 @@ export default async function StoreHomePage({
             href="#products"
             className="store-btn-primary mt-9 inline-block px-7 py-3.5 text-sm font-medium"
           >
-            Shop now
+            Shop Now
           </Link>
         </div>
       </section>

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { Tenant } from "@/lib/types";
+import type { AffiliatePublicSummary, Tenant } from "@/lib/types";
 import { useStoreHref, useStoreSlug } from "./store-context";
 import { OwnershipCredit } from "./ownership-credit";
 import { VerifiedBadge } from "./verified-badge";
@@ -10,14 +10,38 @@ import { BUILD_LABEL } from "@/lib/build-info";
 
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
 
+function AffiliateShopList({ label, shops }: { label: string; shops: { id: string; name: string; slug: string }[] }) {
+  if (shops.length === 0) return null;
+  return (
+    <p className="store-muted text-xs leading-relaxed">
+      {label}{" "}
+      {shops.map((shop, i) => (
+        <span key={shop.id}>
+          <a
+            href={`https://${APP_DOMAIN}/${shop.slug}`}
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[var(--store-primary)]"
+          >
+            {shop.name}
+          </a>
+          {i < shops.length - 1 ? ", " : ""}
+        </span>
+      ))}
+    </p>
+  );
+}
+
 export function SiteFooter({
   tenant,
   hasStory,
   hasCollections,
+  affiliateSummary,
 }: {
   tenant: Tenant;
   hasStory: boolean;
   hasCollections: boolean;
+  affiliateSummary?: AffiliatePublicSummary;
 }) {
   const slug = useStoreSlug();
   const homeHref = useStoreHref();
@@ -76,6 +100,12 @@ export function SiteFooter({
             </div>
           </div>
         </div>
+        {affiliateSummary && (affiliateSummary.sellsFor.length > 0 || affiliateSummary.resoldBy.length > 0) && (
+          <div className="mt-8 flex flex-col gap-1 border-t border-[var(--store-border)] pt-6">
+            <AffiliateShopList label="Also carries products from:" shops={affiliateSummary.sellsFor} />
+            <AffiliateShopList label="Also available via:" shops={affiliateSummary.resoldBy} />
+          </div>
+        )}
         <div className="mt-10">
           <OwnershipCredit tenant={tenant} />
         </div>
