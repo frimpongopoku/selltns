@@ -15,12 +15,14 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       {
         userAgent: "*",
         allow: "/",
-        // /admin: never public. /api: internal route handlers, not content.
-        // /*/cart, /*/checkout, /*/track: per-session/transactional pages —
-        // no SEO value and would otherwise show up as thin duplicate content.
-        disallow: ["/admin", "/api", "/*/cart", "/*/checkout", "/*/track"],
+        // /admin, /superadmin: never public. /api: internal route handlers,
+        // not content. /*/cart, /*/checkout, /*/track: per-session/
+        // transactional pages — no SEO value and would otherwise show up as
+        // thin duplicate content.
+        disallow: ["/admin", "/superadmin", "/api", "/*/cart", "/*/checkout", "/*/track"],
       },
     ],
     sitemap: sitemapUrl,
   };
 }
+

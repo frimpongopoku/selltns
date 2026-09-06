@@ -63,6 +63,30 @@ const nextConfig: NextConfig = {
       { source: "/demo/:path*", destination: "/akosua/:path*", permanent: false },
     ];
   },
+  // Baseline security headers on every response. Deliberately NOT a full
+  // script-src CSP here — this app loads Firebase Auth's popup flow,
+  // Sentry, PostHog, Google Fonts and YouTube embeds, and safely locking
+  // script-src down needs nonces/hashes verified against every one of
+  // those live, not guessed at. clickjacking protection (frame-ancestors/
+  // X-Frame-Options) costs nothing to add blind since it only restricts
+  // who can *frame* this app, not what this app can load — nothing here
+  // legitimately embeds the storefront or admin in a third-party iframe.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

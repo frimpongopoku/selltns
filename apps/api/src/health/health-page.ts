@@ -11,14 +11,27 @@ function statusDot(status: CheckStatus): string {
   return `<span class="dot dot-${status}"></span>`;
 }
 
+// Every field here is currently either a hardcoded string or a third-party
+// error's `.message` (see health.service.ts) — never raw user input — but
+// this page has no view engine to auto-escape for it, so escape explicitly
+// rather than relying on "nothing currently reaches this that needs it."
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function checkRow(result: HealthCheckResult): string {
   return `
     <div class="row">
       <div class="row-main">
         ${statusDot(result.status)}
-        <span class="row-name">${result.name}</span>
+        <span class="row-name">${escapeHtml(result.name)}</span>
       </div>
-      <span class="row-detail muted">${result.detail}</span>
+      <span class="row-detail muted">${escapeHtml(result.detail)}</span>
       <span class="row-ms muted">${result.ms}ms</span>
     </div>`;
 }

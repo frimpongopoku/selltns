@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { SentryModule, SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -24,6 +25,12 @@ import { AffiliatesModule } from './affiliates/affiliates.module';
 @Module({
   imports: [
     SentryModule.forRoot(),
+    // Global default: generous enough that no legitimate storefront/admin
+    // session ever hits it, but it caps how hard a bot can hammer any
+    // single endpoint. Sensitive, unauthenticated, write-y routes (auth,
+    // checkout, contact form) additionally set a much tighter @Throttle()
+    // of their own — see those controllers.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
     PrismaModule,
     TenantsModule,
     ProductsModule,
@@ -49,6 +56,7 @@ import { AffiliatesModule } from './affiliates/affiliates.module';
     // registered before any other exception filter, per @sentry/nestjs.
     { provide: APP_FILTER, useClass: SentryGlobalFilter },
     { provide: APP_INTERCEPTOR, useClass: RequestLoggingInterceptor },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

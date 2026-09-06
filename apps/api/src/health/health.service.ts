@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { S3Client, HeadBucketCommand } from '@aws-sdk/client-s3';
 import { getApps } from 'firebase-admin/app';
 import { PrismaService } from '../prisma/prisma.service';
@@ -31,7 +31,18 @@ type CheckOutcome = { status: CheckStatus; detail: string };
 
 @Injectable()
 export class HealthService {
+  private readonly logger = new Logger(HealthService.name);
+
   constructor(private readonly prisma: PrismaService) {}
+
+  // /health is public and unauthenticated by design — the full error (which
+  // for DB/network failures can include internal hostnames, ports, or IPs)
+  // goes to the server log only. The public `detail` stays a short, fixed
+  // sentence so an anonymous caller learns "it's down," never our topology.
+  private logAndSanitize(checkName: string, err: unknown): string {
+    this.logger.error(`${checkName} check failed: ${errorMessage(err)}`);
+    return 'Unreachable — see server logs for details';
+  }
 
   async runChecks(): Promise<HealthCheckResult[]> {
     const checks: [string, () => Promise<CheckOutcome> | CheckOutcome][] = [
@@ -67,7 +78,7 @@ export class HealthService {
       await withTimeout(this.prisma.$queryRaw`SELECT 1`, CHECK_TIMEOUT_MS);
       return { status: 'ok', detail: 'Connected' };
     } catch (err) {
-      return { status: 'error', detail: `Unreachable — ${errorMessage(err)}` };
+      return { status: 'error', detail: this.logAndSanitize('Database', err) };
     }
   }
 
@@ -87,7 +98,8 @@ export class HealthService {
     if (!hasConfig) {
       return {
         status: 'warn',
-        detail: 'Not configured — falling back to local disk (fine for dev, not production)',
+        detail:
+          'Not configured — falling back to local disk (fine for dev, not production)',
       };
     }
 
@@ -104,11 +116,17 @@ export class HealthService {
         client.send(new HeadBucketCommand({ Bucket: bucket })),
         CHECK_TIMEOUT_MS,
       );
-      return { status: 'ok', detail: `Reachable (${bucket})` };
+      // Deliberately doesn't echo the bucket name back — no reason to hand
+      // an anonymous caller our storage layout, even though it alone
+      // wouldn't grant access.
+      return { status: 'ok', detail: 'Reachable' };
     } catch (err) {
       return {
         status: 'error',
-        detail: `Configured but unreachable — ${errorMessage(err)}`,
+        detail: this.logAndSanitize(
+          isPrivate ? 'Verification storage (R2)' : 'Media storage (R2)',
+          err,
+        ),
       };
     }
   }
@@ -117,7 +135,8 @@ export class HealthService {
     if (!process.env.BREVO_API_KEY) {
       return {
         status: 'warn',
-        detail: 'Not configured — writing emails to disk (fine for dev, not production)',
+        detail:
+          'Not configured — writing emails to disk (fine for dev, not production)',
       };
     }
     try {
@@ -151,7 +170,8 @@ export class HealthService {
     if (!(process.env.VERCEL_API_TOKEN && process.env.VERCEL_PROJECT_ID)) {
       return {
         status: 'warn',
-        detail: 'Not configured — using manual DNS verification (no automatic TLS)',
+        detail:
+          'Not configured — using manual DNS verification (no automatic TLS)',
       };
     }
     try {
@@ -161,7 +181,11 @@ export class HealthService {
       const res = await withTimeout(
         fetch(
           `https://api.vercel.com/v9/projects/${process.env.VERCEL_PROJECT_ID}${teamQuery}`,
-          { headers: { Authorization: `Bearer ${process.env.VERCEL_API_TOKEN}` } },
+          {
+            headers: {
+              Authorization: `Bearer ${process.env.VERCEL_API_TOKEN}`,
+            },
+          },
         ),
         CHECK_TIMEOUT_MS,
       );

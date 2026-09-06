@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { OrdersService } from './orders.service';
 import type { OrderItem, OrderStatus, OrderSource } from '../common/types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -60,6 +61,8 @@ export class OrdersController {
   }
 
   // Public — this is checkout: a guest customer creates their own booking.
+  // Tightened against bots flooding a vendor with fake orders.
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post()
   create(
     @Body()

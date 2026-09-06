@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { SuperAdminAuthService } from './superadmin-auth.service';
 import { SuperAdminGuard } from './superadmin-session.guard';
 import { CurrentSuperAdmin } from './current-superadmin.decorator';
@@ -9,6 +10,9 @@ import type { SuperAdminSessionPayload } from './superadmin-session.guard';
 export class SuperAdminAuthController {
   constructor(private readonly authService: SuperAdminAuthService) {}
 
+  // Public, unauthenticated, and the highest-value login target in the
+  // system — throttled tighter than the tenant login.
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('google')
   googleLogin(@Body() body: GoogleLoginDto) {
     return this.authService.googleLogin(body);

@@ -2,6 +2,7 @@ import './instrument';
 import { join } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 const REQUIRED_ENV_VARS = [
@@ -28,6 +29,34 @@ function checkRequiredEnv() {
 async function bootstrap() {
   checkRequiredEnv();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Baseline security headers (X-Content-Type-Options, X-Frame-Options,
+  // Referrer-Policy, HSTS, etc.) on every response. CSP is scoped to what
+  // this API's two hand-rendered HTML pages (/ and /health) actually use —
+  // inline <style> and the Google Fonts stylesheet, no inline/external
+  // scripts anywhere. crossOriginResourcePolicy is relaxed to cross-origin
+  // since this API is deliberately called from other origins (the
+  // storefront's own domain, vendor custom domains, the local-disk media
+  // fallback's /uploads/* being <img>'d from apps/web on a different port).
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://fonts.googleapis.com',
+          ],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          imgSrc: ["'self'", 'data:'],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
   // No fetch in apps/web ever sets `credentials: "include"` — admin calls
   // go through the web app's same-origin proxy (server-to-server, not
   // subject to CORS) using a Bearer header, not cookies. So the only
