@@ -15,6 +15,7 @@ import {
   CreditCard,
   Handshake,
   QrCode,
+  Tags,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { BILLING_ENABLED } from "@/lib/feature-flags";
@@ -42,6 +43,12 @@ export const SETTINGS_NAV_ITEMS = [
   { href: "/admin/settings/store", label: "Store profile", icon: Store, roles: ["OWNER"] as Role[] },
   { href: "/admin/settings/theme", label: "Storefront theme", icon: Palette, roles: ["OWNER"] as Role[] },
   { href: "/admin/settings/qr-code", label: "QR code", icon: QrCode, roles: ["OWNER", "MANAGER"] as Role[] },
+  {
+    href: "/admin/settings/fulfillment-labels",
+    label: "Fulfillment labels",
+    icon: Tags,
+    roles: ["OWNER", "MANAGER"] as Role[],
+  },
   { href: "/admin/settings/team", label: "Team & roles", icon: Users, roles: ["OWNER"] as Role[] },
   { href: "/admin/affiliates", label: "Affiliates", icon: Handshake, roles: ["OWNER"] as Role[] },
 ] as const;

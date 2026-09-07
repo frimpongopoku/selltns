@@ -119,7 +119,12 @@ export async function renderShopQrCard(tenant: Tenant): Promise<HTMLCanvasElemen
 
   if (tenant.logoUrl) {
     try {
-      const logo = await loadImage(tenant.logoUrl);
+      // Fetched through our own same-origin proxy, not the R2 URL directly —
+      // R2's public dev domain sends no Access-Control-Allow-Origin header,
+      // so a direct crossOrigin="anonymous" load fails silently and the
+      // logo never appears. /api/favicon already exists for this exact
+      // reason (tenant favicons have the same same-origin requirement).
+      const logo = await loadImage(`/api/favicon?slug=${encodeURIComponent(tenant.slug)}`);
       const badgeSize = QR_SIZE * 0.2;
       const badgeX = CARD_SIZE / 2 - badgeSize / 2;
       const badgeY = QR_Y + QR_SIZE / 2 - badgeSize / 2;
