@@ -85,27 +85,27 @@ enum OrderSource {
 }
 
 model Tenant {
-  id               String   @id @default(cuid())
-  name             String
-  slug             String   @unique
-  logoUrl          String?  @map("logo_url")
-  customDomain     String?  @map("custom_domain")
-  domainVerified   Boolean  @default(false) @map("domain_verified")
-  whatsappNumber   String?  @map("whatsapp_number")
-  ownerDisplayName String   @default("") @map("owner_display_name")
-  ownerTitle       String   @default("") @map("owner_title")
-  ownerBio         String   @default("") @map("owner_bio")
-  ownerInfoVisible Boolean  @default(false) @map("owner_info_visible")
+  id                         String   @id @default(cuid())
+  name                       String
+  slug                       String   @unique
+  logoUrl                    String?  @map("logo_url")
+  customDomain               String?  @map("custom_domain")
+  domainVerified             Boolean  @default(false) @map("domain_verified")
+  whatsappNumber             String?  @map("whatsapp_number")
+  ownerDisplayName           String   @default("") @map("owner_display_name")
+  ownerTitle                 String   @default("") @map("owner_title")
+  ownerBio                   String   @default("") @map("owner_bio")
+  ownerInfoVisible           Boolean  @default(false) @map("owner_info_visible")
   // Whether this tenant's own storefront footer discloses its affiliate
   // relationships (both directions — shops it resells for, and shops
   // reselling its products). Each tenant only ever controls disclosure of
   // its own relationships, never the other party's.
-  affiliateDisclosureVisible Boolean @default(true) @map("affiliate_disclosure_visible")
-  heroTagline      String   @default("Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.") @map("hero_tagline")
-  footerTagline    String   @default("Handmade, made-to-order pieces. Requested here, confirmed by us, paid your way.") @map("footer_tagline")
-  storyBlocks      Json     @default("[]") @map("story_blocks")
-  themeTokens      Json     @map("theme_tokens")
-  createdAt        DateTime @default(now()) @map("created_at")
+  affiliateDisclosureVisible Boolean  @default(true) @map("affiliate_disclosure_visible")
+  heroTagline                String   @default("Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.") @map("hero_tagline")
+  footerTagline              String   @default("Handmade, made-to-order pieces. Requested here, confirmed by us, paid your way.") @map("footer_tagline")
+  storyBlocks                Json     @default("[]") @map("story_blocks")
+  themeTokens                Json     @map("theme_tokens")
+  createdAt                  DateTime @default(now()) @map("created_at")
 
   verificationStatus VerificationStatus @default(NONE) @map("verification_status")
   verifiedAt         DateTime?          @map("verified_at")
@@ -191,21 +191,22 @@ model MediaAsset {
 }
 
 model Product {
-  id           String   @id @default(cuid())
-  tenantId     String   @map("tenant_id")
-  title        String
-  slug         String
-  description  String   @default("")
-  price        Int      @default(0)
-  sku          String   @default("")
-  stock        Int      @default(0)
-  isActive     Boolean  @default(true) @map("is_active")
-  images       String[] @default([])
-  videoUrls    String[] @default([]) @map("video_urls")
-  tags         String[] @default([])
-  displayOrder Int      @default(0) @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  tenantId      String   @map("tenant_id")
+  title         String
+  slug          String
+  description   String   @default("")
+  price         Int      @default(0)
+  discountPrice Int?     @map("discount_price")
+  sku           String   @default("")
+  stock         Int      @default(0)
+  isActive      Boolean  @default(true) @map("is_active")
+  images        String[] @default([])
+  videoUrls     String[] @default([]) @map("video_urls")
+  tags          String[] @default([])
+  displayOrder  Int      @default(0) @map("display_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   tenant      Tenant              @relation(fields: [tenantId], references: [id])
   collections CollectionProduct[]
@@ -327,24 +328,24 @@ model Order {
 // PENDING) rather than creating a duplicate, so `history` always holds the
 // full lifecycle for a given pair.
 model AffiliateRelationship {
-  id                  String           @id @default(cuid())
-  ownerTenantId       String           @map("owner_tenant_id")
-  affiliateTenantId   String           @map("affiliate_tenant_id")
-  status              AffiliateStatus  @default(PENDING)
-  capType             AffiliateCapType @map("cap_type")
-  capValue            Int              @map("cap_value")
-  invitedAt           DateTime         @default(now()) @map("invited_at")
-  invitedByUserId     String           @map("invited_by_user_id")
-  respondedAt         DateTime?        @map("responded_at")
-  respondedByUserId   String?          @map("responded_by_user_id")
-  terminatedAt        DateTime?        @map("terminated_at")
-  terminatedByUserId  String?          @map("terminated_by_user_id")
+  id                 String           @id @default(cuid())
+  ownerTenantId      String           @map("owner_tenant_id")
+  affiliateTenantId  String           @map("affiliate_tenant_id")
+  status             AffiliateStatus  @default(PENDING)
+  capType            AffiliateCapType @map("cap_type")
+  capValue           Int              @map("cap_value")
+  invitedAt          DateTime         @default(now()) @map("invited_at")
+  invitedByUserId    String           @map("invited_by_user_id")
+  respondedAt        DateTime?        @map("responded_at")
+  respondedByUserId  String?          @map("responded_by_user_id")
+  terminatedAt       DateTime?        @map("terminated_at")
+  terminatedByUserId String?          @map("terminated_by_user_id")
   // Append-only audit trail — same {status/event, note, at}[] convention as
   // Order.history. Drives the in-app activity feed; no separate
   // notifications table.
-  history             Json             @default("[]")
-  createdAt           DateTime         @default(now()) @map("created_at")
-  updatedAt           DateTime         @updatedAt @map("updated_at")
+  history            Json             @default("[]")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
 
   ownerTenant     Tenant @relation("AffiliateAsOwner", fields: [ownerTenantId], references: [id])
   affiliateTenant Tenant @relation("AffiliateAsAffiliate", fields: [affiliateTenantId], references: [id])
@@ -388,8 +389,8 @@ model AffiliateProductListing {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  relationship    AffiliateRelationship      @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
-  product         Product                    @relation("AffiliateListedProduct", fields: [productId], references: [id], onDelete: Cascade)
+  relationship    AffiliateRelationship     @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  product         Product                   @relation("AffiliateListedProduct", fields: [productId], references: [id], onDelete: Cascade)
   collectionItems AffiliateCollectionItem[]
 
   @@unique([relationshipId, productId])

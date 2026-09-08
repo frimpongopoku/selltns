@@ -28,6 +28,10 @@ export function ProductForm({
   const [title, setTitle] = useState(product?.title ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [price, setPrice] = useState(String(product?.price ?? ""));
+  const [onSale, setOnSale] = useState(product?.discountPrice != null);
+  const [discountPrice, setDiscountPrice] = useState(
+    String(product?.discountPrice ?? ""),
+  );
   const [sku, setSku] = useState(product?.sku ?? "");
   const [stock, setStock] = useState(String(product?.stock ?? ""));
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
@@ -38,11 +42,21 @@ export function ProductForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const numericPrice = Number(price) || 0;
+    if (onSale) {
+      const numericDiscountPrice = Number(discountPrice) || 0;
+      if (numericDiscountPrice <= 0 || numericDiscountPrice >= numericPrice) {
+        toast.error("Discount price must be a positive number lower than the price");
+        return;
+      }
+    }
+    const numericDiscountPrice = onSale ? Number(discountPrice) || 0 : null;
     setSaving(true);
     const payload = {
       title,
       description,
-      price: Number(price) || 0,
+      price: numericPrice,
+      discountPrice: numericDiscountPrice,
       sku,
       stock: Number(stock) || 0,
       isActive,
@@ -134,6 +148,39 @@ export function ProductForm({
           <Label htmlFor="stock">Stock</Label>
           <Input id="stock" type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="mt-1.5" />
         </div>
+      </div>
+
+      <div className="rounded-lg border p-4">
+        <div className="flex items-start gap-3">
+          <Switch
+            checked={onSale}
+            onCheckedChange={(checked) => {
+              setOnSale(checked);
+              if (!checked) setDiscountPrice("");
+            }}
+            className="mt-0.5"
+          />
+          <div>
+            <Label>Discount</Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Shows the regular price crossed out next to a lower price. Turn off anytime to
+              go back to the regular price.
+            </p>
+          </div>
+        </div>
+        {onSale && (
+          <div className="mt-3 max-w-[180px]">
+            <Label htmlFor="discountPrice">Discount price (GHS)</Label>
+            <Input
+              id="discountPrice"
+              type="number"
+              required
+              value={discountPrice}
+              onChange={(e) => setDiscountPrice(e.target.value)}
+              className="mt-1.5"
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex items-start gap-3">

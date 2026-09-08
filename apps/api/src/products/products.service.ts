@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { slugify } from '../common/slugify';
@@ -54,6 +59,35 @@ const SUPPORTED_VIDEO_HOSTS = [
   'vt.tiktok.com',
 ];
 
+// Resolves the discount price to persist. `requested` is `input.discountPrice`
+// from the caller: `undefined` means "not touched by this request" (keep
+// what's there), `null` means "remove the discount". A requested value is
+// validated against `finalPrice` (the price this same update leaves the
+// product at). An untouched discount that a price change has left stale
+// (no longer lower than the new price) is silently cleared — the sale is
+// over the moment there's nothing left to discount from.
+function resolveDiscountPrice(
+  requested: number | null | undefined,
+  finalPrice: number,
+  existing: number | null,
+): number | null {
+  if (requested !== undefined) {
+    if (requested === null) return null;
+    if (!Number.isInteger(requested) || requested <= 0) {
+      throw new BadRequestException(
+        'Discount price must be a positive whole number of GHS.',
+      );
+    }
+    if (requested >= finalPrice) {
+      throw new BadRequestException(
+        "Discount price must be lower than the product's price.",
+      );
+    }
+    return requested;
+  }
+  return existing != null && existing >= finalPrice ? null : existing;
+}
+
 function videoUrlsOf(input: Partial<Product>): string[] {
   const raw = input.videoUrls ?? [];
   const valid = raw.filter((url) => {
@@ -101,6 +135,7 @@ export class ProductsService {
       slug: p.slug,
       description: p.description,
       price: p.price,
+      discountPrice: p.discountPrice,
       sku: p.sku,
       stock: p.stock,
       isActive: p.isActive,
@@ -170,7 +205,8 @@ export class ProductsService {
       : Prisma.empty;
 
     const rows = await this.prisma.$queryRaw<PrismaProduct[]>`
-      SELECT id, tenant_id AS "tenantId", title, slug, description, price, sku, stock,
+      SELECT id, tenant_id AS "tenantId", title, slug, description, price,
+             discount_price AS "discountPrice", sku, stock,
              is_active AS "isActive", images, video_urls AS "videoUrls", tags,
              display_order AS "displayOrder",
              created_at AS "createdAt", updated_at AS "updatedAt"
@@ -231,6 +267,7 @@ export class ProductsService {
       where: { tenantId: input.tenantId },
       _max: { displayOrder: true },
     });
+    const price = input.price ?? 0;
 
     return this.prisma.product.create({
       data: {
@@ -238,7 +275,8 @@ export class ProductsService {
         title: input.title ?? 'Untitled product',
         slug,
         description: input.description ?? '',
-        price: input.price ?? 0,
+        price,
+        discountPrice: resolveDiscountPrice(input.discountPrice, price, null),
         sku: input.sku ?? '',
         stock: input.stock ?? 0,
         isActive: input.isActive ?? true,
@@ -264,13 +302,19 @@ export class ProductsService {
         ? await this.uniqueSlug(tenantId, input.slug, existing.id)
         : existing.slug;
 
+    const price = input.price ?? existing.price;
     const row = await this.prisma.product.update({
       where: { id: existing.id },
       data: {
         title: input.title ?? existing.title,
         slug,
         description: input.description ?? existing.description,
-        price: input.price ?? existing.price,
+        price,
+        discountPrice: resolveDiscountPrice(
+          input.discountPrice,
+          price,
+          existing.discountPrice,
+        ),
         sku: input.sku ?? existing.sku,
         stock: input.stock ?? existing.stock,
         isActive: input.isActive ?? existing.isActive,

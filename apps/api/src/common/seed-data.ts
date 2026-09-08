@@ -112,6 +112,7 @@ export const products: Product[] = [
     description:
       'A flowing wrap dress cut from hand-selected wax-print cotton. Adjustable waist tie, lined bodice, true to size.',
     price: 420,
+    discountPrice: null,
     sku: 'AWD-001',
     stock: 14,
     isActive: true,
@@ -129,6 +130,7 @@ export const products: Product[] = [
     description:
       'Hand-woven bolga basket with genuine leather handles. Every piece is one-of-one — pattern varies slightly.',
     price: 260,
+    discountPrice: 199,
     sku: 'NBB-002',
     stock: 22,
     isActive: true,
@@ -146,6 +148,7 @@ export const products: Product[] = [
     description:
       'Layered recycled-glass beads, hand-strung on waxed cord. Adjustable length, hypoallergenic clasp.',
     price: 145,
+    discountPrice: null,
     sku: 'ABN-003',
     stock: 30,
     isActive: true,
@@ -163,6 +166,7 @@ export const products: Product[] = [
     description:
       'Full-grain leather slides, hand-cut and stitched. Cushioned footbed, sizes 38–45.',
     price: 190,
+    discountPrice: null,
     sku: 'KLS-004',
     stock: 8,
     isActive: true,
@@ -180,6 +184,7 @@ export const products: Product[] = [
     description:
       'Tailored cotton-twill blazer with a hand-woven kente trim along the lapel and cuffs.',
     price: 610,
+    discountPrice: null,
     sku: 'AKB-005',
     stock: 0,
     isActive: true,
@@ -197,6 +202,7 @@ export const products: Product[] = [
     description:
       'Soft-drape midi skirt with an elasticated waist and side pockets. Pairs with any top in the collection.',
     price: 240,
+    discountPrice: null,
     sku: 'YDM-006',
     stock: 17,
     isActive: false,

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -8,18 +9,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle";
 import { formatMoney } from "@/lib/format";
+import { discountedPrice, isOnSale } from "@/lib/pricing";
 import type { Product } from "@/lib/types";
 
 export function ProductsTableView({
   products,
   tenantId,
   onToggled,
+  canReorder,
+  hasMore,
+  onMove,
 }: {
   products: Product[];
   tenantId: string;
   onToggled: (id: string, isActive: boolean) => void;
+  canReorder?: boolean;
+  hasMore?: boolean;
+  onMove?: (id: string, direction: "up" | "down") => void;
 }) {
   return (
     <Card className="mt-6 p-0">
@@ -27,6 +36,7 @@ export function ProductsTableView({
         <Table>
           <TableHeader>
             <TableRow>
+              {canReorder && <TableHead className="w-16">Order</TableHead>}
               <TableHead>Product</TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>Price</TableHead>
@@ -41,6 +51,32 @@ export function ProductsTableView({
                 style={{ animationDelay: `${Math.min(i, 15) * 30}ms` }}
                 className="animate-in fade-in-0 fill-mode-both duration-300"
               >
+                {canReorder && (
+                  <TableCell>
+                    <div className="flex gap-0.5">
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={`Move ${product.title} up`}
+                        disabled={i === 0}
+                        onClick={() => onMove?.(product.id, "up")}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={`Move ${product.title} down`}
+                        disabled={i === products.length - 1 && Boolean(hasMore)}
+                        onClick={() => onMove?.(product.id, "down")}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
                 <TableCell>
                   <Link
                     href={`/admin/products/${product.id}`}
@@ -58,7 +94,18 @@ export function ProductsTableView({
                   </Link>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{product.sku}</TableCell>
-                <TableCell>{formatMoney(product.price)}</TableCell>
+                <TableCell>
+                  {isOnSale(product) ? (
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xs text-muted-foreground line-through">
+                        {formatMoney(product.price)}
+                      </span>
+                      <span>{formatMoney(discountedPrice(product))}</span>
+                    </div>
+                  ) : (
+                    formatMoney(product.price)
+                  )}
+                </TableCell>
                 <TableCell className={product.stock <= 0 ? "text-destructive" : ""}>
                   {product.stock}
                 </TableCell>

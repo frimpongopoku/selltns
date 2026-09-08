@@ -131,6 +131,9 @@ export interface Product {
   slug: string;
   description: string;
   price: number;
+  // The active sale price, only meaningful when set and lower than `price`.
+  // `price` itself never changes when a discount is applied or removed.
+  discountPrice: number | null;
   sku: string;
   stock: number;
   isActive: boolean;

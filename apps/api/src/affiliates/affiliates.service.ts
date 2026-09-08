@@ -85,6 +85,9 @@ function mapProduct(
     slug: row.slug,
     description: row.description,
     price: row.price,
+    // An owner's own discount is never carried onto a reseller's storefront —
+    // affiliate pricing already has its own independent override/cap system.
+    discountPrice: null,
     sku: row.sku,
     stock: row.stock,
     isActive: row.isActive,

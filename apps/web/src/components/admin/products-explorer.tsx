@@ -37,6 +37,7 @@ export function ProductsExplorer({ tenantId }: { tenantId: string }) {
     setTag,
     prepend,
     updateProductInList,
+    moveProduct,
   } = useProductLibrary(tenantId);
 
   const [availableTags, setAvailableTags] = useState<string[]>([]);
@@ -173,9 +174,23 @@ export function ProductsExplorer({ tenantId }: { tenantId: string }) {
       ) : (
         <>
           {viewMode === "grid" ? (
-            <ProductsGridView products={products} tenantId={tenantId} onToggled={handleToggled} />
+            <ProductsGridView
+              products={products}
+              tenantId={tenantId}
+              onToggled={handleToggled}
+              canReorder={!isFiltered}
+              hasMore={hasMore}
+              onMove={moveProduct}
+            />
           ) : (
-            <ProductsTableView products={products} tenantId={tenantId} onToggled={handleToggled} />
+            <ProductsTableView
+              products={products}
+              tenantId={tenantId}
+              onToggled={handleToggled}
+              canReorder={!isFiltered}
+              hasMore={hasMore}
+              onMove={moveProduct}
+            />
           )}
 
           <div ref={sentinelRef} className="mt-6 flex justify-center">

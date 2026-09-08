@@ -1,3 +1,16 @@
+// The amount actually charged/displayed as a product's "now" price — the
+// discount price when one is active, otherwise the regular price. Called at
+// every site that charges or quotes a customer (orders, storefront display,
+// SEO price); `price` itself is left untouched everywhere else.
+export function discountedPrice(product: {
+  price: number;
+  discountPrice: number | null;
+}): number {
+  return product.discountPrice != null && product.discountPrice < product.price
+    ? product.discountPrice
+    : product.price;
+}
+
 export interface ProductCursor {
   displayOrder: number;
   id: string;

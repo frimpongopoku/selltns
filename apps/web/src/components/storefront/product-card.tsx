@@ -5,11 +5,13 @@ import Image from "next/image";
 import { CalendarClock } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
+import { discountedPrice, isOnSale } from "@/lib/pricing";
 import { AddToCartButton } from "./add-to-cart-button";
 import { useStoreHref } from "./store-context";
 
 export function ProductCard({ product }: { product: Product }) {
   const href = useStoreHref(`/products/${product.slug}`);
+  const onSale = isOnSale(product);
 
   return (
     <div className="store-card group flex h-full flex-col overflow-hidden bg-[var(--store-bg)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
@@ -37,6 +39,11 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           )
         )}
+        {onSale && (
+          <span className="absolute right-2 top-2 rounded-full bg-red-600/90 px-2 py-0.5 text-[0.65rem] font-medium text-white sm:px-2.5 sm:py-1 sm:text-xs">
+            Sale
+          </span>
+        )}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-5">
         <Link href={href}>
@@ -44,8 +51,15 @@ export function ProductCard({ product }: { product: Product }) {
             {product.title}
           </h3>
         </Link>
-        <p className="store-accent-text text-xs font-medium sm:text-sm">
-          {formatMoney(product.price)}
+        <p className="flex items-baseline gap-1.5">
+          {onSale && (
+            <span className="store-muted text-[0.7rem] line-through sm:text-xs">
+              {formatMoney(product.price)}
+            </span>
+          )}
+          <span className="store-accent-text text-xs font-medium sm:text-sm">
+            {formatMoney(discountedPrice(product))}
+          </span>
         </p>
         <div className="mt-auto pt-2 sm:pt-3">
           <AddToCartButton product={product} size="sm" />

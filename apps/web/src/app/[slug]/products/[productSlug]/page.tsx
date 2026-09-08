@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { CalendarClock } from "lucide-react";
 import { getCollections, getProduct, getProducts, getTenantBySlug } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
+import { discountedPrice, isOnSale } from "@/lib/pricing";
 import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { ProductCard } from "@/components/storefront/product-card";
@@ -77,8 +78,20 @@ export default async function ProductPage({
             </p>
           )}
           <h1 className="store-heading text-3xl font-semibold">{product.title}</h1>
-          <p className="store-accent-text mt-3 text-xl font-medium">
-            {formatMoney(product.price)}
+          <p className="mt-3 flex flex-wrap items-baseline gap-2">
+            {isOnSale(product) && (
+              <span className="store-muted text-base line-through">
+                {formatMoney(product.price)}
+              </span>
+            )}
+            <span className="store-accent-text text-xl font-medium">
+              {formatMoney(discountedPrice(product))}
+            </span>
+            {isOnSale(product) && (
+              <span className="inline-flex items-center rounded-full bg-red-600/90 px-2 py-0.5 text-xs font-medium text-white">
+                Sale
+              </span>
+            )}
           </p>
           <p className="mt-6 max-w-md leading-relaxed store-muted">
             {product.description}

@@ -1,5 +1,6 @@
 import type { Collection, CollectionWithProducts, Product, Tenant } from "./types";
 import { getCanonicalUrl } from "./canonical";
+import { discountedPrice } from "./pricing";
 
 // Plain JSON-LD builders — rendered via a <script type="application/ld+json">
 // tag on the relevant page. No library needed; schema.org JSON-LD is just
@@ -32,7 +33,7 @@ export function productJsonLd(tenant: Tenant, product: Product) {
     url: getCanonicalUrl(tenant, `/products/${product.slug}`),
     offers: {
       "@type": "Offer",
-      price: product.price,
+      price: discountedPrice(product),
       priceCurrency: "GHS",
       availability,
       url: getCanonicalUrl(tenant, `/products/${product.slug}`),

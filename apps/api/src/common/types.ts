@@ -76,6 +76,12 @@ export interface Product {
   slug: string;
   description: string;
   price: number;
+  // A discounted "sale" price — only ever meaningful when set and lower than
+  // `price`. `price` itself never changes when a discount is applied, so
+  // removing the discount is just clearing this back to null. See
+  // ProductsService/products.utils#discountedPrice for the derived charge
+  // amount, computed at every call site that actually charges a customer.
+  discountPrice: number | null;
   sku: string;
   stock: number;
   isActive: boolean;

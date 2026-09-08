@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getProductsPage } from "./api";
+import { getProductsPage, updateProduct } from "./api";
 import type { Product } from "./types";
 
 const PAGE_SIZE = 24;
@@ -88,6 +88,37 @@ export function useProductLibrary(tenantId: string) {
     setProducts((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  // Reordering only makes sense against the true, unfiltered display order —
+  // callers should gate this behind the same "no search/status/tag filter
+  // active" check used for `isFiltered` elsewhere. Swaps the two adjacent
+  // products' displayOrder values (and their position in the local list) and
+  // persists both sides; a failed write reloads from the server instead of
+  // leaving the list out of sync with the database.
+  const moveProduct = useCallback(
+    (id: string, direction: "up" | "down") => {
+      setProducts((prev) => {
+        const index = prev.findIndex((p) => p.id === id);
+        const targetIndex = direction === "up" ? index - 1 : index + 1;
+        if (index === -1 || targetIndex < 0 || targetIndex >= prev.length) {
+          return prev;
+        }
+        const current = prev[index];
+        const target = prev[targetIndex];
+        const next = [...prev];
+        next[index] = { ...target, displayOrder: current.displayOrder };
+        next[targetIndex] = { ...current, displayOrder: target.displayOrder };
+
+        Promise.all([
+          updateProduct(current.id, tenantId, { displayOrder: target.displayOrder }),
+          updateProduct(target.id, tenantId, { displayOrder: current.displayOrder }),
+        ]).catch(() => reload());
+
+        return next;
+      });
+    },
+    [tenantId, reload],
+  );
+
   return {
     products,
     loading,
@@ -103,6 +134,7 @@ export function useProductLibrary(tenantId: string) {
     prepend,
     updateProductInList,
     removeProduct,
+    moveProduct,
     reload,
   };
 }

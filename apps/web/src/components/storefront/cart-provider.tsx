@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type { Product } from "@/lib/types";
+import { discountedPrice } from "@/lib/pricing";
 import { useStoreSlug } from "./store-context";
 
 export interface CartLine {
@@ -102,7 +103,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         {
           productId: product.id,
           title: product.title,
-          price: product.price,
+          price: discountedPrice(product),
           image: product.images[0] ?? null,
           quantity,
           preorderCollectionId: product.preorder?.collectionId ?? null,

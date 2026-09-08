@@ -12,6 +12,7 @@ import type {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductsService } from '../products/products.service';
+import { discountedPrice } from '../products/products.utils';
 import { AffiliatesService } from '../affiliates/affiliates.service';
 import { EMAIL_SERVICE, type EmailService } from '../email/email.service';
 import {
@@ -184,7 +185,7 @@ export class OrdersService {
             productId: product.id,
             title: product.title,
             quantity: item.quantity,
-            priceAtOrder: product.price,
+            priceAtOrder: discountedPrice(product),
             preorder: product.preorder ?? null,
             affiliateOwnerTenantId: null as string | null,
             affiliateOwnerPrice: null as number | null,
