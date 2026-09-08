@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
@@ -9,9 +9,10 @@ import { useCart } from "@/components/storefront/cart-provider";
 import { useStoreHref, useStoreLinkBuilder } from "@/components/storefront/store-context";
 import { createOrder } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
+import { pruneStaleCartLines, notifyRemovedCartLines } from "@/lib/cart-validation";
 
 export function CheckoutForm({ tenantId }: { tenantId: string }) {
-  const { lines, total, clear } = useCart();
+  const { lines, total, clear, removeItem } = useCart();
   const homeHref = useStoreHref();
   const buildHref = useStoreLinkBuilder();
   const router = useRouter();
@@ -21,6 +22,22 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Runs once per mount — a vendor can unpublish a product while it's
+  // already sitting in someone's cart, so it's cross-checked again here
+  // (on top of the check on the cart page) before anyone reviews totals.
+  const validated = useRef(false);
+  useEffect(() => {
+    if (validated.current || lines.length === 0) return;
+    validated.current = true;
+    pruneStaleCartLines(tenantId, lines, removeItem)
+      .then(notifyRemovedCartLines)
+      .catch(() => {
+        // A failed check shouldn't block checkout — submission re-validates
+        // again regardless.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantId]);
 
   if (lines.length === 0) {
     return (
@@ -47,6 +64,17 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
     e.preventDefault();
     setSubmitting(true);
     try {
+      // Final cross-check right before the order is actually placed — the
+      // mount-time check could be minutes stale by now.
+      const removedTitles = await pruneStaleCartLines(tenantId, lines, removeItem).catch(
+        () => [] as string[],
+      );
+      if (removedTitles.length > 0) {
+        notifyRemovedCartLines(removedTitles);
+        toast.error("Your cart changed — please review it before submitting again.");
+        setSubmitting(false);
+        return;
+      }
       const order = await createOrder({
         tenantId,
         customerName: name,

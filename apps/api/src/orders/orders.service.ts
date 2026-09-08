@@ -83,6 +83,8 @@ function mapTenant(row: PrismaTenant): Tenant {
     ownerTitle: row.ownerTitle,
     ownerBio: row.ownerBio,
     ownerInfoVisible: row.ownerInfoVisible,
+    contactEmail: row.contactEmail,
+    contactSectionVisible: row.contactSectionVisible,
     affiliateDisclosureVisible: row.affiliateDisclosureVisible,
     heroTagline: row.heroTagline,
     footerTagline: row.footerTagline,
@@ -173,39 +175,52 @@ export class OrdersService {
     // Each cart line item is either native to the buying tenant, or an
     // affiliate-listed product from a shop that made this tenant an
     // affiliate — resolved the same "price at order time, never trust the
-    // client" way either way.
+    // client" way either way. A cart can sit unsubmitted long enough for a
+    // vendor to unpublish one of its products, so both paths reject a
+    // product that's no longer active rather than silently ordering it —
+    // the client-side cart validation is only a UX nicety, not the guard.
     const resolvedItems = await Promise.all(
       input.items.map(async (item) => {
-        try {
-          const product = await this.productsService.findOne(
-            item.productId,
-            input.tenantId,
-          );
+        const native = await this.productsService
+          .findOne(item.productId, input.tenantId)
+          .catch(() => null);
+        if (native) {
+          if (!native.isActive) {
+            throw new BadRequestException(
+              `"${native.title}" is no longer available.`,
+            );
+          }
           return {
-            productId: product.id,
-            title: product.title,
+            productId: native.id,
+            title: native.title,
             quantity: item.quantity,
-            priceAtOrder: discountedPrice(product),
-            preorder: product.preorder ?? null,
+            priceAtOrder: discountedPrice(native),
+            preorder: native.preorder ?? null,
             affiliateOwnerTenantId: null as string | null,
             affiliateOwnerPrice: null as number | null,
           };
-        } catch (err) {
-          const resolved = await this.affiliatesService.resolveOrderableListing(
-            item.productId,
-            input.tenantId,
-          );
-          if (!resolved) throw err;
-          return {
-            productId: resolved.product.id,
-            title: resolved.product.title,
-            quantity: item.quantity,
-            priceAtOrder: resolved.effectivePrice,
-            preorder: resolved.product.preorder ?? null,
-            affiliateOwnerTenantId: resolved.relationship.ownerTenantId,
-            affiliateOwnerPrice: resolved.product.price,
-          };
         }
+        const resolved = await this.affiliatesService.resolveOrderableListing(
+          item.productId,
+          input.tenantId,
+        );
+        if (!resolved) {
+          throw new NotFoundException(`Product ${item.productId} not found`);
+        }
+        if (!resolved.product.isActive) {
+          throw new BadRequestException(
+            `"${resolved.product.title}" is no longer available.`,
+          );
+        }
+        return {
+          productId: resolved.product.id,
+          title: resolved.product.title,
+          quantity: item.quantity,
+          priceAtOrder: resolved.effectivePrice,
+          preorder: resolved.product.preorder ?? null,
+          affiliateOwnerTenantId: resolved.relationship.ownerTenantId,
+          affiliateOwnerPrice: resolved.product.price,
+        };
       }),
     );
     const items: OrderItem[] = resolvedItems.map((r) => ({

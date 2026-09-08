@@ -118,6 +118,14 @@ export const updateTenantOwnershipInfo = (
     method: "PATCH",
     body: JSON.stringify(input),
   });
+export const updateTenantContactSection = (
+  tenantId: string,
+  input: { contactEmail?: string | null; contactSectionVisible?: boolean },
+) =>
+  adminRequest<Tenant>(`/tenants/${tenantId}/contact-section`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 export const updateTenantStorefrontCopy = (
   tenantId: string,
   input: { heroTagline?: string; footerTagline?: string },
@@ -378,6 +386,9 @@ export const submitSupportMessage = (input: {
   message: string;
   pageUrl?: string;
   tenantId?: string;
+  // "platform" (default) = the site's Help/Support form; "biibisoft" = the
+  // storefront footer's "Contact the Biibisoft team" entry point.
+  audience?: "platform" | "biibisoft";
   honeypot?: string;
   formRenderedAt?: number;
 }) =>

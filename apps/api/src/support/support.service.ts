@@ -2,12 +2,17 @@ import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service';
 import { EMAIL_SERVICE, type EmailService } from '../email/email.service';
 
+export type SupportMessageAudience = 'platform' | 'biibisoft';
+
 export interface SubmitSupportMessageInput {
   name: string;
   email: string;
   message: string;
   pageUrl?: string;
   tenantId?: string;
+  // "platform" (default) = the site's Help/Support form; "biibisoft" = the
+  // storefront footer's "Contact the Biibisoft team" entry point.
+  audience?: SupportMessageAudience;
   // Anti-spam: a hidden field real users never fill, and a minimum
   // time-on-page a bot submitting instantly won't have waited out.
   honeypot?: string;
@@ -20,6 +25,8 @@ const MIN_FILL_TIME_MS = 2000;
 export class SupportService {
   private readonly logger = new Logger(SupportService.name);
   private readonly notifyEmail = process.env.PLATFORM_SUPPORT_EMAIL;
+  private readonly biibisoftEmail =
+    process.env.BIIBISOFT_CONTACT_EMAIL ?? 'hello@biibisoft.com';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -46,6 +53,9 @@ export class SupportService {
       throw new BadRequestException('Name, email, and message are required.');
     }
 
+    const audience: SupportMessageAudience =
+      input.audience === 'biibisoft' ? 'biibisoft' : 'platform';
+
     const saved = await this.prisma.supportMessage.create({
       data: {
         name,
@@ -53,14 +63,22 @@ export class SupportService {
         message,
         pageUrl: input.pageUrl ?? '',
         tenantId: input.tenantId,
+        audience,
       },
     });
 
-    if (this.notifyEmail) {
+    const notifyEmail =
+      audience === 'biibisoft' ? this.biibisoftEmail : this.notifyEmail;
+    const subject =
+      audience === 'biibisoft'
+        ? `Message to Biibisoft from ${name}`
+        : `Support message from ${name}`;
+
+    if (notifyEmail) {
       await this.emailService
         .send({
-          to: this.notifyEmail,
-          subject: `Support message from ${name}`,
+          to: notifyEmail,
+          subject,
           html: `
             <p><strong>From:</strong> ${name} (${email})</p>
             ${input.pageUrl ? `<p><strong>Page:</strong> ${input.pageUrl}</p>` : ''}
@@ -76,7 +94,7 @@ export class SupportService {
         });
     } else {
       this.logger.warn(
-        'PLATFORM_SUPPORT_EMAIL not set — support message saved but no notification sent.',
+        `${audience === 'biibisoft' ? 'BIIBISOFT_CONTACT_EMAIL' : 'PLATFORM_SUPPORT_EMAIL'} not set — support message saved but no notification sent.`,
       );
     }
 

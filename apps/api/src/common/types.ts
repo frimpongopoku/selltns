@@ -37,6 +37,8 @@ export interface Tenant {
   ownerTitle: string;
   ownerBio: string;
   ownerInfoVisible: boolean;
+  contactEmail: string | null;
+  contactSectionVisible: boolean;
   affiliateDisclosureVisible: boolean;
   heroTagline: string;
   footerTagline: string;

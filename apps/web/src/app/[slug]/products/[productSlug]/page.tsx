@@ -25,16 +25,34 @@ export async function generateMetadata({
   if (!product) return { title: "Product not found" };
   const description = product.description.slice(0, 160);
   const canonical = getCanonicalUrl(tenant, `/products/${product.slug}`);
+
+  // The price (and any discount) is the single most useful line a shared
+  // link's preview can show — lead the social-card description with it
+  // rather than burying it after the product copy.
+  const priceLine = isOnSale(product)
+    ? `Now ${formatMoney(discountedPrice(product))} (was ${formatMoney(product.price)}) — `
+    : `${formatMoney(product.price)} — `;
+  const socialDescription = `${priceLine}${description}`.slice(0, 200);
+  const images = product.images[0]
+    ? [{ url: product.images[0], alt: product.title }]
+    : undefined;
+
   return {
     title: product.title,
     description,
     alternates: { canonical },
     openGraph: {
       title: product.title,
-      description,
+      description: socialDescription,
       url: canonical,
       type: "website",
-      images: product.images[0] ? [{ url: product.images[0] }] : undefined,
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.title,
+      description: socialDescription,
+      images,
     },
   };
 }

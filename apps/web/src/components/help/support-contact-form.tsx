@@ -9,7 +9,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { submitSupportMessage } from "@/lib/api";
 
-export function SupportContactForm({ tenantId }: { tenantId?: string }) {
+export function SupportContactForm({
+  tenantId,
+  audience = "platform",
+}: {
+  tenantId?: string;
+  audience?: "platform" | "biibisoft";
+}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -26,6 +32,7 @@ export function SupportContactForm({ tenantId }: { tenantId?: string }) {
         email,
         message,
         tenantId,
+        audience,
         pageUrl: typeof window !== "undefined" ? window.location.href : undefined,
         formRenderedAt: renderedAt.current,
       });
@@ -86,13 +93,19 @@ export function SupportContactForm({ tenantId }: { tenantId?: string }) {
         </div>
       </div>
       <div>
-        <Label htmlFor="support-message">What's going on?</Label>
+        <Label htmlFor="support-message">
+          {audience === "biibisoft" ? "Message" : "What's going on?"}
+        </Label>
         <Textarea
           id="support-message"
           className="mt-1.5"
           rows={5}
           required
-          placeholder="What you were trying to do, what happened instead, and any order/tracking link if this is about an order."
+          placeholder={
+            audience === "biibisoft"
+              ? "What would you like to tell the Biibisoft team?"
+              : "What you were trying to do, what happened instead, and any order/tracking link if this is about an order."
+          }
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />

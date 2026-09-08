@@ -23,6 +23,8 @@ export const tenant: Tenant = {
   whatsappNumber: '233245550134',
   ownerDisplayName: 'Akosua Mensah',
   ownerTitle: 'Founder & Designer',
+  contactEmail: null,
+  contactSectionVisible: false,
   ownerBio: 'Handcrafted in Accra, one piece at a time.',
   ownerInfoVisible: false,
   affiliateDisclosureVisible: true,

@@ -150,4 +150,16 @@ export class TenantsController {
     this.assertOwnTenant(id, user);
     return this.tenantsService.updateOwnershipInfo(id, body);
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER')
+  @Patch(':id/contact-section')
+  updateContactSection(
+    @Param('id') id: string,
+    @CurrentUser() user: SessionPayload,
+    @Body() body: { contactEmail?: string | null; contactSectionVisible?: boolean },
+  ) {
+    this.assertOwnTenant(id, user);
+    return this.tenantsService.updateContactSection(id, body);
+  }
 }

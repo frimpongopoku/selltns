@@ -7,6 +7,8 @@ import { useStoreHref, useStoreSlug } from "./store-context";
 import { OwnershipCredit } from "./ownership-credit";
 import { VerifiedBadge } from "./verified-badge";
 import { BUILD_LABEL } from "@/lib/build-info";
+import { ContactBiibisoftDialog, BIIBISOFT_CONTACT_EMAIL } from "./contact-biibisoft-dialog";
+import { ContactSection } from "./contact-section";
 
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
 
@@ -37,11 +39,17 @@ export function SiteFooter({
   hasStory,
   hasCollections,
   affiliateSummary,
+  contactSectionVisible,
+  whatsappNumberEncoded,
+  contactEmailEncoded,
 }: {
   tenant: Tenant;
   hasStory: boolean;
   hasCollections: boolean;
   affiliateSummary?: AffiliatePublicSummary;
+  contactSectionVisible?: boolean;
+  whatsappNumberEncoded?: string | null;
+  contactEmailEncoded?: string | null;
 }) {
   const slug = useStoreSlug();
   const homeHref = useStoreHref();
@@ -100,6 +108,11 @@ export function SiteFooter({
             </div>
           </div>
         </div>
+        <ContactSection
+          visible={!!contactSectionVisible}
+          whatsappNumberEncoded={whatsappNumberEncoded ?? null}
+          contactEmailEncoded={contactEmailEncoded ?? null}
+        />
         {affiliateSummary && (affiliateSummary.sellsFor.length > 0 || affiliateSummary.resoldBy.length > 0) && (
           <div className="mt-8 flex flex-col gap-1 border-t border-[var(--store-border)] pt-6">
             <AffiliateShopList label="Also carries products from:" shops={affiliateSummary.sellsFor} />
@@ -111,19 +124,24 @@ export function SiteFooter({
         </div>
         <p className="store-muted mt-3 text-xs">
           © {new Date().getFullYear()} {tenant.name}. Built on{" "}
-          <Link href="/" className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[var(--store-primary)]">
-            Selltns
-          </Link>
-          , by the{" "}
           <a
-            href="https://biibisoft.com"
+            href={`https://${APP_DOMAIN}`}
             target="_blank"
             rel="noreferrer"
             className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[var(--store-primary)]"
           >
-            Biibisoft Team
+            Selltns
           </a>
-          . <span className="opacity-60">{BUILD_LABEL}</span>
+          , by the{" "}
+          <ContactBiibisoftDialog className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[var(--store-primary)]" />{" "}
+          (or{" "}
+          <a
+            href={`mailto:${BIIBISOFT_CONTACT_EMAIL}`}
+            className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[var(--store-primary)]"
+          >
+            email them directly
+          </a>
+          ). <span className="opacity-60">{BUILD_LABEL}</span>
         </p>
       </div>
     </footer>

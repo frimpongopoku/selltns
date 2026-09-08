@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -12,6 +13,7 @@ import type { DomainProvider, DomainStatus } from '../domains/domain-provider';
 
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const DOMAIN_PATTERN = /^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface SlugAvailability {
   available: boolean;
@@ -94,6 +96,28 @@ export class TenantsService {
       .update({
         where: { id: tenantId },
         data: input,
+      })
+      .catch(() => {
+        throw new NotFoundException(`Tenant ${tenantId} not found`);
+      });
+    return tenant as unknown as Tenant;
+  }
+
+  async updateContactSection(
+    tenantId: string,
+    input: { contactEmail?: string | null; contactSectionVisible?: boolean },
+  ): Promise<Tenant> {
+    const contactEmail =
+      input.contactEmail !== undefined
+        ? input.contactEmail?.trim() || null
+        : undefined;
+    if (contactEmail && !EMAIL_PATTERN.test(contactEmail)) {
+      throw new BadRequestException('Enter a valid email address.');
+    }
+    const tenant = await this.prisma.tenant
+      .update({
+        where: { id: tenantId },
+        data: { ...input, contactEmail },
       })
       .catch(() => {
         throw new NotFoundException(`Tenant ${tenantId} not found`);

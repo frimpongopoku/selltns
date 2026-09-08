@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ImageIcon, MessageCircle, UserRound } from "lucide-react";
+import { ImageIcon, MessageCircle, Phone, UserRound } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { LogoPicker } from "@/components/admin/logo-picker";
-import { updateTenantProfile, updateTenantOwnershipInfo } from "@/lib/api";
+import {
+  updateTenantProfile,
+  updateTenantOwnershipInfo,
+  updateTenantContactSection,
+} from "@/lib/api";
 import { toWhatsAppNumber } from "@/lib/phone";
 import type { Tenant } from "@/lib/types";
 
@@ -71,6 +75,7 @@ export function StoreProfileSettings({ tenant }: { tenant: Tenant }) {
       </Card>
 
       <OwnershipInfoCard tenant={tenant} />
+      <ContactSectionCard tenant={tenant} />
     </div>
   );
 }
@@ -198,6 +203,78 @@ function OwnershipInfoCard({ tenant }: { tenant: Tenant }) {
             <p className="text-sm font-medium">Show on storefront</p>
             <p className="text-xs text-muted-foreground">
               When off, none of this appears to customers.
+            </p>
+          </div>
+          <Switch checked={visible} onCheckedChange={setVisible} />
+        </div>
+        <div>
+          <Button onClick={handleSave} disabled={!dirty || saving}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ContactSectionCard({ tenant }: { tenant: Tenant }) {
+  const router = useRouter();
+  const [contactEmail, setContactEmail] = useState(tenant.contactEmail ?? "");
+  const [visible, setVisible] = useState(tenant.contactSectionVisible);
+  const [saving, setSaving] = useState(false);
+
+  const dirty =
+    contactEmail !== (tenant.contactEmail ?? "") ||
+    visible !== tenant.contactSectionVisible;
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await updateTenantContactSection(tenant.id, {
+        contactEmail: contactEmail.trim() || null,
+        contactSectionVisible: visible,
+      });
+      toast.success("Contact section updated");
+      router.refresh();
+    } catch {
+      toast.error("Couldn't save changes. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-2">
+        <Phone className="h-4 w-4 text-emerald-600" />
+        <p className="text-sm font-medium">Contact section</p>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Adds a small &quot;get in touch&quot; block to your storefront so visitors can call,
+        WhatsApp, or email you directly — using the WhatsApp number above and the email
+        below. Entirely optional; off by default.
+      </p>
+
+      <div className="mt-4 flex flex-col gap-4">
+        <div>
+          <Label htmlFor="contact-email">Public contact email (optional)</Label>
+          <Input
+            id="contact-email"
+            type="email"
+            className="mt-1.5"
+            placeholder="hello@yourshop.com"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+          />
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Shown only if you turn this on below — kept separate from your login email.
+          </p>
+        </div>
+        <div className="flex items-center justify-between rounded-lg border p-3">
+          <div>
+            <p className="text-sm font-medium">Show on storefront</p>
+            <p className="text-xs text-muted-foreground">
+              When off, no contact section appears to customers.
             </p>
           </div>
           <Switch checked={visible} onCheckedChange={setVisible} />

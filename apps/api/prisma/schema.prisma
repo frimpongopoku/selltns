@@ -96,6 +96,12 @@ model Tenant {
   ownerTitle                 String   @default("") @map("owner_title")
   ownerBio                   String   @default("") @map("owner_bio")
   ownerInfoVisible           Boolean  @default(false) @map("owner_info_visible")
+  // A public contact email the vendor explicitly opts into showing — kept
+  // separate from any account/login email so nothing is disclosed without
+  // an explicit, deliberate choice (same "off by default" model as
+  // ownerInfoVisible above).
+  contactEmail               String?  @map("contact_email")
+  contactSectionVisible      Boolean  @default(false) @map("contact_section_visible")
   // Whether this tenant's own storefront footer discloses its affiliate
   // relationships (both directions — shops it resells for, and shops
   // reselling its products). Each tenant only ever controls disclosure of
@@ -521,6 +527,10 @@ model SupportMessage {
   message   String
   pageUrl   String   @default("") @map("page_url")
   tenantId  String?  @map("tenant_id")
+  // "platform" (default) = the site's own Help/Support form; "biibisoft" =
+  // the footer's "Contact the Biibisoft team" entry point — same pipeline,
+  // different destination inbox (see SupportService.submit()).
+  audience  String   @default("platform")
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("support_messages")
