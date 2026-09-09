@@ -67,12 +67,20 @@ export class TenantsService {
 
   async updateProfile(
     tenantId: string,
-    input: { whatsappNumber?: string | null; logoUrl?: string | null },
+    input: { name?: string; whatsappNumber?: string | null; logoUrl?: string | null },
   ): Promise<Tenant> {
+    const name = input.name?.trim();
+    if (input.name !== undefined && !name) {
+      throw new BadRequestException('Store name is required.');
+    }
+    if (name && name.length > 100) {
+      throw new BadRequestException('Store name must be 100 characters or fewer.');
+    }
     const tenant = await this.prisma.tenant
       .update({
         where: { id: tenantId },
         data: {
+          name,
           whatsappNumber: input.whatsappNumber,
           logoUrl: input.logoUrl,
         },

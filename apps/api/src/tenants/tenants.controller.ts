@@ -101,7 +101,8 @@ export class TenantsController {
   updateProfile(
     @Param('id') id: string,
     @CurrentUser() user: SessionPayload,
-    @Body() body: { whatsappNumber?: string | null; logoUrl?: string | null },
+    @Body()
+    body: { name?: string; whatsappNumber?: string | null; logoUrl?: string | null },
   ) {
     this.assertOwnTenant(id, user);
     return this.tenantsService.updateProfile(id, body);
