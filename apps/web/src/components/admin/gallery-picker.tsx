@@ -63,7 +63,7 @@ export function GalleryPicker({
             <Plus className="h-4 w-4" />
             Add
           </DialogTrigger>
-          <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+          <DialogContent className="max-h-[90vh] sm:max-w-3xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Choose from gallery</DialogTitle>
             </DialogHeader>
@@ -81,7 +81,7 @@ export function GalleryPicker({
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
                 {Array.from({ length: 8 }, (_, i) => (
                   <div key={i} className="aspect-square animate-pulse rounded-lg bg-muted" />
                 ))}
@@ -95,7 +95,7 @@ export function GalleryPicker({
             ) : (
               <div
                 ref={setScrollEl}
-                className="grid max-h-96 grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4"
+                className="grid max-h-[28rem] grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4 md:grid-cols-5"
               >
                 {assets.map((asset) => {
                   const isSelected = selected.includes(asset.url);
