@@ -72,6 +72,7 @@ function MediaDetailBody({
   const [tags, setTags] = useState<string[]>(asset.tags);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const dirty = title !== (asset.title ?? "") || tags.join(",") !== asset.tags.join(",");
 
@@ -153,16 +154,41 @@ function MediaDetailBody({
       </div>
 
       <DialogFooter className="justify-between sm:justify-between">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={handleDelete}
-          disabled={deleting}
-          className="gap-1.5 text-destructive hover:text-destructive"
-        >
-          {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-          Delete
-        </Button>
+        {confirmingDelete ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Delete this photo? Can&apos;t be undone.</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmingDelete(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="gap-1.5"
+            >
+              {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Yes, delete
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setConfirmingDelete(true)}
+            className="gap-1.5 text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
+        )}
         <Button type="button" onClick={handleSave} disabled={saving || !dirty}>
           {saving && <Loader2 className="h-4 w-4 animate-spin" />}
           Save changes

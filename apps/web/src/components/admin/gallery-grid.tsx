@@ -3,8 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Loader2, Search, X } from "lucide-react";
+import { toast } from "sonner";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { MediaDetailDialog } from "@/components/admin/media-detail-dialog";
+import { ConfirmDeleteDialog } from "@/components/admin/confirm-delete-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { deleteMedia } from "@/lib/api";
@@ -31,6 +33,8 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
     removeAsset,
   } = useMediaLibrary(tenantId);
   const [selected, setSelected] = useState<MediaAsset | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const isFiltered = query.trim() !== "" || dateFrom !== "" || dateTo !== "";
 
   const sentinelRef = useInfiniteScroll({
@@ -38,12 +42,25 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
     enabled: hasMore && !loading,
   });
 
-  function handleQuickDelete(e: React.MouseEvent, id: string) {
+  function handleQuickDeleteClick(e: React.MouseEvent, id: string) {
     e.stopPropagation();
-    removeAsset(id);
-    deleteMedia(id, tenantId).catch(() => {
-      // Rare — if this fails the asset just reappears on next reload.
-    });
+    setPendingDeleteId(id);
+  }
+
+  async function handleConfirmDelete() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    setDeleting(true);
+    try {
+      await deleteMedia(id, tenantId);
+      removeAsset(id);
+      toast.success("Photo deleted");
+      setPendingDeleteId(null);
+    } catch {
+      toast.error("Couldn't delete photo. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
@@ -137,7 +154,7 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
                 </div>
                 <button
                   type="button"
-                  onClick={(e) => handleQuickDelete(e, asset.id)}
+                  onClick={(e) => handleQuickDeleteClick(e, asset.id)}
                   aria-label="Delete photo"
                   className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
                 >
@@ -171,6 +188,15 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
           removeAsset(id);
           setSelected(null);
         }}
+      />
+
+      <ConfirmDeleteDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete this photo?"
+        description="This can't be undone — it'll also disappear anywhere it's currently in use (products, collections, story blocks)."
+        deleting={deleting}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );
