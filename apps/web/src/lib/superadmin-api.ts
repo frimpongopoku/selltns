@@ -48,6 +48,10 @@ export const verifyUser = (userId: string) =>
   superAdminRequest<{ ok: true }>(`/users/${userId}/verify`, { method: "POST" });
 export const unverifyUser = (userId: string) =>
   superAdminRequest<{ ok: true }>(`/users/${userId}/unverify`, { method: "POST" });
+export const verifyTenant = (tenantId: string) =>
+  superAdminRequest<{ ok: true }>(`/tenants/${tenantId}/verify`, { method: "POST" });
+export const unverifyTenant = (tenantId: string) =>
+  superAdminRequest<{ ok: true }>(`/tenants/${tenantId}/unverify`, { method: "POST" });
 
 // Billing — Selltns' own payment details, the message shown alongside them,
 // and reviewing vendors' upgrade requests.

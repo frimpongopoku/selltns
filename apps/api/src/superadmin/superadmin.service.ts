@@ -123,22 +123,44 @@ export class SuperAdminService {
 
     const ownerMembership = await this.prisma.tenantMembership.findFirst({
       where: { tenantId: request.tenantId, role: 'OWNER' },
+      include: { user: true, tenant: { select: { name: true } } },
     });
     if (!ownerMembership) {
       throw new NotFoundException('This shop has no owner to verify.');
     }
 
-    await this.prisma.verificationRequest.update({
-      where: { id },
-      data: {
-        status: 'APPROVED',
-        reviewedBySuperAdminId: superAdminId,
-        reviewedAt: new Date(),
-      },
-    });
-    // Verification belongs to the person, not just the shop they applied
-    // from — this cascades onto every shop they own.
-    await this.verifyUser(ownerMembership.userId);
+    // Approving one shop's application verifies that shop — not every other
+    // shop its owner happens to run. Each shop applies (and gets reviewed)
+    // independently; see UserVerifyActions/verifyUser for the separate,
+    // explicitly-labeled "verify this person across every shop they own"
+    // bulk action a superadmin can still choose from a store's detail page.
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.verificationRequest.update({
+        where: { id },
+        data: {
+          status: 'APPROVED',
+          reviewedBySuperAdminId: superAdminId,
+          reviewedAt: now,
+        },
+      }),
+      this.prisma.tenant.update({
+        where: { id: request.tenantId },
+        data: { verificationStatus: 'VERIFIED', verifiedAt: now },
+      }),
+    ]);
+
+    this.emailService
+      .send({
+        to: ownerMembership.user.email,
+        ...userVerifiedEmail([ownerMembership.tenant.name]),
+      })
+      .catch((err) => {
+        this.logger.error(
+          `Failed to send verified email to ${ownerMembership.user.email}: ${err}`,
+        );
+      });
+
     return { ok: true };
   }
 
@@ -180,12 +202,12 @@ export class SuperAdminService {
     return { ok: true };
   }
 
-  // Marks a person verified and cascades that onto every shop they OWN —
-  // Tenant.verificationStatus stays the fast, denormalized field every
-  // storefront/badge read already relies on, this is just what keeps it in
-  // sync with the person behind the shop. Shared by the request-approval
-  // flow above and the direct "verify this owner" action from a shop's
-  // detail page.
+  // Deliberate bulk override, only reachable via verifyUserById — the
+  // explicitly-labeled "verify this person" action on a store's detail
+  // page. Marks the person verified and cascades that onto every shop they
+  // OWN. Per-shop verification (the normal path) goes through
+  // approveVerification() above instead, which only ever touches the one
+  // shop whose application was approved.
   private async verifyUser(userId: string) {
     const ownedMemberships = await this.prisma.tenantMembership.findMany({
       where: { userId, role: 'OWNER' },
@@ -329,6 +351,36 @@ export class SuperAdminService {
       .catch(() => {
         throw new NotFoundException(`Store ${id} not found`);
       });
+  }
+
+  // Manual per-shop verification override — for a shop that shouldn't go
+  // through the full application (submit → review → approve) flow, or to
+  // correct a single shop's status without touching any other shop the same
+  // person happens to own. Deliberately independent of verifyUser/
+  // unverifyUser below (the person-level bulk action) and of any
+  // VerificationRequest row.
+  async verifyTenantById(id: string) {
+    await this.prisma.tenant
+      .update({
+        where: { id },
+        data: { verificationStatus: 'VERIFIED', verifiedAt: new Date() },
+      })
+      .catch(() => {
+        throw new NotFoundException(`Store ${id} not found`);
+      });
+    return { ok: true };
+  }
+
+  async unverifyTenantById(id: string) {
+    await this.prisma.tenant
+      .update({
+        where: { id },
+        data: { verificationStatus: 'NONE', verifiedAt: null },
+      })
+      .catch(() => {
+        throw new NotFoundException(`Store ${id} not found`);
+      });
+    return { ok: true };
   }
 
   // --- Superadmins ---------------------------------------------------------

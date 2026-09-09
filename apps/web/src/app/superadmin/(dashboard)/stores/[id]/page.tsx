@@ -6,6 +6,7 @@ import { VerifiedPill } from "@/components/superadmin/status-badges";
 import { formatDate } from "@/lib/format";
 import { TenantSuspendActions } from "@/components/superadmin/tenant-suspend-actions";
 import { UserVerifyActions } from "@/components/superadmin/user-verify-actions";
+import { TenantVerifyActions } from "@/components/superadmin/tenant-verify-actions";
 import { TenantPlanActions } from "@/components/superadmin/tenant-plan-actions";
 
 export async function generateMetadata({
@@ -56,6 +57,20 @@ export default async function SuperAdminStoreDetailPage({
         <p className="text-xs text-muted-foreground">Store actions</p>
         <div className="mt-2">
           <TenantSuspendActions tenantId={tenant.id} suspended={tenant.suspended} />
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-xl border p-5">
+        <p className="text-xs text-muted-foreground">Verification</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Affects only this shop — for a shop that doesn&apos;t need the full application, or to
+          correct its badge without touching any other shop the same person owns.
+        </p>
+        <div className="mt-3">
+          <TenantVerifyActions
+            tenantId={tenant.id}
+            verified={tenant.verificationStatus === "VERIFIED"}
+          />
         </div>
       </div>
 

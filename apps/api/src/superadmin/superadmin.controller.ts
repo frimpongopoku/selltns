@@ -105,6 +105,16 @@ export class SuperAdminController {
     return this.superAdminService.unverifyUserById(id);
   }
 
+  @Post('tenants/:id/verify')
+  verifyTenant(@Param('id') id: string) {
+    return this.superAdminService.verifyTenantById(id);
+  }
+
+  @Post('tenants/:id/unverify')
+  unverifyTenant(@Param('id') id: string) {
+    return this.superAdminService.unverifyTenantById(id);
+  }
+
   @Post('tenants/:id/suspend')
   suspendTenant(@Param('id') id: string, @Body('reason') reason: string) {
     if (!reason?.trim()) {

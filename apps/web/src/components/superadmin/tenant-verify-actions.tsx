@@ -5,13 +5,17 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ShieldCheck, ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { verifyUser, unverifyUser } from "@/lib/superadmin-api";
+import { verifyTenant, unverifyTenant } from "@/lib/superadmin-api";
 
-export function UserVerifyActions({
-  userId,
+// Verifies (or unverifies) just this one shop — independent of the
+// person-level bulk action in UserVerifyActions, which affects every shop
+// the owner runs. This is the normal, scoped way to correct or set a
+// single shop's badge.
+export function TenantVerifyActions({
+  tenantId,
   verified,
 }: {
-  userId: string;
+  tenantId: string;
   verified: boolean;
 }) {
   const router = useRouter();
@@ -20,11 +24,11 @@ export function UserVerifyActions({
   async function handleVerify() {
     setSaving(true);
     try {
-      await verifyUser(userId);
-      toast.success("Verified — every shop this person owns now shows the badge.");
+      await verifyTenant(tenantId);
+      toast.success("This shop is now Verified.");
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't verify this person.");
+      toast.error(err instanceof Error ? err.message : "Couldn't verify this shop.");
     } finally {
       setSaving(false);
     }
@@ -33,11 +37,11 @@ export function UserVerifyActions({
   async function handleUnverify() {
     setSaving(true);
     try {
-      await unverifyUser(userId);
-      toast.success("Verification removed from every shop they own.");
+      await unverifyTenant(tenantId);
+      toast.success("Verification removed from this shop.");
       router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't update this person.");
+      toast.error(err instanceof Error ? err.message : "Couldn't update this shop.");
     } finally {
       setSaving(false);
     }
@@ -55,7 +59,7 @@ export function UserVerifyActions({
   return (
     <Button size="sm" onClick={handleVerify} disabled={saving} className="gap-1.5">
       <ShieldCheck className="h-3.5 w-3.5" />
-      Verify owner (all their shops)
+      Verify this shop
     </Button>
   );
 }
