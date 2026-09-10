@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCollections, getProducts, getTenantBySlug } from "@/lib/api";
 import { ProductCard } from "@/components/storefront/product-card";
+import { BespokeRequestBanner } from "@/components/storefront/bespoke-request-banner";
 import { getCanonicalUrl } from "@/lib/canonical";
 import { jsonLdScriptProps, storeJsonLd } from "@/lib/structured-data";
 import { isCustomDomainRequest } from "@/lib/request-host";
@@ -142,6 +143,7 @@ export default async function StoreHomePage({
             ))}
           </div>
         )}
+        <BespokeRequestBanner tenant={tenant} />
       </section>
     </div>
   );

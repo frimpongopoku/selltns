@@ -85,6 +85,7 @@ function mapTenant(row: PrismaTenant): Tenant {
     ownerInfoVisible: row.ownerInfoVisible,
     contactEmail: row.contactEmail,
     contactSectionVisible: row.contactSectionVisible,
+    bespokeRequestsEnabled: row.bespokeRequestsEnabled,
     affiliateDisclosureVisible: row.affiliateDisclosureVisible,
     heroTagline: row.heroTagline,
     footerTagline: row.footerTagline,

@@ -25,6 +25,7 @@ export const tenant: Tenant = {
   ownerTitle: 'Founder & Designer',
   contactEmail: null,
   contactSectionVisible: false,
+  bespokeRequestsEnabled: false,
   ownerBio: 'Handcrafted in Accra, one piece at a time.',
   ownerInfoVisible: false,
   affiliateDisclosureVisible: true,

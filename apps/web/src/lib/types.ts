@@ -51,6 +51,7 @@ export interface Tenant {
   ownerInfoVisible: boolean;
   contactEmail: string | null;
   contactSectionVisible: boolean;
+  bespokeRequestsEnabled: boolean;
   affiliateDisclosureVisible: boolean;
   heroTagline: string;
   footerTagline: string;

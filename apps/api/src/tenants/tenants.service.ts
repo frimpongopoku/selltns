@@ -163,6 +163,18 @@ export class TenantsService {
     return tenant as unknown as Tenant;
   }
 
+  async updateBespokeRequests(tenantId: string, enabled: boolean): Promise<Tenant> {
+    const tenant = await this.prisma.tenant
+      .update({
+        where: { id: tenantId },
+        data: { bespokeRequestsEnabled: enabled },
+      })
+      .catch(() => {
+        throw new NotFoundException(`Tenant ${tenantId} not found`);
+      });
+    return tenant as unknown as Tenant;
+  }
+
   async getDomainStatus(tenantId: string): Promise<CustomDomainInfo> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

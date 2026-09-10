@@ -139,6 +139,11 @@ export const updateAffiliateDisclosure = (tenantId: string, visible: boolean) =>
     method: "PATCH",
     body: JSON.stringify({ visible }),
   });
+export const updateBespokeRequests = (tenantId: string, enabled: boolean) =>
+  adminRequest<Tenant>(`/tenants/${tenantId}/bespoke-requests`, {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
 export const getDomainStatus = (tenantId: string) =>
   adminRequest<DomainStatus>(`/tenants/${tenantId}/domain`);
 export const setDomain = (tenantId: string, domain: string) =>

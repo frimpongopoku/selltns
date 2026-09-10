@@ -4,6 +4,7 @@ import { getCollection, getTenantBySlug } from "@/lib/api";
 import { ThemeScope } from "@/components/theme/theme-scope";
 import { ProductCard } from "@/components/storefront/product-card";
 import { PreorderBanner } from "@/components/storefront/preorder-banner";
+import { BespokeRequestBanner } from "@/components/storefront/bespoke-request-banner";
 import { getCanonicalUrl } from "@/lib/canonical";
 import { collectionJsonLd, jsonLdScriptProps } from "@/lib/structured-data";
 
@@ -96,6 +97,7 @@ export default async function CollectionPage({
         {activeProducts.length === 0 && (
           <p className="store-muted mt-8">No products in this collection yet.</p>
         )}
+        <BespokeRequestBanner tenant={tenant} context={collection.title} />
       </div>
     </ThemeScope>
   );

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ImageIcon, MessageCircle, Phone, Store, UserRound } from "lucide-react";
+import { ImageIcon, MessageCircle, MessageCircleHeart, Phone, Store, UserRound } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import {
   updateTenantProfile,
   updateTenantOwnershipInfo,
   updateTenantContactSection,
+  updateBespokeRequests,
 } from "@/lib/api";
 import { toWhatsAppNumber } from "@/lib/phone";
 import type { Tenant } from "@/lib/types";
@@ -77,6 +78,7 @@ export function StoreProfileSettings({ tenant }: { tenant: Tenant }) {
 
       <OwnershipInfoCard tenant={tenant} />
       <ContactSectionCard tenant={tenant} />
+      <BespokeRequestsCard tenant={tenant} />
     </div>
   );
 }
@@ -333,6 +335,54 @@ function ContactSectionCard({ tenant }: { tenant: Tenant }) {
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>
+      </div>
+    </Card>
+  );
+}
+
+function BespokeRequestsCard({ tenant }: { tenant: Tenant }) {
+  const router = useRouter();
+  const [enabled, setEnabled] = useState(tenant.bespokeRequestsEnabled);
+  const [saving, setSaving] = useState(false);
+  const hasWhatsapp = !!tenant.whatsappNumber;
+
+  async function handleToggle(checked: boolean) {
+    setEnabled(checked);
+    setSaving(true);
+    try {
+      await updateBespokeRequests(tenant.id, checked);
+      toast.success(checked ? "Custom order requests turned on" : "Custom order requests turned off");
+      router.refresh();
+    } catch {
+      toast.error("Couldn't save changes. Please try again.");
+      setEnabled(!checked);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-2">
+        <MessageCircleHeart className="h-4 w-4 text-emerald-600" />
+        <p className="text-sm font-medium">Custom order requests</p>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Adds a &quot;Don&apos;t see what you&apos;re looking for?&quot; banner on your storefront
+        that messages you on WhatsApp — for customers who want something bespoke you don&apos;t
+        have listed.
+      </p>
+      {!hasWhatsapp && (
+        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+          Add your WhatsApp number above first — this banner needs it.
+        </p>
+      )}
+      <div className="mt-3 flex items-center justify-between rounded-lg border p-3">
+        <div>
+          <p className="text-sm font-medium">Show on storefront</p>
+          <p className="text-xs text-muted-foreground">Off by default.</p>
+        </div>
+        <Switch checked={enabled} disabled={!hasWhatsapp || saving} onCheckedChange={handleToggle} />
       </div>
     </Card>
   );

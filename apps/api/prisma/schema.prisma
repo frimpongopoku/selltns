@@ -102,6 +102,10 @@ model Tenant {
   // ownerInfoVisible above).
   contactEmail               String?  @map("contact_email")
   contactSectionVisible      Boolean  @default(false) @map("contact_section_visible")
+  // Shows a "don't see what you want? message us on WhatsApp" banner on
+  // the storefront, for custom/bespoke order requests — off by default,
+  // and has no effect unless whatsappNumber is also set.
+  bespokeRequestsEnabled     Boolean  @default(false) @map("bespoke_requests_enabled")
   // Whether this tenant's own storefront footer discloses its affiliate
   // relationships (both directions — shops it resells for, and shops
   // reselling its products). Each tenant only ever controls disclosure of

@@ -136,6 +136,18 @@ export class TenantsController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER')
+  @Patch(':id/bespoke-requests')
+  updateBespokeRequests(
+    @Param('id') id: string,
+    @CurrentUser() user: SessionPayload,
+    @Body() body: { enabled: boolean },
+  ) {
+    this.assertOwnTenant(id, user);
+    return this.tenantsService.updateBespokeRequests(id, body.enabled);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER')
   @Patch(':id/ownership-info')
   updateOwnershipInfo(
     @Param('id') id: string,

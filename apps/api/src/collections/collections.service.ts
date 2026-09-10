@@ -15,9 +15,14 @@ import type { Collection, ThemeTokens } from '../common/types';
 import { getPreorderInfoMap } from '../common/preorder-info';
 import { AffiliatesService } from '../affiliates/affiliates.service';
 
+// Ordered by each product's own displayOrder — the same order the vendor
+// already controls from the main products list — not the position column
+// (which only ever reflects the order products happened to get checked in
+// when added to the collection, never something a vendor deliberately
+// sets or sees again).
 const PRODUCTS_INCLUDE = {
   products: {
-    orderBy: { position: 'asc' as const },
+    orderBy: { product: { displayOrder: 'asc' as const } },
     include: { product: true },
   },
 } satisfies Prisma.CollectionInclude;
