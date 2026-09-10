@@ -23,7 +23,7 @@ export default async function AdminCollectionsPage() {
         <CollectionQuickCreateDialog tenantId={me.tenant.id} />
       </div>
 
-      <CollectionsExplorer tenantId={me.tenant.id} />
+      <CollectionsExplorer tenantId={me.tenant.id} tenant={me.tenant} />
     </div>
   );
 }

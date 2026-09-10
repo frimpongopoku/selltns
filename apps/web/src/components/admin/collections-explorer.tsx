@@ -2,16 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Search, X } from "lucide-react";
+import { Loader2, Search, Sparkles, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getCollectionTags } from "@/lib/api";
 import { useCollectionLibrary } from "@/lib/use-collection-library";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import { onCollectionCreated } from "@/lib/collection-events";
 import { CollectionActiveToggle } from "@/components/admin/collection-active-toggle";
+import { CollectionFlyerManager } from "@/components/admin/collection-flyer-manager";
+import type { CollectionWithProducts, Tenant } from "@/lib/types";
 
-export function CollectionsExplorer({ tenantId }: { tenantId: string }) {
+export function CollectionsExplorer({ tenantId, tenant }: { tenantId: string; tenant: Tenant }) {
   const {
     collections,
     loading,
@@ -26,6 +30,7 @@ export function CollectionsExplorer({ tenantId }: { tenantId: string }) {
   } = useCollectionLibrary(tenantId);
 
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [flyerCollection, setFlyerCollection] = useState<CollectionWithProducts | null>(null);
 
   useEffect(() => {
     getCollectionTags(tenantId).then(setAvailableTags);
@@ -149,11 +154,23 @@ export function CollectionsExplorer({ tenantId }: { tenantId: string }) {
                     <span className="text-xs text-muted-foreground">
                       {collection.isActive ? "Live" : "Not live"}
                     </span>
-                    <CollectionActiveToggle
-                      collectionId={collection.id}
-                      tenantId={tenantId}
-                      initialActive={collection.isActive}
-                    />
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="gap-1.5 text-xs"
+                        onClick={() => setFlyerCollection(collection)}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Flyer
+                      </Button>
+                      <CollectionActiveToggle
+                        collectionId={collection.id}
+                        tenantId={tenantId}
+                        initialActive={collection.isActive}
+                      />
+                    </div>
                   </div>
                 </Card>
               </div>
@@ -170,6 +187,15 @@ export function CollectionsExplorer({ tenantId }: { tenantId: string }) {
           </div>
         </>
       )}
+
+      <Dialog open={flyerCollection !== null} onOpenChange={(open) => !open && setFlyerCollection(null)}>
+        <DialogContent className="max-h-[90vh] sm:max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{flyerCollection ? `${flyerCollection.title} — flyer` : "Flyer"}</DialogTitle>
+          </DialogHeader>
+          {flyerCollection && <CollectionFlyerManager tenant={tenant} collection={flyerCollection} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
