@@ -62,7 +62,7 @@ export default function RootLayout({
       className={`${inter.variable} ${cormorant.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           {/* Platform-wide "your click was acknowledged" signal — most
               useful in dev (Turbopack's on-demand compile can leave a page
               feeling unresponsive for a moment) but real in production too,
