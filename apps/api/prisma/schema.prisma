@@ -232,6 +232,11 @@ model Collection {
   slug              String
   description       String         @default("")
   coverImage        String         @default("") @map("cover_image")
+  // When set, this replaces coverImage as the link-preview (og:image) photo
+  // for this collection's public URL — an explicit opt-in the vendor makes
+  // from the flyer generator, never automatic. Null means "use the cover
+  // photo," same as before this existed.
+  unfurlImage       String?        @map("unfurl_image")
   seoTitle          String         @default("") @map("seo_title")
   seoDescription    String         @default("") @map("seo_description")
   tags              String[]       @default([])

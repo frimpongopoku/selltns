@@ -173,6 +173,10 @@ export interface Collection {
   productIds: string[];
   tags: string[];
   coverImage: string;
+  // Overrides coverImage as the link-preview photo when set — an explicit
+  // opt-in from the flyer generator, never automatic. Null means "use the
+  // cover photo," always the default.
+  unfurlImage: string | null;
   type: CollectionType;
   depositType: DepositType | null;
   depositPercentage: number | null;

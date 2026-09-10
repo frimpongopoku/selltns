@@ -29,6 +29,7 @@ interface CollectionRow {
   slug: string;
   description: string;
   coverImage: string;
+  unfurlImage: string | null;
   seoTitle: string;
   seoDescription: string;
   tags: string[];
@@ -50,6 +51,7 @@ function mapCollection(row: CollectionRow) {
     slug: row.slug,
     description: row.description,
     coverImage: row.coverImage,
+    unfurlImage: row.unfurlImage,
     seoTitle: row.seoTitle,
     seoDescription: row.seoDescription,
     tags: row.tags,
@@ -337,6 +339,8 @@ export class CollectionsService {
         slug,
         description: input.description ?? existing.description,
         coverImage: input.coverImage ?? existing.coverImage,
+        unfurlImage:
+          input.unfurlImage !== undefined ? input.unfurlImage : existing.unfurlImage,
         seoTitle: input.seoTitle ?? existing.seoTitle,
         seoDescription: input.seoDescription ?? existing.seoDescription,
         tags: input.tags !== undefined ? tagsOf(input) : existing.tags,

@@ -193,7 +193,13 @@ export function CollectionsExplorer({ tenantId, tenant }: { tenantId: string; te
           <DialogHeader>
             <DialogTitle>{flyerCollection ? `${flyerCollection.title} — flyer` : "Flyer"}</DialogTitle>
           </DialogHeader>
-          {flyerCollection && <CollectionFlyerManager tenant={tenant} collection={flyerCollection} />}
+          {flyerCollection && (
+            <CollectionFlyerManager
+              tenant={tenant}
+              collection={flyerCollection}
+              onCollectionUpdated={setFlyerCollection}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

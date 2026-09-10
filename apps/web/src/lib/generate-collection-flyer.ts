@@ -294,14 +294,9 @@ export async function renderCollectionFlyer(input: RenderFlyerInput): Promise<HT
   ctx.fillStyle = "#ffffff";
   ctx.font = `700 15px ${FONT_STACK}`;
   ctx.fillText("SHOP NOW", pillX + pillW / 2, pillY + pillH / 2 + 5);
-
-  ctx.fillStyle = "#6b7280";
-  ctx.font = `500 14px ${FONT_STACK}`;
-  ctx.fillText(
-    truncateToWidth(ctx, prettyUrl(url), pillW + 20),
-    pillX + pillW / 2,
-    pillY + pillH + 22,
-  );
+  // The URL itself lives in the footer only (below) — showing it a second
+  // time here too, right where the product grid starts, was overlapping
+  // the top row of photos.
 
   // --- Collection title, as the flyer's headline ---
   ctx.textAlign = "left";

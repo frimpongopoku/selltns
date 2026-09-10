@@ -25,7 +25,9 @@ export async function generateMetadata({
     tenant.footerTagline ||
     `Browse ${collection.title} from ${tenant.name} on Selltns.`;
   const canonical = getCanonicalUrl(tenant, `/collections/${collection.slug}`);
-  // Prefer the collection's own cover photo; fall back to any active
+  // unfurlImage — the generated product-grid flyer, when the vendor has
+  // explicitly opted into using it — takes priority over the cover photo;
+  // otherwise prefer the cover photo, then fall back to any active
   // product's photo before giving up and letting opengraph-image.tsx
   // render a typographic fallback. Point og:image straight at that URL
   // rather than compositing it through next/og — real social crawlers
@@ -33,7 +35,9 @@ export async function generateMetadata({
   // specific to our own Satori-based renderer, not to how they fetch an
   // og:image directly.
   const image =
-    collection.coverImage || collection.products.find((p) => p.isActive && p.images[0])?.images[0];
+    collection.unfurlImage ||
+    collection.coverImage ||
+    collection.products.find((p) => p.isActive && p.images[0])?.images[0];
   return {
     title,
     description,

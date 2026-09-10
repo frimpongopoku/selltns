@@ -117,6 +117,9 @@ export interface Collection {
   productIds: string[];
   tags: string[];
   coverImage: string;
+  // Overrides coverImage as the link-preview photo when set — null means
+  // "use the cover photo," which is always the default.
+  unfurlImage: string | null;
   type: CollectionType;
   depositType: DepositType | null;
   depositPercentage: number | null;

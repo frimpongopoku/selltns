@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Download, FileText, Share2 } from "lucide-react";
+import { Copy, Download, FileText, Image as ImageIcon, Share2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,6 +15,9 @@ import {
   type FlyerProductInput,
   type RenderFlyerInput,
 } from "@/lib/generate-collection-flyer";
+import { updateCollection } from "@/lib/api";
+import { uploadMedia } from "@/lib/upload";
+import { getCanonicalUrl } from "@/lib/canonical";
 import type { CollectionWithProducts, Tenant } from "@/lib/types";
 
 const MAX_PRODUCTS = 6;
@@ -21,10 +25,16 @@ const MAX_PRODUCTS = 6;
 export function CollectionFlyerManager({
   tenant,
   collection,
+  onCollectionUpdated,
 }: {
   tenant: Tenant;
   collection: CollectionWithProducts;
+  /** Called after this flyer is set (or unset) as the link-preview image —
+   * lets a caller holding its own copy of `collection` (e.g. a dialog fed
+   * from a client-side list) stay in sync without a full page reload. */
+  onCollectionUpdated?: (updated: CollectionWithProducts) => void;
 }) {
+  const router = useRouter();
   const liveProducts = useMemo(
     () => collection.products.filter((p) => p.isActive).sort((a, b) => a.displayOrder - b.displayOrder),
     [collection.products],
@@ -36,6 +46,9 @@ export function CollectionFlyerManager({
   const [error, setError] = useState<string | null>(null);
   const [canShare, setCanShare] = useState(false);
   const [busy, setBusy] = useState<"png" | "pdf" | "share" | null>(null);
+  const [settingUnfurl, setSettingUnfurl] = useState(false);
+  const isUnfurlActive = !!collection.unfurlImage;
+  const collectionUrl = getCanonicalUrl(tenant, `/collections/${collection.slug}`);
 
   const selectedProducts: FlyerProductInput[] = useMemo(
     () =>
@@ -58,6 +71,15 @@ export function CollectionFlyerManager({
       : null;
 
   useEffect(() => {
+    // `navigator` doesn't exist during SSR, so this can only be known
+    // post-mount — computing it during render (even via a lazy useState
+    // initializer) would make the client's first render disagree with the
+    // server-rendered HTML and trigger a hydration mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCanShare(typeof navigator.share === "function");
+  }, []);
+
+  useEffect(() => {
     if (!input) return;
     let cancelled = false;
     getCollectionFlyerPngBlob(input)
@@ -65,12 +87,6 @@ export function CollectionFlyerManager({
         if (cancelled) return;
         setError(null);
         setPreviewUrl(URL.createObjectURL(blob));
-        const file = new File([blob], `${tenant.slug}-${collection.slug}-flyer.png`, {
-          type: "image/png",
-        });
-        setCanShare(
-          typeof navigator.share === "function" && !!navigator.canShare?.({ files: [file] }),
-        );
       })
       .catch((err) => {
         if (!cancelled) {
@@ -124,25 +140,77 @@ export function CollectionFlyerManager({
     }
   }
 
+  // Shares the customer-facing collection link, not a standalone image
+  // file — a picture with no way to click through to actually shop isn't
+  // useful, and file-sharing is also the flakier of the two across
+  // browsers/OSes. Pasting (or share-sheeting) the link anywhere gets the
+  // same rich preview anyway, once the flyer's been set as this
+  // collection's link-preview image below.
   async function handleShare() {
-    if (!input) return;
     setBusy("share");
+    try {
+      await navigator.share({
+        title: `${collection.title} — ${tenant.name}`,
+        text: `Check out ${collection.title} from ${tenant.name}`,
+        url: collectionUrl,
+      });
+    } catch (err) {
+      if (err instanceof Error && err.name !== "AbortError") {
+        toast.error(`Couldn't open the share sheet${err.message ? `: ${err.message}` : ""}.`);
+      }
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(collectionUrl);
+      toast.success("Link copied — paste it anywhere to share your collection.");
+    } catch {
+      toast.error("Couldn't copy the link. Please try again.");
+    }
+  }
+
+  // Explicit, one-time action — uploads whatever the flyer currently looks
+  // like and points the collection's link-preview image at it. Nothing
+  // updates automatically afterward; changing the product selection later
+  // and wanting the preview to match means clicking this again.
+  async function handleUseAsUnfurl() {
+    if (!input) return;
+    setSettingUnfurl(true);
     try {
       const blob = await getCollectionFlyerPngBlob(input);
       const file = new File([blob], `${tenant.slug}-${collection.slug}-flyer.png`, {
         type: "image/png",
       });
-      await navigator.share({
-        files: [file],
-        title: `${collection.title} — ${tenant.name}`,
-        text: `Check out ${collection.title} from ${tenant.name}`,
+      const asset = await uploadMedia(tenant.id, file);
+      const updated = await updateCollection(collection.id, tenant.id, {
+        unfurlImage: asset.url,
       });
+      onCollectionUpdated?.(updated);
+      toast.success("This flyer is now used when your collection link is shared.");
+      router.refresh();
     } catch (err) {
-      if (err instanceof Error && err.name !== "AbortError") {
-        toast.error("Couldn't open the share sheet.");
-      }
+      toast.error(
+        err instanceof Error ? err.message : "Couldn't set this as the link preview image.",
+      );
     } finally {
-      setBusy(null);
+      setSettingUnfurl(false);
+    }
+  }
+
+  async function handleRevertToCover() {
+    setSettingUnfurl(true);
+    try {
+      const updated = await updateCollection(collection.id, tenant.id, { unfurlImage: null });
+      onCollectionUpdated?.(updated);
+      toast.success("Back to your collection's cover photo for link previews.");
+      router.refresh();
+    } catch {
+      toast.error("Couldn't update this. Please try again.");
+    } finally {
+      setSettingUnfurl(false);
     }
   }
 
@@ -203,7 +271,16 @@ export function CollectionFlyerManager({
         )}
 
         <div className="flex w-full max-w-sm flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:justify-center">
-          <Button onClick={handleDownloadPng} disabled={!input || !previewUrl || busy !== null} className="gap-1.5">
+          <Button onClick={handleCopyLink} disabled={busy !== null} className="gap-1.5">
+            <Copy className="h-4 w-4" />
+            Copy link
+          </Button>
+          <Button
+            onClick={handleDownloadPng}
+            disabled={!input || !previewUrl || busy !== null}
+            variant="outline"
+            className="gap-1.5"
+          >
             <Download className="h-4 w-4" />
             {busy === "png" ? "Downloading…" : "Download PNG"}
           </Button>
@@ -219,13 +296,53 @@ export function CollectionFlyerManager({
           {canShare && (
             <Button
               onClick={handleShare}
-              disabled={!input || !previewUrl || busy !== null}
+              disabled={busy !== null}
               variant="outline"
               className="gap-1.5"
             >
               <Share2 className="h-4 w-4" />
-              {busy === "share" ? "Sharing…" : "Share"}
+              {busy === "share" ? "Sharing…" : "Share link"}
             </Button>
+          )}
+        </div>
+        <p className="max-w-sm text-center text-xs text-muted-foreground">
+          Copy link shares your collection&apos;s page — the flyer photo shows automatically once
+          you set it as the link preview below.
+        </p>
+
+        <div className="w-full max-w-sm rounded-lg border p-3 text-center">
+          {isUnfurlActive ? (
+            <>
+              <p className="text-xs text-muted-foreground">
+                This flyer is used as the photo when your collection link is shared — instead of
+                the cover photo.
+              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleRevertToCover}
+                disabled={settingUnfurl}
+                className="mt-2"
+              >
+                {settingUnfurl ? "Updating…" : "Use cover photo instead"}
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">
+                By default, sharing your collection link shows its cover photo.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleUseAsUnfurl}
+                disabled={!input || !previewUrl || settingUnfurl}
+                className="mt-2 gap-1.5"
+              >
+                <ImageIcon className="h-3.5 w-3.5" />
+                {settingUnfurl ? "Setting…" : "Use this flyer as the link preview instead"}
+              </Button>
+            </>
           )}
         </div>
       </Card>
