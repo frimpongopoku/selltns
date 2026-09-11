@@ -6,12 +6,15 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductsTableView } from "@/components/admin/products-table-view";
 import { ProductsGridView } from "@/components/admin/products-grid-view";
+import { ProductFlyerManager } from "@/components/admin/product-flyer-manager";
 import { getProductTags } from "@/lib/api";
 import { useProductLibrary, type ProductStatusFilter } from "@/lib/use-product-library";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import { onProductCreated } from "@/lib/product-events";
+import type { Product, Tenant } from "@/lib/types";
 
 const VIEW_MODE_KEY = "selltns:admin:products:view";
 type ViewMode = "table" | "grid";
@@ -22,7 +25,7 @@ const STATUS_TABS: { value: ProductStatusFilter; label: string }[] = [
   { value: "inactive", label: "Not live" },
 ];
 
-export function ProductsExplorer({ tenantId }: { tenantId: string }) {
+export function ProductsExplorer({ tenantId, tenant }: { tenantId: string; tenant: Tenant }) {
   const {
     products,
     loading,
@@ -42,6 +45,7 @@ export function ProductsExplorer({ tenantId }: { tenantId: string }) {
 
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [flyerProduct, setFlyerProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     getProductTags(tenantId).then(setAvailableTags);
@@ -50,8 +54,25 @@ export function ProductsExplorer({ tenantId }: { tenantId: string }) {
   useEffect(() => onProductCreated(prepend), [prepend]);
 
   useEffect(() => {
+    // `localStorage`/`matchMedia` don't exist during SSR, so the saved (or
+    // device-appropriate default) view can only be known post-mount —
+    // computing it during render would disagree with the server-rendered
+    // HTML and trigger a hydration mismatch.
     const saved = window.localStorage.getItem(VIEW_MODE_KEY);
-    if (saved === "grid" || saved === "table") setViewMode(saved);
+    // Table view's columns don't fit a phone screen without horizontal
+    // scrolling — grid's card layout keeps the flyer button and reorder
+    // controls reachable without it, so default to grid there when the
+    // vendor hasn't picked a view yet.
+    const next =
+      saved === "grid" || saved === "table"
+        ? saved
+        : window.matchMedia("(max-width: 639px)").matches
+          ? "grid"
+          : null;
+    if (next) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setViewMode(next);
+    }
   }, []);
 
   useEffect(() => {
@@ -181,6 +202,7 @@ export function ProductsExplorer({ tenantId }: { tenantId: string }) {
               canReorder={!isFiltered}
               hasMore={hasMore}
               onMove={moveProduct}
+              onFlyer={setFlyerProduct}
             />
           ) : (
             <ProductsTableView
@@ -190,6 +212,7 @@ export function ProductsExplorer({ tenantId }: { tenantId: string }) {
               canReorder={!isFiltered}
               hasMore={hasMore}
               onMove={moveProduct}
+              onFlyer={setFlyerProduct}
             />
           )}
 
@@ -203,6 +226,15 @@ export function ProductsExplorer({ tenantId }: { tenantId: string }) {
           </div>
         </>
       )}
+
+      <Dialog open={flyerProduct !== null} onOpenChange={(open) => !open && setFlyerProduct(null)}>
+        <DialogContent className="max-h-[90vh] sm:max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{flyerProduct ? `${flyerProduct.title} — flyer` : "Flyer"}</DialogTitle>
+          </DialogHeader>
+          {flyerProduct && <ProductFlyerManager tenant={tenant} product={flyerProduct} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

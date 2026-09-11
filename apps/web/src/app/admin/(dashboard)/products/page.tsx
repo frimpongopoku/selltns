@@ -23,7 +23,7 @@ export default async function AdminProductsPage() {
         <ProductQuickCreateDialog tenantId={me.tenant.id} />
       </div>
 
-      <ProductsExplorer tenantId={me.tenant.id} />
+      <ProductsExplorer tenantId={me.tenant.id} tenant={me.tenant} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ export function ProductsGridView({
   canReorder,
   hasMore,
   onMove,
+  onFlyer,
 }: {
   products: Product[];
   tenantId: string;
@@ -22,6 +23,7 @@ export function ProductsGridView({
   canReorder?: boolean;
   hasMore?: boolean;
   onMove?: (id: string, direction: "up" | "down") => void;
+  onFlyer?: (product: Product) => void;
 }) {
   return (
     <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
@@ -61,8 +63,8 @@ export function ProductsGridView({
               ) : (
                 <span>{formatMoney(product.price)}</span>
               )}
-              <span className={product.stock <= 0 ? "text-destructive" : ""}>
-                {product.stock} in stock
+              <span className={product.trackStock && product.stock <= 0 ? "text-destructive" : ""}>
+                {product.trackStock ? `${product.stock} in stock` : "Always available"}
               </span>
             </div>
             {product.tags.length > 0 && (
@@ -81,12 +83,23 @@ export function ProductsGridView({
             )}
             <div className="mt-1 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">{product.isActive ? "Live" : "Not live"}</span>
-              <ProductActiveToggle
-                productId={product.id}
-                tenantId={tenantId}
-                initialActive={product.isActive}
-                onToggled={(isActive) => onToggled(product.id, isActive)}
-              />
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label={`Flyer for ${product.title}`}
+                  onClick={() => onFlyer?.(product)}
+                >
+                  <Sparkles className="h-4 w-4" />
+                </Button>
+                <ProductActiveToggle
+                  productId={product.id}
+                  tenantId={tenantId}
+                  initialActive={product.isActive}
+                  onToggled={(isActive) => onToggled(product.id, isActive)}
+                />
+              </div>
             </div>
             {canReorder && (
               <div className="-mb-1 -mt-0.5 flex items-center justify-center gap-1 border-t pt-1.5">

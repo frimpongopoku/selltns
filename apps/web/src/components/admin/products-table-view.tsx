@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -22,6 +22,7 @@ export function ProductsTableView({
   canReorder,
   hasMore,
   onMove,
+  onFlyer,
 }: {
   products: Product[];
   tenantId: string;
@@ -29,6 +30,7 @@ export function ProductsTableView({
   canReorder?: boolean;
   hasMore?: boolean;
   onMove?: (id: string, direction: "up" | "down") => void;
+  onFlyer?: (product: Product) => void;
 }) {
   return (
     <Card className="mt-6 p-0">
@@ -38,10 +40,10 @@ export function ProductsTableView({
             <TableRow>
               {canReorder && <TableHead className="w-16">Order</TableHead>}
               <TableHead>Product</TableHead>
+              <TableHead>Actions</TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Stock</TableHead>
-              <TableHead>Visible</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -77,10 +79,10 @@ export function ProductsTableView({
                     </div>
                   </TableCell>
                 )}
-                <TableCell>
+                <TableCell className="whitespace-normal">
                   <Link
                     href={`/admin/products/${product.id}`}
-                    className="flex items-center gap-3 hover:underline"
+                    className="flex max-w-[200px] items-center gap-3 hover:underline"
                   >
                     <div
                       className="h-10 w-10 shrink-0 rounded-md bg-cover bg-top"
@@ -92,6 +94,29 @@ export function ProductsTableView({
                     />
                     {product.title}
                   </Link>
+                </TableCell>
+                {/* Kept right after Product (not at the far right, past SKU/Price/Stock)
+                    so the flyer button and visibility toggle stay reachable without
+                    scrolling a narrow table on a phone. */}
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1.5 text-xs"
+                      onClick={() => onFlyer?.(product)}
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Flyer
+                    </Button>
+                    <ProductActiveToggle
+                      productId={product.id}
+                      tenantId={tenantId}
+                      initialActive={product.isActive}
+                      onToggled={(isActive) => onToggled(product.id, isActive)}
+                    />
+                  </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{product.sku}</TableCell>
                 <TableCell>
@@ -106,16 +131,8 @@ export function ProductsTableView({
                     formatMoney(product.price)
                   )}
                 </TableCell>
-                <TableCell className={product.stock <= 0 ? "text-destructive" : ""}>
-                  {product.stock}
-                </TableCell>
-                <TableCell>
-                  <ProductActiveToggle
-                    productId={product.id}
-                    tenantId={tenantId}
-                    initialActive={product.isActive}
-                    onToggled={(isActive) => onToggled(product.id, isActive)}
-                  />
+                <TableCell className={product.trackStock && product.stock <= 0 ? "text-destructive" : ""}>
+                  {product.trackStock ? product.stock : "Always available"}
                 </TableCell>
               </TableRow>
             ))}
