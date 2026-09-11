@@ -19,7 +19,7 @@ export function storeJsonLd(tenant: Tenant) {
 export function productJsonLd(tenant: Tenant, product: Product) {
   const availability = product.preorder
     ? "https://schema.org/PreOrder"
-    : product.stock > 0
+    : !product.trackStock || product.stock > 0
       ? "https://schema.org/InStock"
       : "https://schema.org/OutOfStock";
 

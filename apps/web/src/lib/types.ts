@@ -139,6 +139,9 @@ export interface Product {
   discountPrice: number | null;
   sku: string;
   stock: number;
+  // When false, this product is always shown/orderable as in stock —
+  // `stock` stops mattering (and stops being shown) for it.
+  trackStock: boolean;
   isActive: boolean;
   images: string[];
   videoUrls: string[];

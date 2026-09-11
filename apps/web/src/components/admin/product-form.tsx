@@ -34,6 +34,7 @@ export function ProductForm({
   );
   const [sku, setSku] = useState(product?.sku ?? "");
   const [stock, setStock] = useState(String(product?.stock ?? ""));
+  const [alwaysInStock, setAlwaysInStock] = useState(!(product?.trackStock ?? true));
   const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [videoUrls, setVideoUrls] = useState<string[]>(product?.videoUrls ?? []);
@@ -59,6 +60,7 @@ export function ProductForm({
       discountPrice: numericDiscountPrice,
       sku,
       stock: Number(stock) || 0,
+      trackStock: !alwaysInStock,
       isActive,
       images,
       videoUrls,
@@ -144,9 +146,22 @@ export function ProductForm({
           <Label htmlFor="sku">SKU</Label>
           <Input id="sku" value={sku} onChange={(e) => setSku(e.target.value)} className="mt-1.5" />
         </div>
+        {!alwaysInStock && (
+          <div>
+            <Label htmlFor="stock">Stock</Label>
+            <Input id="stock" type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="mt-1.5" />
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-start gap-3">
+        <Switch checked={alwaysInStock} onCheckedChange={setAlwaysInStock} className="mt-0.5" />
         <div>
-          <Label htmlFor="stock">Stock</Label>
-          <Input id="stock" type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="mt-1.5" />
+          <Label>Always in stock</Label>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            For made-to-order or otherwise unlimited items — this product never shows as
+            &quot;Out of stock&quot;, no matter the stock count.
+          </p>
         </div>
       </div>
 

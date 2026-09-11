@@ -90,6 +90,7 @@ function mapProduct(
     discountPrice: null,
     sku: row.sku,
     stock: row.stock,
+    trackStock: row.trackStock,
     isActive: row.isActive,
     images: row.images,
     videoUrls: row.videoUrls,

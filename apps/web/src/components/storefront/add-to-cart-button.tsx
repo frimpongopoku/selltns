@@ -18,8 +18,10 @@ export function AddToCartButton({
   const [added, setAdded] = useState(false);
   const isPreorder = !!product.preorder;
   // Made-to-order pre-order items aren't tracked by stock count the way
-  // regular inventory is — a pre-order product legitimately sits at 0 stock.
-  const outOfStock = product.stock <= 0 && !isPreorder;
+  // regular inventory is — a pre-order product legitimately sits at 0
+  // stock. Same idea for any product the vendor's explicitly marked as
+  // always available (trackStock off) — anytime bespoke/unlimited items.
+  const outOfStock = product.trackStock && product.stock <= 0 && !isPreorder;
   // "Add to cart" implies off-the-shelf stock — wrong mental model for a
   // made-to-order piece, so pre-order gets its own reserve-flavored action
   // and icon instead of the shopping-bag/cart metaphor.

@@ -210,6 +210,11 @@ model Product {
   discountPrice Int?     @map("discount_price")
   sku           String   @default("")
   stock         Int      @default(0)
+  // When false, this product is always shown/orderable as in stock — the
+  // stock number stops mattering (and stops being shown). For made-to-order
+  // or otherwise never-runs-out items, same idea as a pre-order but for
+  // anytime bespoke/unlimited items rather than a scheduled release.
+  trackStock    Boolean  @default(true) @map("track_stock")
   isActive      Boolean  @default(true) @map("is_active")
   images        String[] @default([])
   videoUrls     String[] @default([]) @map("video_urls")

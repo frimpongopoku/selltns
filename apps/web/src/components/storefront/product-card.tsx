@@ -33,7 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
             Pre-order
           </span>
         ) : (
-          product.stock <= 0 && (
+          product.trackStock && product.stock <= 0 && (
             <span className="absolute left-2 top-2 rounded-full bg-black/70 px-2 py-0.5 text-[0.65rem] text-white sm:px-2.5 sm:py-1 sm:text-xs">
               Out of stock
             </span>

@@ -79,6 +79,11 @@ export default async function ProductPage({
   const featuredIn = allCollections.filter(
     (c) => c.isActive && c.productIds.includes(product.id),
   );
+  const availabilityText = !product.trackStock
+    ? "In stock"
+    : product.stock > 0
+      ? `${product.stock} in stock`
+      : "Out of stock";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -115,8 +120,12 @@ export default async function ProductPage({
             {product.description}
           </p>
           <dl className="store-muted mt-7 grid max-w-xs grid-cols-2 gap-y-3 text-sm">
-            <dt>SKU</dt>
-            <dd className="text-[var(--store-fg)]">{product.sku}</dd>
+            {product.sku && (
+              <>
+                <dt>SKU</dt>
+                <dd className="text-[var(--store-fg)]">{product.sku}</dd>
+              </>
+            )}
             {product.preorder ? (
               <>
                 <dt>You pay now</dt>
@@ -135,9 +144,7 @@ export default async function ProductPage({
             ) : (
               <>
                 <dt>Availability</dt>
-                <dd className="text-[var(--store-fg)]">
-                  {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
-                </dd>
+                <dd className="text-[var(--store-fg)]">{availabilityText}</dd>
               </>
             )}
           </dl>

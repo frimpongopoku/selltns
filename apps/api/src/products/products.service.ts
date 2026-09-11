@@ -138,6 +138,7 @@ export class ProductsService {
       discountPrice: p.discountPrice,
       sku: p.sku,
       stock: p.stock,
+      trackStock: p.trackStock,
       isActive: p.isActive,
       images: p.images,
       videoUrls: p.videoUrls,
@@ -206,7 +207,7 @@ export class ProductsService {
 
     const rows = await this.prisma.$queryRaw<PrismaProduct[]>`
       SELECT id, tenant_id AS "tenantId", title, slug, description, price,
-             discount_price AS "discountPrice", sku, stock,
+             discount_price AS "discountPrice", sku, stock, track_stock AS "trackStock",
              is_active AS "isActive", images, video_urls AS "videoUrls", tags,
              display_order AS "displayOrder",
              created_at AS "createdAt", updated_at AS "updatedAt"
@@ -279,6 +280,7 @@ export class ProductsService {
         discountPrice: resolveDiscountPrice(input.discountPrice, price, null),
         sku: input.sku ?? '',
         stock: input.stock ?? 0,
+        trackStock: input.trackStock ?? true,
         isActive: input.isActive ?? true,
         images: input.images ?? [],
         videoUrls: videoUrlsOf(input),
@@ -317,6 +319,7 @@ export class ProductsService {
         ),
         sku: input.sku ?? existing.sku,
         stock: input.stock ?? existing.stock,
+        trackStock: input.trackStock ?? existing.trackStock,
         isActive: input.isActive ?? existing.isActive,
         images: input.images ?? existing.images,
         videoUrls:

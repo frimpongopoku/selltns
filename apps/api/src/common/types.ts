@@ -87,6 +87,9 @@ export interface Product {
   discountPrice: number | null;
   sku: string;
   stock: number;
+  // When false, the storefront always treats this product as in stock —
+  // `stock` stops mattering (and stops being shown) for it.
+  trackStock: boolean;
   isActive: boolean;
   images: string[];
   videoUrls: string[];
