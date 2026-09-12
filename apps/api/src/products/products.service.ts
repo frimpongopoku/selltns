@@ -164,6 +164,7 @@ export class ProductsService {
       // Never shown on a public storefront — see AffiliatesService, which is
       // the only place this feeds into a price.
       affiliatePrice: null,
+      hiddenFromAllAffiliates: p.hiddenFromAllAffiliates,
       sku: p.sku,
       stock: p.stock,
       trackStock: p.trackStock,
@@ -236,6 +237,7 @@ export class ProductsService {
     const rows = await this.prisma.$queryRaw<PrismaProduct[]>`
       SELECT id, tenant_id AS "tenantId", title, slug, description, price,
              discount_price AS "discountPrice", affiliate_price AS "affiliatePrice",
+             hidden_from_all_affiliates AS "hiddenFromAllAffiliates",
              sku, stock, track_stock AS "trackStock",
              is_active AS "isActive", images, video_urls AS "videoUrls", tags,
              display_order AS "displayOrder",

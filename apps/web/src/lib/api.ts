@@ -3,6 +3,7 @@ import type {
   AffiliateCapType,
   AffiliateEligibleProduct,
   AffiliateListing,
+  AffiliateProductVisibility,
   AffiliatePublicSummary,
   AffiliateRelationship,
   Collection,
@@ -457,6 +458,21 @@ export const unexemptAffiliateProduct = (id: string, tenantId: string, productId
   adminRequest<{ id: string }>(
     `/affiliates/${id}/exemptions/${productId}?tenantId=${tenantId}`,
     { method: "DELETE" },
+  );
+// The product-editing-pane counterpart to the exemption endpoints above —
+// one product, every affiliate at once.
+export const getAffiliateProductVisibility = (productId: string, tenantId: string) =>
+  adminRequest<AffiliateProductVisibility>(
+    `/affiliates/products/${productId}/visibility?tenantId=${tenantId}`,
+  );
+export const setAffiliateProductVisibility = (
+  productId: string,
+  tenantId: string,
+  input: AffiliateProductVisibility,
+) =>
+  adminRequest<AffiliateProductVisibility>(
+    `/affiliates/products/${productId}/visibility?tenantId=${tenantId}`,
+    { method: "PATCH", body: JSON.stringify(input) },
   );
 export const getAffiliateListings = (id: string, tenantId: string) =>
   adminRequest<AffiliateListing[]>(`/affiliates/${id}/listings?tenantId=${tenantId}`);

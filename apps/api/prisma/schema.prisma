@@ -201,31 +201,37 @@ model MediaAsset {
 }
 
 model Product {
-  id             String   @id @default(cuid())
-  tenantId       String   @map("tenant_id")
-  title          String
-  slug           String
-  description    String   @default("")
-  price          Int      @default(0)
-  discountPrice  Int?     @map("discount_price")
+  id                      String   @id @default(cuid())
+  tenantId                String   @map("tenant_id")
+  title                   String
+  slug                    String
+  description             String   @default("")
+  price                   Int      @default(0)
+  discountPrice           Int?     @map("discount_price")
   // The price affiliates pay when they resell this product — the source of
   // truth for AffiliatesService's cap/markup math whenever it's set, instead
   // of `price`. Null means "same as the regular price".
-  affiliatePrice Int?     @map("affiliate_price")
-  sku            String   @default("")
-  stock          Int      @default(0)
+  affiliatePrice          Int?     @map("affiliate_price")
+  // Hides this product from every affiliate, including any invited later —
+  // checked at AffiliateRelationship.accept() time and reflected live by
+  // deleting/never-creating an AffiliateProductListing for it. Hiding from
+  // only *some* affiliates instead is AffiliateProductExemption, per
+  // relationship — the two aren't mutually exclusive, this one just wins.
+  hiddenFromAllAffiliates Boolean  @default(false) @map("hidden_from_all_affiliates")
+  sku                     String   @default("")
+  stock                   Int      @default(0)
   // When false, this product is always shown/orderable as in stock — the
   // stock number stops mattering (and stops being shown). For made-to-order
   // or otherwise never-runs-out items, same idea as a pre-order but for
   // anytime bespoke/unlimited items rather than a scheduled release.
-  trackStock     Boolean  @default(true) @map("track_stock")
-  isActive       Boolean  @default(true) @map("is_active")
-  images         String[] @default([])
-  videoUrls      String[] @default([]) @map("video_urls")
-  tags           String[] @default([])
-  displayOrder   Int      @default(0) @map("display_order")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  trackStock              Boolean  @default(true) @map("track_stock")
+  isActive                Boolean  @default(true) @map("is_active")
+  images                  String[] @default([])
+  videoUrls               String[] @default([]) @map("video_urls")
+  tags                    String[] @default([])
+  displayOrder            Int      @default(0) @map("display_order")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
   tenant      Tenant              @relation(fields: [tenantId], references: [id])
   collections CollectionProduct[]

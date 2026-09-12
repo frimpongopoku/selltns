@@ -92,6 +92,9 @@ function mapProduct(
     // affiliateBasePrice) — never shown raw on a reseller's own storefront,
     // right next to the very listing it prices.
     affiliatePrice: null,
+    // Whatever this value is, a product an affiliate can actually see here
+    // is by definition not hidden from them.
+    hiddenFromAllAffiliates: false,
     sku: row.sku,
     stock: row.stock,
     trackStock: row.trackStock,
@@ -345,6 +348,7 @@ export class AffiliatesService {
       where: {
         tenantId: existing.ownerTenantId,
         id: { notIn: exemptProductIds },
+        hiddenFromAllAffiliates: false,
       },
       select: { id: true },
     });
@@ -616,6 +620,110 @@ export class AffiliatesService {
     }
 
     return { id: productId };
+  }
+
+  // The product-editing-pane version of the same "who can see this"
+  // control above — but framed around one product across every affiliate
+  // at once, rather than one affiliate across every product. `hiddenFromAll`
+  // is the Product-level flag (also gates future affiliates at accept()
+  // time); `exemptRelationshipIds` is only meaningful when it's false, and
+  // is just the existing per-relationship AffiliateProductExemption model,
+  // read back in bulk for this one product.
+  async getProductVisibility(
+    productId: string,
+    ownerTenantId: string,
+  ): Promise<{ hiddenFromAll: boolean; exemptRelationshipIds: string[] }> {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, tenantId: ownerTenantId },
+      select: { hiddenFromAllAffiliates: true },
+    });
+    if (!product) throw new NotFoundException(`Product ${productId} not found`);
+
+    const exemptions = await this.prisma.affiliateProductExemption.findMany({
+      where: {
+        productId,
+        relationship: { ownerTenantId, status: 'ACTIVE' },
+      },
+      select: { relationshipId: true },
+    });
+    return {
+      hiddenFromAll: product.hiddenFromAllAffiliates,
+      exemptRelationshipIds: exemptions.map((e) => e.relationshipId),
+    };
+  }
+
+  // Applies the same exempt()/unexempt() side effects (the exemption
+  // marker row, plus deleting/recreating the AffiliateProductListing that
+  // actually governs what an affiliate can see) across every one of the
+  // owner's active relationships in one transaction, diffed against the
+  // requested target set rather than redone unconditionally — so a
+  // relationship an affiliate has already customized (isActive, their own
+  // markup) isn't disturbed unless its visibility actually changes.
+  async setProductVisibility(
+    productId: string,
+    ownerTenantId: string,
+    input: { hiddenFromAll: boolean; exemptRelationshipIds: string[] },
+  ): Promise<{ hiddenFromAll: boolean; exemptRelationshipIds: string[] }> {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, tenantId: ownerTenantId },
+    });
+    if (!product) throw new NotFoundException(`Product ${productId} not found`);
+
+    const activeRelationships =
+      await this.prisma.affiliateRelationship.findMany({
+        where: { ownerTenantId, status: 'ACTIVE' },
+        select: { id: true },
+      });
+    const activeIds = new Set(activeRelationships.map((r) => r.id));
+
+    const targetExemptIds = input.hiddenFromAll
+      ? activeIds
+      : new Set(input.exemptRelationshipIds.filter((id) => activeIds.has(id)));
+
+    const currentExemptions =
+      await this.prisma.affiliateProductExemption.findMany({
+        where: { productId, relationshipId: { in: [...activeIds] } },
+        select: { relationshipId: true },
+      });
+    const currentExemptIds = new Set(
+      currentExemptions.map((e) => e.relationshipId),
+    );
+
+    const toExempt = [...targetExemptIds].filter(
+      (id) => !currentExemptIds.has(id),
+    );
+    const toUnexempt = [...currentExemptIds].filter(
+      (id) => !targetExemptIds.has(id),
+    );
+
+    await this.prisma.$transaction([
+      this.prisma.product.update({
+        where: { id: productId },
+        data: { hiddenFromAllAffiliates: input.hiddenFromAll },
+      }),
+      ...toExempt.flatMap((relationshipId) => [
+        this.prisma.affiliateProductExemption.upsert({
+          where: { relationshipId_productId: { relationshipId, productId } },
+          update: {},
+          create: { relationshipId, productId },
+        }),
+        this.prisma.affiliateProductListing.deleteMany({
+          where: { relationshipId, productId },
+        }),
+      ]),
+      ...toUnexempt.flatMap((relationshipId) => [
+        this.prisma.affiliateProductExemption.deleteMany({
+          where: { relationshipId, productId },
+        }),
+        this.prisma.affiliateProductListing.upsert({
+          where: { relationshipId_productId: { relationshipId, productId } },
+          update: { isActive: true },
+          create: { relationshipId, productId },
+        }),
+      ]),
+    ]);
+
+    return this.getProductVisibility(productId, ownerTenantId);
   }
 
   async eligibleProducts(

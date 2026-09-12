@@ -141,6 +141,10 @@ export interface Product {
   // truth for how affiliates are priced whenever it's set, in place of
   // `price`. Null means "same as the regular price".
   affiliatePrice: number | null;
+  // Hides this product from every affiliate, current and future — managed
+  // from the product editing pane via getAffiliateProductVisibility/
+  // setAffiliateProductVisibility, not this product's own update endpoint.
+  hiddenFromAllAffiliates: boolean;
   sku: string;
   stock: number;
   // When false, this product is always shown/orderable as in stock —
@@ -308,6 +312,14 @@ export interface AffiliateListing {
 export interface AffiliateEligibleProduct {
   product: Product;
   exempt: boolean;
+}
+
+// One product's visibility across every one of the owner's affiliates at
+// once — the product-editing-pane counterpart to AffiliateEligibleProduct,
+// which instead lists every product for one affiliate.
+export interface AffiliateProductVisibility {
+  hiddenFromAll: boolean;
+  exemptRelationshipIds: string[];
 }
 
 export interface AffiliateTenantRef {

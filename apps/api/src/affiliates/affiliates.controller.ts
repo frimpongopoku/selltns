@@ -116,6 +116,37 @@ export class AffiliatesController {
     return this.affiliatesService.unexempt(id, user.tenantId, productId);
   }
 
+  // The product-editing-pane version of exemptions above — one product,
+  // every affiliate at once. Routed here (not under /products) since it's
+  // still fundamentally affiliate-relationship data.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
+  @Get('products/:productId/visibility')
+  getProductVisibility(
+    @Param('productId') productId: string,
+    @CurrentUser() user: SessionPayload,
+  ) {
+    return this.affiliatesService.getProductVisibility(
+      productId,
+      user.tenantId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
+  @Patch('products/:productId/visibility')
+  setProductVisibility(
+    @Param('productId') productId: string,
+    @CurrentUser() user: SessionPayload,
+    @Body() body: { hiddenFromAll: boolean; exemptRelationshipIds: string[] },
+  ) {
+    return this.affiliatesService.setProductVisibility(
+      productId,
+      user.tenantId,
+      body,
+    );
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER')
   @Get(':id/listings')

@@ -90,6 +90,10 @@ export interface Product {
   // place of `price`. Null means "same as the regular price". Never carried
   // onto an affiliate's own storefront/listing view — see AffiliatesService.
   affiliatePrice: number | null;
+  // Hides this product from every affiliate, current and future — see
+  // AffiliatesService.setProductVisibility/accept. Hiding from only some
+  // affiliates is a per-relationship AffiliateProductExemption instead.
+  hiddenFromAllAffiliates: boolean;
   sku: string;
   stock: number;
   // When false, the storefront always treats this product as in stock —

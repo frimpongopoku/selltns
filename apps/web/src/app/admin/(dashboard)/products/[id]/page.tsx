@@ -3,6 +3,7 @@ import { getProduct } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductFlyerManager } from "@/components/admin/product-flyer-manager";
+import { AffiliateVisibilityManager } from "@/components/admin/affiliate-visibility-manager";
 
 export default async function EditProductPage({
   params,
@@ -21,6 +22,16 @@ export default async function EditProductPage({
       <p className="text-sm text-muted-foreground">Edit product details.</p>
       <div className="mt-7">
         <ProductForm tenantId={me.tenant.id} product={product} />
+      </div>
+
+      <div className="mt-12 max-w-3xl border-t pt-8">
+        <h2 className="text-lg font-semibold">Affiliate visibility</h2>
+        <p className="text-sm text-muted-foreground">
+          Control which affiliates, if any, can resell this product.
+        </p>
+        <div className="mt-5">
+          <AffiliateVisibilityManager tenantId={me.tenant.id} productId={product.id} />
+        </div>
       </div>
 
       <div className="mt-12 max-w-3xl border-t pt-8">
