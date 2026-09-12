@@ -88,6 +88,31 @@ function resolveDiscountPrice(
   return existing != null && existing >= finalPrice ? null : existing;
 }
 
+// Same shape as resolveDiscountPrice above, for the price affiliates pay
+// instead of the regular price — see AffiliatesService for how it feeds
+// into the cap/markup math.
+function resolveAffiliatePrice(
+  requested: number | null | undefined,
+  finalPrice: number,
+  existing: number | null,
+): number | null {
+  if (requested !== undefined) {
+    if (requested === null) return null;
+    if (!Number.isInteger(requested) || requested <= 0) {
+      throw new BadRequestException(
+        'Affiliate price must be a positive whole number of GHS.',
+      );
+    }
+    if (requested >= finalPrice) {
+      throw new BadRequestException(
+        "Affiliate price must be lower than the product's price.",
+      );
+    }
+    return requested;
+  }
+  return existing != null && existing >= finalPrice ? null : existing;
+}
+
 function videoUrlsOf(input: Partial<Product>): string[] {
   const raw = input.videoUrls ?? [];
   const valid = raw.filter((url) => {
@@ -136,6 +161,9 @@ export class ProductsService {
       description: p.description,
       price: p.price,
       discountPrice: p.discountPrice,
+      // Never shown on a public storefront — see AffiliatesService, which is
+      // the only place this feeds into a price.
+      affiliatePrice: null,
       sku: p.sku,
       stock: p.stock,
       trackStock: p.trackStock,
@@ -207,7 +235,8 @@ export class ProductsService {
 
     const rows = await this.prisma.$queryRaw<PrismaProduct[]>`
       SELECT id, tenant_id AS "tenantId", title, slug, description, price,
-             discount_price AS "discountPrice", sku, stock, track_stock AS "trackStock",
+             discount_price AS "discountPrice", affiliate_price AS "affiliatePrice",
+             sku, stock, track_stock AS "trackStock",
              is_active AS "isActive", images, video_urls AS "videoUrls", tags,
              display_order AS "displayOrder",
              created_at AS "createdAt", updated_at AS "updatedAt"
@@ -278,6 +307,11 @@ export class ProductsService {
         description: input.description ?? '',
         price,
         discountPrice: resolveDiscountPrice(input.discountPrice, price, null),
+        affiliatePrice: resolveAffiliatePrice(
+          input.affiliatePrice,
+          price,
+          null,
+        ),
         sku: input.sku ?? '',
         stock: input.stock ?? 0,
         trackStock: input.trackStock ?? true,
@@ -317,6 +351,11 @@ export class ProductsService {
           price,
           existing.discountPrice,
         ),
+        affiliatePrice: resolveAffiliatePrice(
+          input.affiliatePrice,
+          price,
+          existing.affiliatePrice,
+        ),
         sku: input.sku ?? existing.sku,
         stock: input.stock ?? existing.stock,
         trackStock: input.trackStock ?? existing.trackStock,
@@ -331,12 +370,16 @@ export class ProductsService {
       },
     });
 
-    // The owner's price is always the source of truth for any affiliate
-    // reselling this product — a change here must trickle down, clamping
-    // any affiliate price that would now exceed its relationship's cap.
-    if (input.price !== undefined && input.price !== existing.price) {
+    // The affiliate base price (the custom affiliate price if one's set,
+    // else the regular price) is always the source of truth for any
+    // affiliate reselling this product — a change to either one that shifts
+    // it must trickle down, clamping any affiliate price that would now
+    // exceed its relationship's cap.
+    const oldAffiliateBase = existing.affiliatePrice ?? existing.price;
+    const newAffiliateBase = row.affiliatePrice ?? row.price;
+    if (newAffiliateBase !== oldAffiliateBase) {
       void this.affiliatesService
-        .recalculateAffiliatePricesForProduct(row.id, row.price)
+        .recalculateAffiliatePricesForProduct(row.id, newAffiliateBase)
         .catch((err) =>
           this.logger.error('Failed to recalculate affiliate prices', err),
         );

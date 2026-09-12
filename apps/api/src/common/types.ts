@@ -85,6 +85,11 @@ export interface Product {
   // ProductsService/products.utils#discountedPrice for the derived charge
   // amount, computed at every call site that actually charges a customer.
   discountPrice: number | null;
+  // The price affiliates pay when they resell this product — the source of
+  // truth for AffiliatesService's cap/markup math whenever it's set, in
+  // place of `price`. Null means "same as the regular price". Never carried
+  // onto an affiliate's own storefront/listing view — see AffiliatesService.
+  affiliatePrice: number | null;
   sku: string;
   stock: number;
   // When false, the storefront always treats this product as in stock —

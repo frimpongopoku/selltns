@@ -32,6 +32,12 @@ export function ProductForm({
   const [discountPrice, setDiscountPrice] = useState(
     String(product?.discountPrice ?? ""),
   );
+  const [customAffiliatePrice, setCustomAffiliatePrice] = useState(
+    product?.affiliatePrice != null,
+  );
+  const [affiliatePrice, setAffiliatePrice] = useState(
+    String(product?.affiliatePrice ?? ""),
+  );
   const [sku, setSku] = useState(product?.sku ?? "");
   const [stock, setStock] = useState(String(product?.stock ?? ""));
   const [alwaysInStock, setAlwaysInStock] = useState(!(product?.trackStock ?? true));
@@ -52,12 +58,21 @@ export function ProductForm({
       }
     }
     const numericDiscountPrice = onSale ? Number(discountPrice) || 0 : null;
+    if (customAffiliatePrice) {
+      const numericAffiliatePrice = Number(affiliatePrice) || 0;
+      if (numericAffiliatePrice <= 0 || numericAffiliatePrice >= numericPrice) {
+        toast.error("Affiliate price must be a positive number lower than the price");
+        return;
+      }
+    }
+    const numericAffiliatePrice = customAffiliatePrice ? Number(affiliatePrice) || 0 : null;
     setSaving(true);
     const payload = {
       title,
       description,
       price: numericPrice,
       discountPrice: numericDiscountPrice,
+      affiliatePrice: numericAffiliatePrice,
       sku,
       stock: Number(stock) || 0,
       trackStock: !alwaysInStock,
@@ -192,6 +207,39 @@ export function ProductForm({
               required
               value={discountPrice}
               onChange={(e) => setDiscountPrice(e.target.value)}
+              className="mt-1.5"
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-lg border p-4">
+        <div className="flex items-start gap-3">
+          <Switch
+            checked={customAffiliatePrice}
+            onCheckedChange={(checked) => {
+              setCustomAffiliatePrice(checked);
+              if (!checked) setAffiliatePrice("");
+            }}
+            className="mt-0.5"
+          />
+          <div>
+            <Label>Affiliate price</Label>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              What affiliates pay when they resell this — off means they pay your regular
+              price.
+            </p>
+          </div>
+        </div>
+        {customAffiliatePrice && (
+          <div className="mt-3 max-w-[180px]">
+            <Label htmlFor="affiliatePrice">Affiliate price (GHS)</Label>
+            <Input
+              id="affiliatePrice"
+              type="number"
+              required
+              value={affiliatePrice}
+              onChange={(e) => setAffiliatePrice(e.target.value)}
               className="mt-1.5"
             />
           </div>

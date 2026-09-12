@@ -88,6 +88,10 @@ function mapProduct(
     // An owner's own discount is never carried onto a reseller's storefront —
     // affiliate pricing already has its own independent override/cap system.
     discountPrice: null,
+    // Already folded into ownerPrice/effectivePrice below (see
+    // affiliateBasePrice) — never shown raw on a reseller's own storefront,
+    // right next to the very listing it prices.
+    affiliatePrice: null,
     sku: row.sku,
     stock: row.stock,
     trackStock: row.trackStock,
@@ -99,6 +103,19 @@ function mapProduct(
     createdAt: row.createdAt.toISOString(),
     preorder,
   };
+}
+
+// The price this product is priced from for every affiliate computation
+// below — the owner's custom affiliate price when they've set one,
+// otherwise their regular price. This is the actual "source of truth" an
+// owner controls from the product editing pane; everything else here
+// (caps, overrides, clamping) builds on top of it exactly as it did on the
+// regular price before affiliate pricing existed.
+function affiliateBasePrice(product: {
+  price: number;
+  affiliatePrice: number | null;
+}): number {
+  return product.affiliatePrice ?? product.price;
 }
 
 // FIXED = a flat GHS ceiling on top of the owner's price; PERCENTAGE = a
@@ -650,7 +667,7 @@ export class AffiliatesService {
       rows.map((r) => r.productId),
     );
     return rows.map((row) => {
-      const ownerPrice = row.product.price;
+      const ownerPrice = affiliateBasePrice(row.product);
       return {
         id: row.id,
         relationshipId: row.relationshipId,
@@ -700,7 +717,7 @@ export class AffiliatesService {
       );
     }
 
-    const ownerPrice = listing.product.price;
+    const ownerPrice = affiliateBasePrice(listing.product);
     const ceiling = capCeiling(existing.capType, existing.capValue, ownerPrice);
     if (price < ownerPrice) {
       throw new BadRequestException(
@@ -945,7 +962,7 @@ export class AffiliatesService {
         row.product,
         preorderByProductId.get(row.product.id) ?? null,
       ),
-      price: row.priceOverride ?? row.product.price,
+      price: row.priceOverride ?? affiliateBasePrice(row.product),
       affiliateSource: {
         listingId: row.id,
         relationshipId: row.relationshipId,
@@ -987,7 +1004,8 @@ export class AffiliatesService {
         row.listing.product,
         preorderByProductId.get(row.listing.product.id) ?? null,
       ),
-      price: row.listing.priceOverride ?? row.listing.product.price,
+      price:
+        row.listing.priceOverride ?? affiliateBasePrice(row.listing.product),
       affiliateSource: {
         listingId: row.listing.id,
         relationshipId: row.listing.relationshipId,
@@ -1090,7 +1108,7 @@ export class AffiliatesService {
     return {
       product: mapProduct(row.product, preorder.preorder),
       listingId: row.id,
-      effectivePrice: row.priceOverride ?? row.product.price,
+      effectivePrice: row.priceOverride ?? affiliateBasePrice(row.product),
       relationship: mapRelationship(row.relationship),
     };
   }

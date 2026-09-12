@@ -137,6 +137,10 @@ export interface Product {
   // The active sale price, only meaningful when set and lower than `price`.
   // `price` itself never changes when a discount is applied or removed.
   discountPrice: number | null;
+  // The price affiliates pay when they resell this product — the source of
+  // truth for how affiliates are priced whenever it's set, in place of
+  // `price`. Null means "same as the regular price".
+  affiliatePrice: number | null;
   sku: string;
   stock: number;
   // When false, this product is always shown/orderable as in stock —
