@@ -2,17 +2,20 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Loader2, Search, X } from "lucide-react";
+import { Check, Download, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { MediaDetailDialog } from "@/components/admin/media-detail-dialog";
 import { ConfirmDeleteDialog } from "@/components/admin/confirm-delete-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { deleteMedia } from "@/lib/api";
 import { formatBytes } from "@/lib/media-constraints";
 import { useMediaLibrary } from "@/lib/use-media-library";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
+import { downloadMediaAssets } from "@/lib/download-media";
+import { cn } from "@/lib/utils";
 import type { MediaAsset } from "@/lib/types";
 
 export function GalleryGrid({ tenantId }: { tenantId: string }) {
@@ -35,6 +38,11 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
   const [selected, setSelected] = useState<MediaAsset | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(
+    null,
+  );
   const isFiltered = query.trim() !== "" || dateFrom !== "" || dateTo !== "";
 
   const sentinelRef = useInfiniteScroll({
@@ -60,6 +68,53 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
       toast.error("Couldn't delete photo. Please try again.");
     } finally {
       setDeleting(false);
+    }
+  }
+
+  function handleCardClick(asset: MediaAsset) {
+    if (selectMode) {
+      if (downloadProgress !== null) return;
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(asset.id)) next.delete(asset.id);
+        else next.add(asset.id);
+        return next;
+      });
+    } else {
+      setSelected(asset);
+    }
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
+
+  function handleSelectAllToggle() {
+    setSelectedIds((prev) =>
+      prev.size === assets.length ? new Set() : new Set(assets.map((a) => a.id)),
+    );
+  }
+
+  async function handleDownload() {
+    const chosen = assets.filter((a) => selectedIds.has(a.id));
+    if (chosen.length === 0) return;
+    setDownloadProgress({ done: 0, total: chosen.length });
+    try {
+      const { succeeded, failed } = await downloadMediaAssets(chosen, (done, total) =>
+        setDownloadProgress({ done, total }),
+      );
+      if (failed === 0) {
+        toast.success(succeeded === 1 ? "Photo downloaded" : `${succeeded} photos downloaded`);
+      } else if (succeeded === 0) {
+        toast.error("Couldn't download these photos. Please try again.");
+      } else {
+        toast.info(`${succeeded} downloaded — ${failed} couldn't be reached.`);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't download photos.");
+    } finally {
+      setDownloadProgress(null);
     }
   }
 
@@ -115,6 +170,11 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
             Clear filters
           </button>
         )}
+        {!loading && assets.length > 0 && !selectMode && (
+          <Button type="button" variant="outline" size="sm" onClick={() => setSelectMode(true)}>
+            Select photos
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -134,34 +194,65 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
         </div>
       ) : (
         <>
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {assets.map((asset, i) => (
-              <div
-                key={asset.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => setSelected(asset)}
-                onKeyDown={(e) => e.key === "Enter" && setSelected(asset)}
-                style={{ animationDelay: `${Math.min(i, 20) * 25}ms` }}
-                className="group relative aspect-square animate-in fade-in-0 zoom-in-95 fill-mode-both cursor-pointer overflow-hidden rounded-lg border text-left duration-300"
-              >
-                <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="200px" className="object-cover object-top" />
-                <div className="absolute inset-x-0 bottom-0 translate-y-full bg-black/60 px-2 py-1 text-[10px] text-white transition-transform group-hover:translate-y-0">
-                  <p className="truncate">{asset.title || "Untitled"}</p>
-                  <p className="text-white/80">
-                    {asset.width}×{asset.height} · {formatBytes(asset.bytes)}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={(e) => handleQuickDeleteClick(e, asset.id)}
-                  aria-label="Delete photo"
-                  className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+          <div
+            className={cn(
+              "mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5",
+              selectMode && "pb-28",
+            )}
+          >
+            {assets.map((asset, i) => {
+              const isSelected = selectedIds.has(asset.id);
+              return (
+                <div
+                  key={asset.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleCardClick(asset)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCardClick(asset)}
+                  style={{ animationDelay: `${Math.min(i, 20) * 25}ms` }}
+                  className="group relative aspect-square animate-in fade-in-0 zoom-in-95 fill-mode-both cursor-pointer overflow-hidden rounded-lg border text-left duration-300"
                 >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
+                  <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="200px" className="object-cover object-top" />
+                  {selectMode && (
+                    <div
+                      className={cn(
+                        "absolute inset-0 transition-colors",
+                        isSelected ? "bg-primary/25" : "bg-black/0 group-hover:bg-black/10",
+                      )}
+                    />
+                  )}
+                  {!selectMode && (
+                    <div className="absolute inset-x-0 bottom-0 translate-y-full bg-black/60 px-2 py-1 text-[10px] text-white transition-transform group-hover:translate-y-0">
+                      <p className="truncate">{asset.title || "Untitled"}</p>
+                      <p className="text-white/80">
+                        {asset.width}×{asset.height} · {formatBytes(asset.bytes)}
+                      </p>
+                    </div>
+                  )}
+                  {selectMode ? (
+                    <div
+                      className={cn(
+                        "absolute left-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full border-2 shadow-sm transition-colors",
+                        isSelected
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-white/90 bg-black/30 text-transparent",
+                      )}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => handleQuickDeleteClick(e, asset.id)}
+                      aria-label="Delete photo"
+                      className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div ref={sentinelRef} className="mt-6 flex justify-center">
@@ -173,6 +264,54 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
             )}
           </div>
         </>
+      )}
+
+      {selectMode && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+          <div
+            className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6"
+            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          >
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={downloadProgress !== null}
+                onClick={exitSelectMode}
+                aria-label="Exit select mode"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <p className="truncate text-sm font-medium">
+                {selectedIds.size === 0 ? "Select photos" : `${selectedIds.size} selected`}
+              </p>
+            </div>
+            <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={downloadProgress !== null}
+                onClick={handleSelectAllToggle}
+              >
+                {selectedIds.size === assets.length ? "Clear all" : "Select all"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={selectedIds.size === 0 || downloadProgress !== null}
+                onClick={handleDownload}
+                className="gap-1.5"
+              >
+                <Download className="h-4 w-4" />
+                {downloadProgress
+                  ? `${downloadProgress.done}/${downloadProgress.total}…`
+                  : "Download"}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       <MediaDetailDialog
