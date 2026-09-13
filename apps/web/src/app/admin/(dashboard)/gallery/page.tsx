@@ -17,7 +17,7 @@ export default async function AdminGalleryPage() {
         Every photo uploaded anywhere in the admin lands here — this is the picker used for products and collections.
       </p>
       <div className="mt-7">
-        <GalleryGrid tenantId={me.tenant.id} />
+        <GalleryGrid tenantId={me.tenant.id} tenantName={me.tenant.name} />
       </div>
     </div>
   );

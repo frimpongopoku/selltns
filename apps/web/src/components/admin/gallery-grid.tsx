@@ -14,11 +14,11 @@ import { deleteMedia } from "@/lib/api";
 import { formatBytes } from "@/lib/media-constraints";
 import { useMediaLibrary } from "@/lib/use-media-library";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
-import { downloadMediaAssets } from "@/lib/download-media";
+import { downloadMediaAssets, galleryZipFilename } from "@/lib/download-media";
 import { cn } from "@/lib/utils";
 import type { MediaAsset } from "@/lib/types";
 
-export function GalleryGrid({ tenantId }: { tenantId: string }) {
+export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenantName: string }) {
   const {
     assets,
     loading,
@@ -101,8 +101,10 @@ export function GalleryGrid({ tenantId }: { tenantId: string }) {
     if (chosen.length === 0) return;
     setDownloadProgress({ done: 0, total: chosen.length });
     try {
-      const { succeeded, failed } = await downloadMediaAssets(chosen, (done, total) =>
-        setDownloadProgress({ done, total }),
+      const { succeeded, failed } = await downloadMediaAssets(
+        chosen,
+        (done, total) => setDownloadProgress({ done, total }),
+        galleryZipFilename(tenantName),
       );
       if (failed === 0) {
         toast.success(succeeded === 1 ? "Photo downloaded" : `${succeeded} photos downloaded`);
