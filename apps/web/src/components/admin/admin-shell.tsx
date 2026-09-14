@@ -140,10 +140,12 @@ export function AdminShell({
 
   return (
     <div className="flex min-h-screen">
-      {/* Desktop sidebar — flush against the viewport edge */}
-      <aside className="hidden w-64 shrink-0 flex-col gap-6 border-r bg-background p-5 md:flex">
+      {/* Desktop sidebar — pinned to the viewport height so the nav list
+          scrolls internally and the sign-out/footer block at the bottom
+          never needs a page-level scroll to reach. */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 border-r bg-background p-5 md:flex">
         <BrandBlock tenant={tenant} spaces={spaces} />
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <AdminNavLinks role={user.role} />
         </div>
         <StorefrontLink tenant={tenant} />
@@ -162,7 +164,7 @@ export function AdminShell({
             <SheetContent side="left" className="flex w-72 flex-col gap-6 p-5">
               <SheetTitle className="sr-only">Admin navigation</SheetTitle>
               <BrandBlock tenant={tenant} spaces={spaces} />
-              <div className="flex-1 overflow-y-auto">
+              <div className="min-h-0 flex-1 overflow-y-auto">
                 <AdminNavLinks role={user.role} onNavigate={() => setOpen(false)} />
               </div>
               <StorefrontLink tenant={tenant} />

@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS, SETTINGS_NAV_ITEMS, ADVANCED_NAV_ITEMS } from "./nav-items";
+import { ChevronDown, Settings } from "lucide-react";
+import { NAV_ITEMS, SETTINGS_NAV_ITEMS } from "./nav-items";
+import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
 
 function visibleTo(roles: readonly Role[] | undefined, role: Role) {
@@ -28,9 +31,12 @@ export function AdminNavLinks({ role, onNavigate }: { role: Role; onNavigate?: (
   const settingsItems = SETTINGS_NAV_ITEMS.filter((item) =>
     visibleTo("roles" in item ? item.roles : undefined, role),
   );
-  const advancedItems = ADVANCED_NAV_ITEMS.filter((item) =>
-    visibleTo("roles" in item ? item.roles : undefined, role),
-  );
+  const settingsActive = settingsItems.some((item) => isActive(item.href));
+  // Manually-toggled state, but a settings sub-page always forces it open
+  // (see `isSettingsOpen` below) regardless of what was last toggled — so
+  // you're never looking at a highlighted child with its section collapsed.
+  const [settingsToggledOpen, setSettingsToggledOpen] = useState(settingsActive);
+  const isSettingsOpen = settingsToggledOpen || settingsActive;
 
   return (
     <nav className="flex flex-col gap-1">
@@ -45,37 +51,35 @@ export function AdminNavLinks({ role, onNavigate }: { role: Role; onNavigate?: (
       })}
 
       {settingsItems.length > 0 && (
-        <>
-          <p className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-muted-foreground/70 uppercase">
-            Settings
-          </p>
-          {settingsItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </>
-      )}
-
-      {advancedItems.length > 0 && (
-        <>
-          <p className="mt-6 mb-1 px-3 text-xs font-semibold tracking-wide text-muted-foreground/70 uppercase">
-            Advanced
-          </p>
-          {advancedItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </>
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => setSettingsToggledOpen((v) => !v)}
+            aria-expanded={isSettingsOpen}
+            className={cn(linkClass(settingsActive), "w-full justify-between")}
+          >
+            <span className="flex items-center gap-3">
+              <Settings className="h-4 w-4" />
+              Settings
+            </span>
+            <ChevronDown
+              className={cn("h-4 w-4 shrink-0 transition-transform", isSettingsOpen && "rotate-180")}
+            />
+          </button>
+          {isSettingsOpen && (
+            <div className="mt-1 ml-4 flex flex-col gap-1 border-l pl-3">
+              {settingsItems.map((item) => {
+                const active = isActive(item.href);
+                return (
+                  <Link key={item.href} href={item.href} onClick={onNavigate} className={linkClass(active)}>
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
     </nav>
   );

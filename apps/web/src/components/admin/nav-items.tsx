@@ -26,15 +26,19 @@ import { BILLING_ENABLED } from "@/lib/feature-flags";
 // convenience (hide what a role can't use), the API is the real gate.
 export const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/collections", label: "Collections", icon: Layers, roles: ["OWNER", "MANAGER"] as Role[] },
-  { href: "/admin/preorders", label: "Pre-orders", icon: PackageSearch, roles: ["OWNER", "MANAGER"] as Role[] },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon, roles: ["OWNER", "MANAGER"] as Role[] },
+  { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
+  { href: "/admin/preorders", label: "Pre-orders", icon: PackageSearch, roles: ["OWNER", "MANAGER"] as Role[] },
+  { href: "/admin/collections", label: "Collections", icon: Layers, roles: ["OWNER", "MANAGER"] as Role[] },
   { href: "/admin/payments", label: "Payment methods", icon: Wallet, roles: ["OWNER", "MANAGER"] as Role[] },
   { href: "/admin/configure", label: "Configure pages", icon: LayoutTemplate, roles: ["OWNER", "MANAGER"] as Role[] },
 ] as const;
 
+// Everything else lives one level down, under a single collapsible
+// "Settings" item in the sidebar (see AdminNavLinks) — day-to-day
+// workflow (products/orders/etc. above) stays flat and scannable, while
+// account/config pages that are opened rarely don't each cost a row.
 export const SETTINGS_NAV_ITEMS = [
   { href: "/admin/verification", label: "Get verified", icon: ShieldCheck, roles: ["OWNER"] as Role[] },
   ...(BILLING_ENABLED
@@ -51,11 +55,8 @@ export const SETTINGS_NAV_ITEMS = [
   },
   { href: "/admin/settings/team", label: "Team & roles", icon: Users, roles: ["OWNER"] as Role[] },
   { href: "/admin/affiliates", label: "Affiliates", icon: Handshake, roles: ["OWNER"] as Role[] },
-] as const;
-
-// Kept separate from SETTINGS_NAV_ITEMS and rendered under its own "Advanced"
-// heading — custom domains involve DNS and aren't something most vendors
-// need to touch, so they shouldn't sit alongside the everyday settings.
-export const ADVANCED_NAV_ITEMS = [
+  // Custom domain involves DNS and isn't something most vendors need to
+  // touch — kept last, but still just another settings item rather than
+  // its own separate section.
   { href: "/admin/settings/domain", label: "Custom domain", icon: Globe, roles: ["OWNER"] as Role[] },
 ] as const;
