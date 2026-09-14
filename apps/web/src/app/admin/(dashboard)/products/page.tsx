@@ -23,10 +23,7 @@ export default async function AdminProductsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <FeedLinkButton
-            url={getCanonicalUrl(me.tenant, "/feed.xml")}
-            label="Copy Pinterest feed link"
-          />
+          <FeedLinkButton url={getCanonicalUrl(me.tenant, "/feed.xml")} />
           <ProductQuickCreateDialog tenantId={me.tenant.id} />
         </div>
       </div>

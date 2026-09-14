@@ -13,6 +13,8 @@ import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import { onCollectionCreated } from "@/lib/collection-events";
 import { CollectionActiveToggle } from "@/components/admin/collection-active-toggle";
 import { CollectionFlyerManager } from "@/components/admin/collection-flyer-manager";
+import { FeedLinkButton } from "@/components/admin/feed-link-button";
+import { getCanonicalUrl } from "@/lib/canonical";
 import type { CollectionWithProducts, Tenant } from "@/lib/types";
 
 export function CollectionsExplorer({ tenantId, tenant }: { tenantId: string; tenant: Tenant }) {
@@ -155,6 +157,11 @@ export function CollectionsExplorer({ tenantId, tenant }: { tenantId: string; te
                       {collection.isActive ? "Live" : "Not live"}
                     </span>
                     <div className="flex items-center gap-1">
+                      <FeedLinkButton
+                        url={getCanonicalUrl(tenant, `/collections/${collection.slug}/feed.xml`)}
+                        label="Feed"
+                        variant="ghost"
+                      />
                       <Button
                         type="button"
                         size="sm"

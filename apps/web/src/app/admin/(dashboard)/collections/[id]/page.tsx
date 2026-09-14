@@ -39,11 +39,11 @@ export default async function EditCollectionPage({
       </div>
 
       <div className="mt-12 max-w-3xl border-t pt-8">
-        <h2 className="text-lg font-semibold">Pinterest feed</h2>
+        <h2 className="text-lg font-semibold">Feed</h2>
         <p className="text-sm text-muted-foreground">
-          Every live product in this collection, as an RSS feed — connect it to a Pinterest
-          board (Settings → Create Pins in bulk → Connect RSS feed) and new products get
-          pinned automatically.
+          Every live product in this collection, as an RSS feed — connect it to any tool that
+          reads one, including Pinterest&apos;s auto-publish feature, to keep it updated
+          automatically.
         </p>
         <div className="mt-3">
           <FeedLinkButton
