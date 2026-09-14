@@ -46,8 +46,14 @@ export function CollectionForm({
   const [description, setDescription] = useState(collection?.description ?? "");
   const [seoTitle, setSeoTitle] = useState(collection?.seoTitle ?? "");
   const [seoDescription, setSeoDescription] = useState(collection?.seoDescription ?? "");
+  // Only ever this tenant's own products — an affiliate-resold item (see
+  // AffiliateCollectionItemsManager) isn't a valid native `productIds`
+  // entry, so it's filtered out here even if a caller ever passes one in.
   const [selectedProducts, setSelectedProducts] = useState<Map<string, Product>>(
-    () => new Map((collection?.products ?? []).map((p) => [p.id, p])),
+    () =>
+      new Map(
+        (collection?.products ?? []).filter((p) => !p.affiliateSource).map((p) => [p.id, p]),
+      ),
   );
   const [tags, setTags] = useState<string[]>(collection?.tags ?? []);
   const [coverImage, setCoverImage] = useState<string[]>(

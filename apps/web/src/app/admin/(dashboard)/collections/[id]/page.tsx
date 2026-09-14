@@ -6,6 +6,7 @@ import { getCanonicalUrl } from "@/lib/canonical";
 import { CollectionForm } from "@/components/admin/collection-form";
 import { CollectionFlyerManager } from "@/components/admin/collection-flyer-manager";
 import { FeedLinkButton } from "@/components/admin/feed-link-button";
+import { AffiliateCollectionItemsManager } from "@/components/admin/affiliate-collection-items-manager";
 
 export default async function EditCollectionPage({
   params,
@@ -26,6 +27,8 @@ export default async function EditCollectionPage({
       <div className="mt-7">
         <CollectionForm tenantId={me.tenant.id} collection={collection} />
       </div>
+
+      <AffiliateCollectionItemsManager tenantId={me.tenant.id} collectionId={collection.id} />
 
       <div className="mt-12 max-w-3xl border-t pt-8">
         <h2 className="text-lg font-semibold">Share flyer</h2>
