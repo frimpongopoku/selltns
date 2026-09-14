@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { getProducts } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
+import { getCanonicalUrl } from "@/lib/canonical";
 import { ProductQuickCreateDialog } from "@/components/admin/product-quick-create-dialog";
 import { ProductsExplorer } from "@/components/admin/products-explorer";
+import { FeedLinkButton } from "@/components/admin/feed-link-button";
 
 export const metadata = { title: "Products" };
 
@@ -20,7 +22,13 @@ export default async function AdminProductsPage() {
             {products.length} products in your catalog.
           </p>
         </div>
-        <ProductQuickCreateDialog tenantId={me.tenant.id} />
+        <div className="flex items-center gap-2">
+          <FeedLinkButton
+            url={getCanonicalUrl(me.tenant, "/feed.xml")}
+            label="Copy Pinterest feed link"
+          />
+          <ProductQuickCreateDialog tenantId={me.tenant.id} />
+        </div>
       </div>
 
       <ProductsExplorer tenantId={me.tenant.id} tenant={me.tenant} />

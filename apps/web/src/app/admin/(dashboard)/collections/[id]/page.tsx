@@ -2,8 +2,10 @@ import { notFound, redirect } from "next/navigation";
 import { getCollection } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
 import { requireRole } from "@/lib/require-role";
+import { getCanonicalUrl } from "@/lib/canonical";
 import { CollectionForm } from "@/components/admin/collection-form";
 import { CollectionFlyerManager } from "@/components/admin/collection-flyer-manager";
+import { FeedLinkButton } from "@/components/admin/feed-link-button";
 
 export default async function EditCollectionPage({
   params,
@@ -33,6 +35,20 @@ export default async function EditCollectionPage({
         </p>
         <div className="mt-5">
           <CollectionFlyerManager tenant={me.tenant} collection={collection} />
+        </div>
+      </div>
+
+      <div className="mt-12 max-w-3xl border-t pt-8">
+        <h2 className="text-lg font-semibold">Pinterest feed</h2>
+        <p className="text-sm text-muted-foreground">
+          Every live product in this collection, as an RSS feed — connect it to a Pinterest
+          board (Settings → Create Pins in bulk → Connect RSS feed) and new products get
+          pinned automatically.
+        </p>
+        <div className="mt-3">
+          <FeedLinkButton
+            url={getCanonicalUrl(me.tenant, `/collections/${collection.slug}/feed.xml`)}
+          />
         </div>
       </div>
     </div>
