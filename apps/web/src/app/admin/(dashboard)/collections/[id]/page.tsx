@@ -21,11 +21,11 @@ export default async function EditCollectionPage({
   if (!collection) notFound();
 
   return (
-    <div>
+    <div className="pb-24">
       <h1 className="text-2xl font-semibold">{collection.title}</h1>
       <p className="text-sm text-muted-foreground">Edit collection details.</p>
       <div className="mt-7">
-        <CollectionForm tenantId={me.tenant.id} collection={collection} />
+        <CollectionForm tenantId={me.tenant.id} collection={collection} floatingSubmit />
       </div>
 
       <AffiliateCollectionItemsManager tenantId={me.tenant.id} collectionId={collection.id} />

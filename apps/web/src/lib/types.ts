@@ -309,6 +309,11 @@ export interface AffiliateListing {
   capCeiling: number;
 }
 
+export interface AffiliateListingPage {
+  items: AffiliateListing[];
+  nextCursor: string | null;
+}
+
 export interface AffiliateEligibleProduct {
   product: Product;
   exempt: boolean;

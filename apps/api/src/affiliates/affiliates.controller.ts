@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AffiliatesService } from './affiliates.service';
@@ -147,10 +148,28 @@ export class AffiliatesController {
     );
   }
 
+  // paginate=true switches to the cursor-paginated + searchable variant
+  // (listingsPaginated) instead of the plain-array one, same dual-mode
+  // pattern as ProductsController's own GET /products — existing callers
+  // that don't pass it keep getting the plain array unchanged.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER')
   @Get(':id/listings')
-  listings(@Param('id') id: string, @CurrentUser() user: SessionPayload) {
+  listings(
+    @Param('id') id: string,
+    @CurrentUser() user: SessionPayload,
+    @Query('paginate') paginate?: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+  ) {
+    if (paginate === 'true') {
+      return this.affiliatesService.listingsPaginated(id, user.tenantId, {
+        cursor,
+        limit: limit ? Number(limit) : undefined,
+        q,
+      });
+    }
     return this.affiliatesService.listings(id, user.tenantId);
   }
 

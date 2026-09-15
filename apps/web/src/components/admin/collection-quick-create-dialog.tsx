@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import {
   Dialog,
@@ -23,6 +24,7 @@ export function CollectionQuickCreateDialog({
   triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -41,6 +43,10 @@ export function CollectionQuickCreateDialog({
             onSaved={(created) => {
               setOpen(false);
               emitCollectionCreated(created);
+              // Straight to its own edit page — that's where flyer/feed/
+              // affiliate-item sections that only apply to an existing
+              // collection actually live, not this creation dialog.
+              router.push(`/admin/collections/${created.id}`);
             }}
           />
         )}

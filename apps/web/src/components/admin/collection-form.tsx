@@ -21,6 +21,7 @@ import { TagInput } from "@/components/admin/tag-input";
 import { ProductPicker } from "@/components/admin/product-picker";
 import { createCollection, deleteCollection, updateCollection } from "@/lib/api";
 import { THEME_PRESETS, THEME_TEMPLATE_META } from "@/lib/theme-presets";
+import { cn } from "@/lib/utils";
 import type {
   CollectionWithProducts,
   DepositType,
@@ -33,6 +34,7 @@ export function CollectionForm({
   collection,
   defaultPreorder = false,
   onSaved,
+  floatingSubmit = false,
 }: {
   tenantId: string;
   collection?: CollectionWithProducts;
@@ -40,6 +42,12 @@ export function CollectionForm({
   defaultPreorder?: boolean;
   /** When provided, called instead of navigating to the collections list on success. */
   onSaved?: (saved: CollectionWithProducts) => void;
+  /** Pins Save/Delete to the bottom of the viewport instead of the form's
+   * own flow — for the full edit page, where Flyer/Feed/affiliate-item
+   * sections below can make the page long enough that the button would
+   * otherwise be a long scroll away. Left off in the quick-create dialog,
+   * whose own bounded scroll area doesn't have that problem. */
+  floatingSubmit?: boolean;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(collection?.title ?? "");
@@ -112,8 +120,14 @@ export function CollectionForm({
       toast.success(collection ? "Collection updated" : "Collection created");
       if (onSaved) {
         onSaved(saved);
-      } else {
+      } else if (collection) {
         router.push("/admin/collections");
+      } else {
+        // New collection, no custom onSaved handler (i.e. the standalone
+        // /admin/collections/new page, not the quick-create dialog) —
+        // land on its own edit page, where flyer/feed/affiliate-item
+        // sections that only make sense for an existing collection live.
+        router.push(`/admin/collections/${saved.id}`);
       }
       router.refresh();
     } catch {
@@ -283,15 +297,32 @@ export function CollectionForm({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 pt-2">
-        <Button type="submit" disabled={saving}>
-          {saving ? "Saving…" : collection ? "Save changes" : "Create collection"}
-        </Button>
-        {collection && (
-          <Button type="button" variant="destructive" onClick={handleDelete}>
-            Delete
-          </Button>
+      <div
+        className={cn(
+          floatingSubmit &&
+            "fixed inset-x-0 bottom-0 z-40 border-t bg-background shadow-[0_-4px_16px_rgba(0,0,0,0.06)]",
         )}
+      >
+        <div
+          className={cn(
+            "flex items-center gap-3",
+            floatingSubmit ? "mx-auto max-w-3xl px-4 py-3 sm:px-6" : "pt-2",
+          )}
+          style={
+            floatingSubmit
+              ? { paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }
+              : undefined
+          }
+        >
+          <Button type="submit" disabled={saving}>
+            {saving ? "Saving…" : collection ? "Save changes" : "Create collection"}
+          </Button>
+          {collection && (
+            <Button type="button" variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          )}
+        </div>
       </div>
     </form>
   );

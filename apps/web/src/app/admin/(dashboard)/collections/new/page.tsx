@@ -11,11 +11,11 @@ export default async function NewCollectionPage() {
   requireRole(me.role, ["OWNER", "MANAGER"]);
 
   return (
-    <div>
+    <div className="pb-24">
       <h1 className="text-2xl font-semibold">New collection</h1>
       <p className="text-sm text-muted-foreground">Group products into a themed set.</p>
       <div className="mt-7">
-        <CollectionForm tenantId={me.tenant.id} />
+        <CollectionForm tenantId={me.tenant.id} floatingSubmit />
       </div>
     </div>
   );

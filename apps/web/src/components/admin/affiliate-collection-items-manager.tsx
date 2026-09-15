@@ -2,23 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { formatMoney } from "@/lib/format";
 import {
   addAffiliateCollectionItem,
-  getAffiliateListings,
   getCollection,
   getIncomingAffiliates,
   removeAffiliateCollectionItem,
 } from "@/lib/api";
-import type { AffiliateListing } from "@/lib/types";
-
-interface ResellableItem {
-  relationshipId: string;
-  ownerName: string;
-  listing: AffiliateListing;
-}
+import { useAffiliateListingLibrary } from "@/lib/use-affiliate-listing-library";
+import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
+import type { AffiliateListing, AffiliateRelationship } from "@/lib/types";
 
 // A native Collection's `productIds` can only ever point at this tenant's
 // own products (see CollectionsService) — placing a product you resell
@@ -26,7 +22,12 @@ interface ResellableItem {
 // AffiliateCollectionItem, a completely separate mechanism tied to your
 // own AffiliateProductListing. ProductPicker/CollectionForm only ever
 // deals with the native side, so this is a self-contained sibling section
-// for the other one, following the same shape as AffiliateVisibilityManager.
+// for the other one.
+//
+// Each owner you resell for gets its own search-and-paginate picker (see
+// useAffiliateListingLibrary / OwnerResellableList below) — same
+// server-side cursor pagination as ProductPicker, so a catalog running
+// into the thousands never gets loaded into the page all at once.
 export function AffiliateCollectionItemsManager({
   tenantId,
   collectionId,
@@ -35,40 +36,15 @@ export function AffiliateCollectionItemsManager({
   collectionId: string;
 }) {
   const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState<ResellableItem[]>([]);
+  const [relationships, setRelationships] = useState<AffiliateRelationship[]>([]);
   const [memberListingIds, setMemberListingIds] = useState<Set<string>>(new Set());
-  const [pendingListingId, setPendingListingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      try {
-        const [relationships, collection] = await Promise.all([
-          getIncomingAffiliates(tenantId),
-          getCollection(collectionId, tenantId, true),
-        ]);
-        const active = relationships.filter((r) => r.status === "ACTIVE");
-        const listingsByRelationship = await Promise.all(
-          active.map((r) => getAffiliateListings(r.id, tenantId)),
-        );
+    Promise.all([getIncomingAffiliates(tenantId), getCollection(collectionId, tenantId, true)])
+      .then(([relationshipsResult, collection]) => {
         if (cancelled) return;
-
-        const resellable: ResellableItem[] = [];
-        active.forEach((relationship, i) => {
-          for (const listing of listingsByRelationship[i]) {
-            // Only what's actually showing on this shop's own storefront —
-            // adding a listing the vendor has hidden would just add an
-            // invisible item to the collection.
-            if (listing.isActive && listing.product) {
-              resellable.push({
-                relationshipId: relationship.id,
-                ownerName: relationship.ownerTenant?.name ?? "Unknown shop",
-                listing,
-              });
-            }
-          }
-        });
-        setItems(resellable);
+        setRelationships(relationshipsResult.filter((r) => r.status === "ACTIVE"));
         setMemberListingIds(
           new Set(
             collection.products
@@ -76,59 +52,29 @@ export function AffiliateCollectionItemsManager({
               .filter((id): id is string => Boolean(id)),
           ),
         );
-      } catch {
-        // Leaves the section empty — nothing to resell, or the fetch
-        // failed; either way there's nothing useful to show here.
-      } finally {
+      })
+      .catch(() => {
+        // Nothing to resell, or the fetch failed — either way there's
+        // nothing useful to show here.
+      })
+      .finally(() => {
         if (!cancelled) setLoading(false);
-      }
-    }
-    load();
+      });
     return () => {
       cancelled = true;
     };
   }, [tenantId, collectionId]);
 
-  async function toggle(item: ResellableItem) {
-    const inCollection = memberListingIds.has(item.listing.id);
-    setPendingListingId(item.listing.id);
-    try {
-      if (inCollection) {
-        await removeAffiliateCollectionItem(
-          item.relationshipId,
-          tenantId,
-          collectionId,
-          item.listing.productId,
-        );
-      } else {
-        await addAffiliateCollectionItem(
-          item.relationshipId,
-          tenantId,
-          collectionId,
-          item.listing.productId,
-        );
-      }
-      setMemberListingIds((prev) => {
-        const next = new Set(prev);
-        if (inCollection) next.delete(item.listing.id);
-        else next.add(item.listing.id);
-        return next;
-      });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't update this product.");
-    } finally {
-      setPendingListingId(null);
-    }
+  function markMember(listingId: string, member: boolean) {
+    setMemberListingIds((prev) => {
+      const next = new Set(prev);
+      if (member) next.add(listingId);
+      else next.delete(listingId);
+      return next;
+    });
   }
 
-  if (loading || items.length === 0) return null;
-
-  const byOwner = new Map<string, ResellableItem[]>();
-  for (const item of items) {
-    const list = byOwner.get(item.ownerName) ?? [];
-    list.push(item);
-    byOwner.set(item.ownerName, list);
-  }
+  if (loading || relationships.length === 0) return null;
 
   return (
     <div className="mt-12 max-w-3xl border-t pt-8">
@@ -136,32 +82,125 @@ export function AffiliateCollectionItemsManager({
       <p className="text-sm text-muted-foreground">
         Add products from shops you&apos;re an affiliate for into this collection too.
       </p>
-      <div className="mt-4 flex flex-col gap-5">
-        {[...byOwner.entries()].map(([ownerName, ownerItems]) => (
-          <div key={ownerName}>
-            <p className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              {ownerName}
-            </p>
-            <div className="flex flex-col divide-y rounded-lg border">
-              {ownerItems.map((item) => {
-                const checked = memberListingIds.has(item.listing.id);
-                const pending = pendingListingId === item.listing.id;
-                return (
-                  <label key={item.listing.id} className="flex items-center gap-2.5 p-2.5 text-sm">
-                    <Checkbox checked={checked} disabled={pending} onCheckedChange={() => toggle(item)} />
-                    <span className="flex-1 truncate">{item.listing.product?.title}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {formatMoney(item.listing.effectivePrice)}
-                    </span>
-                    {pending && (
-                      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
-                    )}
-                  </label>
-                );
-              })}
-            </div>
-          </div>
+      <div className="mt-4 flex flex-col gap-6">
+        {relationships.map((relationship) => (
+          <OwnerResellableList
+            key={relationship.id}
+            tenantId={tenantId}
+            collectionId={collectionId}
+            relationship={relationship}
+            memberListingIds={memberListingIds}
+            onMemberChange={markMember}
+          />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function OwnerResellableList({
+  tenantId,
+  collectionId,
+  relationship,
+  memberListingIds,
+  onMemberChange,
+}: {
+  tenantId: string;
+  collectionId: string;
+  relationship: AffiliateRelationship;
+  memberListingIds: Set<string>;
+  onMemberChange: (listingId: string, member: boolean) => void;
+}) {
+  const { listings, loading, loadingMore, hasMore, loadMore, query, setQuery } =
+    useAffiliateListingLibrary(relationship.id, tenantId);
+  const [listEl, setListEl] = useState<HTMLDivElement | null>(null);
+  const [pendingListingId, setPendingListingId] = useState<string | null>(null);
+  const sentinelRef = useInfiniteScroll({
+    onIntersect: loadMore,
+    enabled: hasMore && !loading,
+    root: listEl,
+  });
+
+  async function toggle(listing: AffiliateListing) {
+    const inCollection = memberListingIds.has(listing.id);
+    setPendingListingId(listing.id);
+    try {
+      if (inCollection) {
+        await removeAffiliateCollectionItem(
+          relationship.id,
+          tenantId,
+          collectionId,
+          listing.productId,
+        );
+      } else {
+        await addAffiliateCollectionItem(
+          relationship.id,
+          tenantId,
+          collectionId,
+          listing.productId,
+        );
+      }
+      onMemberChange(listing.id, !inCollection);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't update this product.");
+    } finally {
+      setPendingListingId(null);
+    }
+  }
+
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        {relationship.ownerTenant?.name ?? "Unknown shop"}
+      </p>
+      <div className="relative">
+        <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search products…"
+          className="pl-8"
+        />
+      </div>
+      <div ref={setListEl} className="mt-2 max-h-72 overflow-y-auto rounded-lg border">
+        {loading ? (
+          <div className="flex justify-center p-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : listings.length === 0 ? (
+          <p className="p-4 text-center text-sm text-muted-foreground">
+            {query ? "No products match your search." : "Nothing to resell here yet."}
+          </p>
+        ) : (
+          <>
+            {listings.map((listing) => {
+              const checked = memberListingIds.has(listing.id);
+              const pending = pendingListingId === listing.id;
+              return (
+                <label
+                  key={listing.id}
+                  className="flex items-center gap-2.5 border-b p-2.5 text-sm last:border-b-0"
+                >
+                  <Checkbox
+                    checked={checked}
+                    disabled={pending}
+                    onCheckedChange={() => toggle(listing)}
+                  />
+                  <span className="flex-1 truncate">{listing.product?.title}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {formatMoney(listing.effectivePrice)}
+                  </span>
+                  {pending && (
+                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
+                  )}
+                </label>
+              );
+            })}
+            <div ref={sentinelRef} className="flex justify-center p-2">
+              {loadingMore && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

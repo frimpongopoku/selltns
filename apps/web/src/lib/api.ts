@@ -3,6 +3,7 @@ import type {
   AffiliateCapType,
   AffiliateEligibleProduct,
   AffiliateListing,
+  AffiliateListingPage,
   AffiliateProductVisibility,
   AffiliatePublicSummary,
   AffiliateRelationship,
@@ -476,6 +477,25 @@ export const setAffiliateProductVisibility = (
   );
 export const getAffiliateListings = (id: string, tenantId: string) =>
   adminRequest<AffiliateListing[]>(`/affiliates/${id}/listings?tenantId=${tenantId}`);
+// Cursor-paginated + searchable variant — for picking from a
+// potentially large catalog (e.g. AffiliateCollectionItemsManager)
+// without ever loading the whole thing at once.
+export interface GetAffiliateListingsPageParams {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+}
+export const getAffiliateListingsPage = (
+  id: string,
+  tenantId: string,
+  params: GetAffiliateListingsPageParams = {},
+) => {
+  const search = new URLSearchParams({ tenantId, paginate: "true" });
+  if (params.cursor) search.set("cursor", params.cursor);
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.q) search.set("q", params.q);
+  return adminRequest<AffiliateListingPage>(`/affiliates/${id}/listings?${search.toString()}`);
+};
 export const setAffiliateListingPrice = (
   id: string,
   tenantId: string,

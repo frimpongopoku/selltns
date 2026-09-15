@@ -36,6 +36,7 @@ import {
   attachPreorderInfo,
   getPreorderInfoMap,
 } from '../common/preorder-info';
+import { decodeCursor, encodeCursor } from '../products/products.utils';
 
 const RELATIONSHIP_INCLUDE = {
   ownerTenant: { select: { id: true, name: true, slug: true } },
@@ -792,6 +793,82 @@ export class AffiliatesService {
         capCeiling: capCeiling(existing.capType, existing.capValue, ownerPrice),
       };
     });
+  }
+
+  // Cursor-paginated + searchable variant of listings() above, for
+  // picking from a potentially large catalog (e.g. building a collection
+  // out of what you resell) without ever loading the whole thing at once
+  // — same keyset-on-(displayOrder, id) shape as ProductsService's own
+  // pagination. Deliberately a separate method behind a `paginate=true`
+  // flag on the same route rather than changing listings()'s response
+  // shape, since existing callers expect a plain array. Only ever
+  // currently-visible listings — an inactive one wouldn't show up
+  // anywhere for a caller to usefully act on yet.
+  async listingsPaginated(
+    id: string,
+    affiliateTenantId: string,
+    params: { cursor?: string; limit?: number; q?: string },
+  ): Promise<{ items: AffiliateListing[]; nextCursor: string | null }> {
+    const existing = await this.loadRelationship(id, affiliateTenantId);
+    if (existing.affiliateTenantId !== affiliateTenantId) {
+      throw new ForbiddenException('Only the affiliate can view this.');
+    }
+    const limit = Math.min(Math.max(params.limit ?? 30, 1), 100);
+    const cursor = decodeCursor(params.cursor);
+    const q = params.q?.trim();
+
+    const rows = await this.prisma.affiliateProductListing.findMany({
+      where: {
+        relationshipId: id,
+        isActive: true,
+        ...(q
+          ? { product: { title: { contains: q, mode: 'insensitive' } } }
+          : {}),
+        ...(cursor
+          ? {
+              OR: [
+                { displayOrder: { gt: cursor.displayOrder } },
+                { displayOrder: cursor.displayOrder, id: { gt: cursor.id } },
+              ],
+            }
+          : {}),
+      },
+      include: { product: true },
+      orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],
+      take: limit + 1,
+    });
+
+    const hasMore = rows.length > limit;
+    const pageRows = hasMore ? rows.slice(0, limit) : rows;
+    const preorderByProductId = await getPreorderInfoMap(
+      this.prisma,
+      existing.ownerTenantId,
+      pageRows.map((r) => r.productId),
+    );
+    const items = pageRows.map((row) => {
+      const ownerPrice = affiliateBasePrice(row.product);
+      return {
+        id: row.id,
+        relationshipId: row.relationshipId,
+        productId: row.productId,
+        priceOverride: row.priceOverride,
+        isActive: row.isActive,
+        displayOrder: row.displayOrder,
+        product: mapProduct(
+          row.product,
+          preorderByProductId.get(row.productId) ?? null,
+        ),
+        ownerPrice,
+        effectivePrice: row.priceOverride ?? ownerPrice,
+        capCeiling: capCeiling(existing.capType, existing.capValue, ownerPrice),
+      };
+    });
+    const last = pageRows[pageRows.length - 1];
+    const nextCursor =
+      hasMore && last
+        ? encodeCursor({ displayOrder: last.displayOrder, id: last.id })
+        : null;
+    return { items, nextCursor };
   }
 
   // Rejected outright if it breaks the agreed cap or undercuts the owner —
