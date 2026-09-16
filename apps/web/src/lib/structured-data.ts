@@ -7,12 +7,15 @@ import { discountedPrice } from "./pricing";
 // a plain object with an @context/@type.
 
 export function storeJsonLd(tenant: Tenant) {
+  // "telephone" means a callable number — prefer the dedicated phone number,
+  // falling back to WhatsApp only if that's all the shop has set.
+  const callable = tenant.phoneNumber || tenant.whatsappNumber;
   return {
     "@context": "https://schema.org",
     "@type": "Store",
     name: tenant.name,
     url: getCanonicalUrl(tenant),
-    ...(tenant.whatsappNumber ? { telephone: `+${tenant.whatsappNumber}` } : {}),
+    ...(callable ? { telephone: `+${callable}` } : {}),
   };
 }
 

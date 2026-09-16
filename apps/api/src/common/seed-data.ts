@@ -20,6 +20,7 @@ export const tenant: Tenant = {
   logoUrl: null,
   customDomain: null,
   domainVerified: false,
+  phoneNumber: '233209876543',
   whatsappNumber: '233245550134',
   ownerDisplayName: 'Akosua Mensah',
   ownerTitle: 'Founder & Designer',

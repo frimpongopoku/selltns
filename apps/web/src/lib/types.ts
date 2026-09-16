@@ -44,6 +44,7 @@ export interface Tenant {
   logoUrl: string | null;
   customDomain: string | null;
   domainVerified: boolean;
+  phoneNumber: string | null;
   whatsappNumber: string | null;
   ownerDisplayName: string;
   ownerTitle: string;

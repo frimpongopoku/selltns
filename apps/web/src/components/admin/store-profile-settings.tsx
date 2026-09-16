@@ -22,20 +22,23 @@ import type { Tenant } from "@/lib/types";
 
 export function StoreProfileSettings({ tenant }: { tenant: Tenant }) {
   const router = useRouter();
+  const [phoneNumber, setPhoneNumber] = useState(tenant.phoneNumber ?? "");
   const [whatsappNumber, setWhatsappNumber] = useState(
     tenant.whatsappNumber ?? "",
   );
   const [saving, setSaving] = useState(false);
 
-  const dirty = whatsappNumber !== (tenant.whatsappNumber ?? "");
+  const dirty =
+    phoneNumber !== (tenant.phoneNumber ?? "") ||
+    whatsappNumber !== (tenant.whatsappNumber ?? "");
 
   async function handleSave() {
     setSaving(true);
     try {
-      const normalized = whatsappNumber
-        ? toWhatsAppNumber(whatsappNumber)
-        : null;
-      await updateTenantProfile(tenant.id, { whatsappNumber: normalized });
+      await updateTenantProfile(tenant.id, {
+        phoneNumber: phoneNumber ? toWhatsAppNumber(phoneNumber) : null,
+        whatsappNumber: whatsappNumber ? toWhatsAppNumber(whatsappNumber) : null,
+      });
       toast.success("Store profile updated");
       router.refresh();
     } catch {
@@ -53,26 +56,40 @@ export function StoreProfileSettings({ tenant }: { tenant: Tenant }) {
       <Card className="p-5">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-emerald-600" />
-          <p className="text-sm font-medium">WhatsApp number</p>
+          <p className="text-sm font-medium">Phone & WhatsApp</p>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Customers use this to send you their completed order, and it powers
-          the &quot;View storefront&quot; WhatsApp share buttons across your
-          store.
+          Separate numbers if you use different lines — the phone number
+          powers the &quot;Call&quot; button, and WhatsApp is where customers
+          send their completed order and powers the &quot;View storefront&quot;
+          share buttons. Leave either blank if it doesn&apos;t apply.
         </p>
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-          <div className="flex-1">
-            <Label htmlFor="whatsapp" className="sr-only">WhatsApp number</Label>
+        <div className="mt-3 flex flex-col gap-3">
+          <div>
+            <Label htmlFor="phone">Phone number</Label>
+            <Input
+              id="phone"
+              className="mt-1.5"
+              placeholder="024 555 0134"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="whatsapp">WhatsApp number</Label>
             <Input
               id="whatsapp"
+              className="mt-1.5"
               placeholder="024 555 0134"
               value={whatsappNumber}
               onChange={(e) => setWhatsappNumber(e.target.value)}
             />
           </div>
-          <Button onClick={handleSave} disabled={!dirty || saving}>
-            {saving ? "Saving…" : "Save"}
-          </Button>
+          <div>
+            <Button onClick={handleSave} disabled={!dirty || saving}>
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -302,8 +319,8 @@ function ContactSectionCard({ tenant }: { tenant: Tenant }) {
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         Adds a small &quot;get in touch&quot; block to your storefront so visitors can call,
-        WhatsApp, or email you directly — using the WhatsApp number above and the email
-        below. Entirely optional; off by default.
+        WhatsApp, or email you directly — using the phone and WhatsApp numbers above and
+        the email below. Entirely optional; off by default.
       </p>
 
       <div className="mt-4 flex flex-col gap-4">

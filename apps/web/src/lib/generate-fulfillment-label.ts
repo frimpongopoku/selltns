@@ -20,16 +20,15 @@ function prettyUrl(url: string): string {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
-// Phone and WhatsApp are the same underlying tenant.whatsappNumber field
-// today (it's dual-purpose everywhere else in the app — see
-// contact-section.tsx's "Call" + "WhatsApp" buttons off one number) — shown
-// as two labeled lines here since a packer glancing at the label shouldn't
-// have to guess which action a bare number implies. Each line is only
+// Phone and WhatsApp are independent fields — a vendor can have a different
+// callable line than the number they watch WhatsApp on. Each line is only
 // included if the shop actually has that contact info set.
 function buildContactLines(tenant: Tenant): string[] {
   const lines: string[] = [];
+  if (tenant.phoneNumber) {
+    lines.push(`Phone: ${tenant.phoneNumber}`);
+  }
   if (tenant.whatsappNumber) {
-    lines.push(`Phone: ${tenant.whatsappNumber}`);
     lines.push(`WhatsApp: ${tenant.whatsappNumber}`);
   }
   if (tenant.contactEmail) {

@@ -241,7 +241,7 @@ export default async function TrackOrderPage({
       <div className="mt-10">
         <TrackerActions
           order={order}
-          tenant={{ ...tenant, whatsappNumber: null }}
+          tenant={{ ...tenant, phoneNumber: null, whatsappNumber: null }}
           whatsappNumberEncoded={tenant.whatsappNumber ? obscurePhone(tenant.whatsappNumber) : null}
           collectionTitle={collection?.title ?? null}
         />

@@ -91,6 +91,10 @@ model Tenant {
   logoUrl                    String?  @map("logo_url")
   customDomain               String?  @map("custom_domain")
   domainVerified             Boolean  @default(false) @map("domain_verified")
+  // A callable number, kept separate from whatsappNumber below — a vendor
+  // can have a landline/different mobile for calls than the number they
+  // actually watch WhatsApp on. Either, both, or neither may be set.
+  phoneNumber                String?  @map("phone_number")
   whatsappNumber             String?  @map("whatsapp_number")
   ownerDisplayName           String   @default("") @map("owner_display_name")
   ownerTitle                 String   @default("") @map("owner_title")

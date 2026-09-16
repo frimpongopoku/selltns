@@ -5,49 +5,54 @@ import { useRevealedPhone } from "@/lib/use-revealed-phone";
 import { waLink } from "@/lib/phone";
 
 // Shown only when the vendor has both opted in (Settings > Store profile >
-// Contact section) and filled in at least one channel. The WhatsApp number
-// and email arrive pre-obscured (see [slug]/layout.tsx) so a bot fetching
+// Contact section) and filled in at least one channel. Phone, WhatsApp, and
+// email are independent — a shop can have one, two, or all three, e.g. a
+// vendor whose callable line differs from the number they watch WhatsApp on.
+// All three arrive pre-obscured (see [slug]/layout.tsx) so a bot fetching
 // the page source never sees the raw values — only decoded here, client-side,
 // after mount (obscurePhone/revealPhone are generic string tokens, not
 // phone-specific, despite the name — reused here for the email too).
 export function ContactSection({
   visible,
+  phoneNumberEncoded,
   whatsappNumberEncoded,
   contactEmailEncoded,
 }: {
   visible: boolean;
+  phoneNumberEncoded: string | null;
   whatsappNumberEncoded: string | null;
   contactEmailEncoded: string | null;
 }) {
+  const phoneNumber = useRevealedPhone(phoneNumberEncoded);
   const whatsappNumber = useRevealedPhone(whatsappNumberEncoded);
   const contactEmail = useRevealedPhone(contactEmailEncoded);
 
-  if (!visible || (!whatsappNumber && !contactEmail)) return null;
+  if (!visible || (!phoneNumber && !whatsappNumber && !contactEmail)) return null;
 
   return (
     <div className="store-card mt-8 flex flex-wrap items-center gap-x-5 gap-y-3 p-4">
       <span className="store-muted text-xs font-medium tracking-wide uppercase">
         Get in touch
       </span>
+      {phoneNumber && (
+        <a
+          href={`tel:+${phoneNumber}`}
+          className="flex items-center gap-1.5 text-sm transition-colors hover:text-[var(--store-primary)]"
+        >
+          <Phone className="h-3.5 w-3.5" />
+          Call
+        </a>
+      )}
       {whatsappNumber && (
-        <>
-          <a
-            href={`tel:+${whatsappNumber}`}
-            className="flex items-center gap-1.5 text-sm transition-colors hover:text-[var(--store-primary)]"
-          >
-            <Phone className="h-3.5 w-3.5" />
-            Call
-          </a>
-          <a
-            href={waLink(whatsappNumber)}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-sm transition-colors hover:text-[var(--store-primary)]"
-          >
-            <MessageCircle className="h-3.5 w-3.5" />
-            WhatsApp
-          </a>
-        </>
+        <a
+          href={waLink(whatsappNumber)}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-1.5 text-sm transition-colors hover:text-[var(--store-primary)]"
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
+          WhatsApp
+        </a>
       )}
       {contactEmail && (
         <a

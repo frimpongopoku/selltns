@@ -57,7 +57,8 @@ export default async function StorefrontLayout({
   // contact section gets pre-obscured tokens instead (see lib/phone.ts) —
   // decoded client-side only, after mount, so a bot fetching the page
   // source never sees the raw number or email.
-  const publicTenant = { ...tenant, whatsappNumber: null, contactEmail: null };
+  const publicTenant = { ...tenant, phoneNumber: null, whatsappNumber: null, contactEmail: null };
+  const phoneNumberEncoded = tenant.phoneNumber ? obscurePhone(tenant.phoneNumber) : null;
   const whatsappNumberEncoded = tenant.whatsappNumber
     ? obscurePhone(tenant.whatsappNumber)
     : null;
@@ -79,6 +80,7 @@ export default async function StorefrontLayout({
             hasCollections={hasCollections}
             affiliateSummary={affiliateSummary}
             contactSectionVisible={tenant.contactSectionVisible}
+            phoneNumberEncoded={phoneNumberEncoded}
             whatsappNumberEncoded={whatsappNumberEncoded}
             contactEmailEncoded={contactEmailEncoded}
           />

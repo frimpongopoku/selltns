@@ -101,7 +101,12 @@ export const updateTenantTheme = (tenantId: string, themeTokens: ThemeTokens) =>
   });
 export const updateTenantProfile = (
   tenantId: string,
-  input: { name?: string; whatsappNumber?: string | null; logoUrl?: string | null },
+  input: {
+    name?: string;
+    phoneNumber?: string | null;
+    whatsappNumber?: string | null;
+    logoUrl?: string | null;
+  },
 ) =>
   adminRequest<Tenant>(`/tenants/${tenantId}/profile`, {
     method: "PATCH",

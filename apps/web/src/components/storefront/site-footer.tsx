@@ -39,6 +39,7 @@ export function SiteFooter({
   hasCollections,
   affiliateSummary,
   contactSectionVisible,
+  phoneNumberEncoded,
   whatsappNumberEncoded,
   contactEmailEncoded,
 }: {
@@ -47,6 +48,7 @@ export function SiteFooter({
   hasCollections: boolean;
   affiliateSummary?: AffiliatePublicSummary;
   contactSectionVisible?: boolean;
+  phoneNumberEncoded?: string | null;
   whatsappNumberEncoded?: string | null;
   contactEmailEncoded?: string | null;
 }) {
@@ -109,6 +111,7 @@ export function SiteFooter({
         </div>
         <ContactSection
           visible={!!contactSectionVisible}
+          phoneNumberEncoded={phoneNumberEncoded ?? null}
           whatsappNumberEncoded={whatsappNumberEncoded ?? null}
           contactEmailEncoded={contactEmailEncoded ?? null}
         />

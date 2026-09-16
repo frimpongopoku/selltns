@@ -67,7 +67,12 @@ export class TenantsService {
 
   async updateProfile(
     tenantId: string,
-    input: { name?: string; whatsappNumber?: string | null; logoUrl?: string | null },
+    input: {
+      name?: string;
+      phoneNumber?: string | null;
+      whatsappNumber?: string | null;
+      logoUrl?: string | null;
+    },
   ): Promise<Tenant> {
     const name = input.name?.trim();
     if (input.name !== undefined && !name) {
@@ -81,6 +86,7 @@ export class TenantsService {
         where: { id: tenantId },
         data: {
           name,
+          phoneNumber: input.phoneNumber,
           whatsappNumber: input.whatsappNumber,
           logoUrl: input.logoUrl,
         },

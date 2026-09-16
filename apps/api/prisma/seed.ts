@@ -31,13 +31,17 @@ async function main() {
 
   const seededTenant = await prisma.tenant.upsert({
     where: { id: tenant.id },
-    update: { whatsappNumber: tenant.whatsappNumber },
+    update: {
+      phoneNumber: tenant.phoneNumber,
+      whatsappNumber: tenant.whatsappNumber,
+    },
     create: {
       id: tenant.id,
       name: tenant.name,
       slug: tenant.slug,
       customDomain: tenant.customDomain,
       domainVerified: tenant.domainVerified,
+      phoneNumber: tenant.phoneNumber,
       whatsappNumber: tenant.whatsappNumber,
       themeTokens: tenant.themeTokens as object,
       storyBlocks: storyBlocks as object,
