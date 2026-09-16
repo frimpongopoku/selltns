@@ -1,3 +1,12 @@
+import type { AffiliateCapType } from "./types";
+
+// The agreed markup ceiling on an affiliate relationship, phrased the same
+// way everywhere it's shown (invite form, relationship list, affiliate
+// products page) — e.g. "up to GHS 50 extra" or "up to 20% extra".
+export function capLabel(capType: AffiliateCapType, capValue: number) {
+  return capType === "FIXED" ? `up to ${formatMoney(capValue)} extra` : `up to ${capValue}% extra`;
+}
+
 export function formatMoney(amount: number) {
   return new Intl.NumberFormat("en-GH", {
     style: "currency",

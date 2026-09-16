@@ -757,6 +757,39 @@ export class AffiliatesService {
     }));
   }
 
+  // Listing rows are a snapshot, bulk-created once in accept() — a product
+  // the owner adds afterwards never gets one on its own (ProductsService
+  // has no idea affiliate relationships exist). Rather than chase every
+  // place the owner's catalog can change (new product, un-hiding one,
+  // un-exempting one — unexempt() already does its own version of this)
+  // with a matching sync hook, every read here re-derives "what SHOULD be
+  // listed" from the owner's live catalog and fills in whatever's missing
+  // first. skipDuplicates makes this a no-op once nothing's missing, so
+  // it's cheap and safe to run on every read rather than needing a
+  // one-time backfill migration for relationships that predate this.
+  private async reconcileListings(
+    relationshipId: string,
+    ownerTenantId: string,
+  ): Promise<void> {
+    const exemptions = await this.prisma.affiliateProductExemption.findMany({
+      where: { relationshipId },
+      select: { productId: true },
+    });
+    const exemptProductIds = exemptions.map((e) => e.productId);
+    const ownerProducts = await this.prisma.product.findMany({
+      where: {
+        tenantId: ownerTenantId,
+        id: { notIn: exemptProductIds },
+        hiddenFromAllAffiliates: false,
+      },
+      select: { id: true },
+    });
+    await this.prisma.affiliateProductListing.createMany({
+      data: ownerProducts.map((p) => ({ relationshipId, productId: p.id })),
+      skipDuplicates: true,
+    });
+  }
+
   async listings(
     id: string,
     affiliateTenantId: string,
@@ -764,6 +797,9 @@ export class AffiliatesService {
     const existing = await this.loadRelationship(id, affiliateTenantId);
     if (existing.affiliateTenantId !== affiliateTenantId) {
       throw new ForbiddenException('Only the affiliate can view this.');
+    }
+    if (existing.status === 'ACTIVE') {
+      await this.reconcileListings(id, existing.ownerTenantId);
     }
     const rows = await this.prisma.affiliateProductListing.findMany({
       where: { relationshipId: id },
@@ -791,6 +827,7 @@ export class AffiliatesService {
         ownerPrice,
         effectivePrice: row.priceOverride ?? ownerPrice,
         capCeiling: capCeiling(existing.capType, existing.capValue, ownerPrice),
+        ownerTenant: existing.ownerTenant,
       };
     });
   }
@@ -812,6 +849,9 @@ export class AffiliatesService {
     const existing = await this.loadRelationship(id, affiliateTenantId);
     if (existing.affiliateTenantId !== affiliateTenantId) {
       throw new ForbiddenException('Only the affiliate can view this.');
+    }
+    if (existing.status === 'ACTIVE') {
+      await this.reconcileListings(id, existing.ownerTenantId);
     }
     const limit = Math.min(Math.max(params.limit ?? 30, 1), 100);
     const cursor = decodeCursor(params.cursor);
@@ -861,6 +901,104 @@ export class AffiliatesService {
         ownerPrice,
         effectivePrice: row.priceOverride ?? ownerPrice,
         capCeiling: capCeiling(existing.capType, existing.capValue, ownerPrice),
+        ownerTenant: existing.ownerTenant,
+      };
+    });
+    const last = pageRows[pageRows.length - 1];
+    const nextCursor =
+      hasMore && last
+        ? encodeCursor({ displayOrder: last.displayOrder, id: last.id })
+        : null;
+    return { items, nextCursor };
+  }
+
+  // Same shape as listingsPaginated(), but across every ACTIVE relationship
+  // the caller is the affiliate side of at once — the "everything I resell,
+  // from every shop, in one list" view (apps/web's affiliate products page),
+  // instead of picking one relationship at a time. Unlike listingsPaginated
+  // (built for picking active-only items into a collection), this includes
+  // inactive listings too, since managing them — noticing one's off and
+  // turning it back on — is the point of this view.
+  async myListingsPaginated(
+    affiliateTenantId: string,
+    params: {
+      cursor?: string;
+      limit?: number;
+      q?: string;
+      relationshipId?: string;
+    },
+  ): Promise<{ items: AffiliateListing[]; nextCursor: string | null }> {
+    const relationships = await this.prisma.affiliateRelationship.findMany({
+      where: {
+        affiliateTenantId,
+        status: 'ACTIVE',
+        ...(params.relationshipId ? { id: params.relationshipId } : {}),
+      },
+      include: RELATIONSHIP_INCLUDE,
+    });
+    await Promise.all(
+      relationships.map((r) => this.reconcileListings(r.id, r.ownerTenantId)),
+    );
+    if (relationships.length === 0) return { items: [], nextCursor: null };
+    const relationshipById = new Map(relationships.map((r) => [r.id, r]));
+
+    const limit = Math.min(Math.max(params.limit ?? 30, 1), 100);
+    const cursor = decodeCursor(params.cursor);
+    const q = params.q?.trim();
+
+    const rows = await this.prisma.affiliateProductListing.findMany({
+      where: {
+        relationshipId: { in: [...relationshipById.keys()] },
+        ...(q
+          ? { product: { title: { contains: q, mode: 'insensitive' } } }
+          : {}),
+        ...(cursor
+          ? {
+              OR: [
+                { displayOrder: { gt: cursor.displayOrder } },
+                { displayOrder: cursor.displayOrder, id: { gt: cursor.id } },
+              ],
+            }
+          : {}),
+      },
+      include: { product: true },
+      orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],
+      take: limit + 1,
+    });
+
+    const hasMore = rows.length > limit;
+    const pageRows = hasMore ? rows.slice(0, limit) : rows;
+    // Products can come from different owner tenants on this page, so the
+    // preorder lookup can't share a single ownerTenantId like the
+    // single-relationship methods above do.
+    const preorderByProductId = await this.preorderMapAcrossOwners(
+      pageRows.map((r) => ({
+        productId: r.productId,
+        ownerTenantId: relationshipById.get(r.relationshipId)!.ownerTenantId,
+      })),
+    );
+    const items = pageRows.map((row) => {
+      const relationship = relationshipById.get(row.relationshipId)!;
+      const ownerPrice = affiliateBasePrice(row.product);
+      return {
+        id: row.id,
+        relationshipId: row.relationshipId,
+        productId: row.productId,
+        priceOverride: row.priceOverride,
+        isActive: row.isActive,
+        displayOrder: row.displayOrder,
+        product: mapProduct(
+          row.product,
+          preorderByProductId.get(row.productId) ?? null,
+        ),
+        ownerPrice,
+        effectivePrice: row.priceOverride ?? ownerPrice,
+        capCeiling: capCeiling(
+          relationship.capType,
+          relationship.capValue,
+          ownerPrice,
+        ),
+        ownerTenant: relationship.ownerTenant,
       };
     });
     const last = pageRows[pageRows.length - 1];
@@ -931,6 +1069,7 @@ export class AffiliatesService {
       ownerPrice,
       effectivePrice: row.priceOverride ?? ownerPrice,
       capCeiling: ceiling,
+      ownerTenant: existing.ownerTenant,
     };
   }
 
@@ -1121,6 +1260,19 @@ export class AffiliatesService {
   async getActiveListingsForAffiliateTenant(
     affiliateTenantId: string,
   ): Promise<Product[]> {
+    // See reconcileListings — this is the one place a stale/missing listing
+    // is most visible (it's what customers actually see live), so it's
+    // worth the extra couple of queries per active relationship here too.
+    const activeRelationships =
+      await this.prisma.affiliateRelationship.findMany({
+        where: { affiliateTenantId, status: 'ACTIVE' },
+        select: { id: true, ownerTenantId: true },
+      });
+    await Promise.all(
+      activeRelationships.map((r) =>
+        this.reconcileListings(r.id, r.ownerTenantId),
+      ),
+    );
     const rows = await this.prisma.affiliateProductListing.findMany({
       where: {
         isActive: true,

@@ -19,7 +19,16 @@ import {
 import { GalleryPicker } from "@/components/admin/gallery-picker";
 import { TagInput } from "@/components/admin/tag-input";
 import { ProductPicker } from "@/components/admin/product-picker";
-import { createCollection, deleteCollection, updateCollection } from "@/lib/api";
+import {
+  AffiliateCollectionItemsManager,
+  type StagedAffiliateItem,
+} from "@/components/admin/affiliate-collection-items-manager";
+import {
+  addAffiliateCollectionItem,
+  createCollection,
+  deleteCollection,
+  updateCollection,
+} from "@/lib/api";
 import { THEME_PRESETS, THEME_TEMPLATE_META } from "@/lib/theme-presets";
 import { cn } from "@/lib/utils";
 import type {
@@ -81,6 +90,11 @@ export function CollectionForm({
   );
   const [fulfillmentNote, setFulfillmentNote] = useState(collection?.fulfillmentNote ?? "");
   const [isActive, setIsActive] = useState(collection?.isActive ?? true);
+  // Only relevant while creating — an existing collection's affiliate
+  // members are managed by the sibling AffiliateCollectionItemsManager the
+  // edit page renders directly (each toggle there is already a live API
+  // call, so there's nothing to stage).
+  const [stagedAffiliateItems, setStagedAffiliateItems] = useState<StagedAffiliateItem[]>([]);
   const [saving, setSaving] = useState(false);
 
   function handleToggleProduct(product: Product) {
@@ -117,6 +131,21 @@ export function CollectionForm({
       const saved = collection
         ? await updateCollection(collection.id, tenantId, payload)
         : await createCollection(tenantId, payload);
+      if (!collection && stagedAffiliateItems.length > 0) {
+        const results = await Promise.allSettled(
+          stagedAffiliateItems.map((item) =>
+            addAffiliateCollectionItem(item.relationshipId, tenantId, saved.id, item.productId),
+          ),
+        );
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed > 0) {
+          toast.error(
+            failed === stagedAffiliateItems.length
+              ? "Collection created, but the resold products couldn't be added. Add them from the collection's edit page."
+              : `Collection created, but ${failed} resold product${failed === 1 ? "" : "s"} couldn't be added — check the collection's edit page.`,
+          );
+        }
+      }
       toast.success(collection ? "Collection updated" : "Collection created");
       if (onSaved) {
         onSaved(saved);
@@ -125,8 +154,10 @@ export function CollectionForm({
       } else {
         // New collection, no custom onSaved handler (i.e. the standalone
         // /admin/collections/new page, not the quick-create dialog) —
-        // land on its own edit page, where flyer/feed/affiliate-item
-        // sections that only make sense for an existing collection live.
+        // land on its own edit page, where flyer/feed sections that only
+        // make sense for an existing collection live (affiliate items can
+        // now be picked during creation too, staged above and replayed
+        // once saved.id exists — see stagedAffiliateItems).
         router.push(`/admin/collections/${saved.id}`);
       }
       router.refresh();
@@ -192,6 +223,16 @@ export function CollectionForm({
           <ProductPicker tenantId={tenantId} selected={selectedProducts} onToggle={handleToggleProduct} />
         </div>
       </div>
+
+      {!collection && (
+        <AffiliateCollectionItemsManager
+          tenantId={tenantId}
+          collectionId={null}
+          stagedItems={stagedAffiliateItems}
+          onStagedItemsChange={setStagedAffiliateItems}
+          variant="inline"
+        />
+      )}
 
       <div className="rounded-lg border p-4">
         <label className="flex items-center gap-2 text-sm font-medium">

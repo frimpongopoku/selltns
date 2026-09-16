@@ -501,6 +501,26 @@ export const getAffiliateListingsPage = (
   if (params.q) search.set("q", params.q);
   return adminRequest<AffiliateListingPage>(`/affiliates/${id}/listings?${search.toString()}`);
 };
+// Same shape as getAffiliateListingsPage, but merged across every shop the
+// caller resells for at once — the affiliate products page, as opposed to
+// picking from one relationship at a time.
+export interface GetMyAffiliateListingsPageParams {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+  relationshipId?: string;
+}
+export const getMyAffiliateListingsPage = (
+  tenantId: string,
+  params: GetMyAffiliateListingsPageParams = {},
+) => {
+  const search = new URLSearchParams({ tenantId });
+  if (params.cursor) search.set("cursor", params.cursor);
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.q) search.set("q", params.q);
+  if (params.relationshipId) search.set("relationshipId", params.relationshipId);
+  return adminRequest<AffiliateListingPage>(`/affiliates/my-listings?${search.toString()}`);
+};
 export const setAffiliateListingPrice = (
   id: string,
   tenantId: string,

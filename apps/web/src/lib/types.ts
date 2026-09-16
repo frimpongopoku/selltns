@@ -308,6 +308,7 @@ export interface AffiliateListing {
   ownerPrice: number;
   effectivePrice: number;
   capCeiling: number;
+  ownerTenant: { id: string; name: string; slug: string };
 }
 
 export interface AffiliateListingPage {

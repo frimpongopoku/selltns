@@ -43,9 +43,10 @@ export function CollectionQuickCreateDialog({
             onSaved={(created) => {
               setOpen(false);
               emitCollectionCreated(created);
-              // Straight to its own edit page — that's where flyer/feed/
-              // affiliate-item sections that only apply to an existing
-              // collection actually live, not this creation dialog.
+              // Straight to its own edit page — that's where flyer/feed
+              // sections that only apply to an existing collection live
+              // (this dialog already lets you pick affiliate items too,
+              // staged and attached right after creation).
               router.push(`/admin/collections/${created.id}`);
             }}
           />

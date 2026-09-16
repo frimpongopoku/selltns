@@ -16,6 +16,15 @@ import { useAffiliateListingLibrary } from "@/lib/use-affiliate-listing-library"
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import type { AffiliateListing, AffiliateRelationship } from "@/lib/types";
 
+// A staged (not-yet-attached) affiliate pick — enough to replay as a real
+// addAffiliateCollectionItem() call once a collection id exists (see
+// CollectionForm's create path, the only place this is used).
+export interface StagedAffiliateItem {
+  relationshipId: string;
+  productId: string;
+  listingId: string;
+}
+
 // A native Collection's `productIds` can only ever point at this tenant's
 // own products (see CollectionsService) — placing a product you resell
 // from another shop into one of your own collections instead goes through
@@ -28,12 +37,31 @@ import type { AffiliateListing, AffiliateRelationship } from "@/lib/types";
 // useAffiliateListingLibrary / OwnerResellableList below) — same
 // server-side cursor pagination as ProductPicker, so a catalog running
 // into the thousands never gets loaded into the page all at once.
+//
+// Two modes, switched on whether collectionId is set:
+//   - Editing an existing collection (collectionId given): each checkbox
+//     toggle calls the add/remove API immediately, same as always.
+//   - Creating a new one (collectionId null, used from CollectionForm):
+//     there's no collection row yet for the API to attach to, so toggles
+//     just update the caller-owned `stagedItems` list instead. The caller
+//     is responsible for replaying addAffiliateCollectionItem() for each
+//     staged item once the collection is actually created.
 export function AffiliateCollectionItemsManager({
   tenantId,
   collectionId,
+  stagedItems,
+  onStagedItemsChange,
+  variant = "section",
 }: {
   tenantId: string;
-  collectionId: string;
+  collectionId: string | null;
+  /** Required (and only used) when collectionId is null. */
+  stagedItems?: StagedAffiliateItem[];
+  onStagedItemsChange?: (items: StagedAffiliateItem[]) => void;
+  /** "section": a page-level block (the edit page, standalone below the
+   * form). "inline": styled to sit as one more field inside CollectionForm
+   * (the create path, where this is nested inside the form itself). */
+  variant?: "section" | "inline";
 }) {
   const [loading, setLoading] = useState(true);
   const [relationships, setRelationships] = useState<AffiliateRelationship[]>([]);
@@ -41,17 +69,23 @@ export function AffiliateCollectionItemsManager({
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getIncomingAffiliates(tenantId), getCollection(collectionId, tenantId, true)])
+    const relationshipsPromise = getIncomingAffiliates(tenantId);
+    const membershipPromise = collectionId
+      ? getCollection(collectionId, tenantId, true)
+      : Promise.resolve(null);
+    Promise.all([relationshipsPromise, membershipPromise])
       .then(([relationshipsResult, collection]) => {
         if (cancelled) return;
         setRelationships(relationshipsResult.filter((r) => r.status === "ACTIVE"));
-        setMemberListingIds(
-          new Set(
-            collection.products
-              .map((p) => p.affiliateSource?.listingId)
-              .filter((id): id is string => Boolean(id)),
-          ),
-        );
+        if (collection) {
+          setMemberListingIds(
+            new Set(
+              collection.products
+                .map((p) => p.affiliateSource?.listingId)
+                .filter((id): id is string => Boolean(id)),
+            ),
+          );
+        }
       })
       .catch(() => {
         // Nothing to resell, or the fetch failed — either way there's
@@ -65,66 +99,13 @@ export function AffiliateCollectionItemsManager({
     };
   }, [tenantId, collectionId]);
 
-  function markMember(listingId: string, member: boolean) {
-    setMemberListingIds((prev) => {
-      const next = new Set(prev);
-      if (member) next.add(listingId);
-      else next.delete(listingId);
-      return next;
-    });
-  }
+  const effectiveMemberIds = collectionId
+    ? memberListingIds
+    : new Set((stagedItems ?? []).map((item) => item.listingId));
 
-  if (loading || relationships.length === 0) return null;
-
-  return (
-    <div className="mt-12 max-w-3xl border-t pt-8">
-      <h2 className="text-lg font-semibold">Products you resell</h2>
-      <p className="text-sm text-muted-foreground">
-        Add products from shops you&apos;re an affiliate for into this collection too.
-      </p>
-      <div className="mt-4 flex flex-col gap-6">
-        {relationships.map((relationship) => (
-          <OwnerResellableList
-            key={relationship.id}
-            tenantId={tenantId}
-            collectionId={collectionId}
-            relationship={relationship}
-            memberListingIds={memberListingIds}
-            onMemberChange={markMember}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function OwnerResellableList({
-  tenantId,
-  collectionId,
-  relationship,
-  memberListingIds,
-  onMemberChange,
-}: {
-  tenantId: string;
-  collectionId: string;
-  relationship: AffiliateRelationship;
-  memberListingIds: Set<string>;
-  onMemberChange: (listingId: string, member: boolean) => void;
-}) {
-  const { listings, loading, loadingMore, hasMore, loadMore, query, setQuery } =
-    useAffiliateListingLibrary(relationship.id, tenantId);
-  const [listEl, setListEl] = useState<HTMLDivElement | null>(null);
-  const [pendingListingId, setPendingListingId] = useState<string | null>(null);
-  const sentinelRef = useInfiniteScroll({
-    onIntersect: loadMore,
-    enabled: hasMore && !loading,
-    root: listEl,
-  });
-
-  async function toggle(listing: AffiliateListing) {
-    const inCollection = memberListingIds.has(listing.id);
-    setPendingListingId(listing.id);
-    try {
+  async function handleToggle(relationship: AffiliateRelationship, listing: AffiliateListing) {
+    const inCollection = effectiveMemberIds.has(listing.id);
+    if (collectionId) {
       if (inCollection) {
         await removeAffiliateCollectionItem(
           relationship.id,
@@ -140,7 +121,88 @@ function OwnerResellableList({
           listing.productId,
         );
       }
-      onMemberChange(listing.id, !inCollection);
+      setMemberListingIds((prev) => {
+        const next = new Set(prev);
+        if (inCollection) next.delete(listing.id);
+        else next.add(listing.id);
+        return next;
+      });
+    } else {
+      const current = stagedItems ?? [];
+      const next = inCollection
+        ? current.filter((item) => item.listingId !== listing.id)
+        : [
+            ...current,
+            { relationshipId: relationship.id, productId: listing.productId, listingId: listing.id },
+          ];
+      onStagedItemsChange?.(next);
+    }
+  }
+
+  if (loading || relationships.length === 0) return null;
+
+  const list = (
+    <div className="mt-4 flex flex-col gap-6">
+      {relationships.map((relationship) => (
+        <OwnerResellableList
+          key={relationship.id}
+          tenantId={tenantId}
+          relationship={relationship}
+          memberListingIds={effectiveMemberIds}
+          onToggle={(listing) => handleToggle(relationship, listing)}
+        />
+      ))}
+    </div>
+  );
+
+  if (variant === "inline") {
+    return (
+      <div>
+        <p className="text-sm font-medium">Products you resell</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Add products from shops you&apos;re an affiliate for into this collection too.
+        </p>
+        {list}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-12 max-w-3xl border-t pt-8">
+      <h2 className="text-lg font-semibold">Products you resell</h2>
+      <p className="text-sm text-muted-foreground">
+        Add products from shops you&apos;re an affiliate for into this collection too.
+      </p>
+      {list}
+    </div>
+  );
+}
+
+function OwnerResellableList({
+  tenantId,
+  relationship,
+  memberListingIds,
+  onToggle,
+}: {
+  tenantId: string;
+  relationship: AffiliateRelationship;
+  memberListingIds: Set<string>;
+  onToggle: (listing: AffiliateListing) => Promise<void>;
+}) {
+  const { listings, loading, loadingMore, hasMore, loadMore, query, setQuery } =
+    useAffiliateListingLibrary(relationship.id, tenantId);
+  const [listEl, setListEl] = useState<HTMLDivElement | null>(null);
+  const [pendingListingId, setPendingListingId] = useState<string | null>(null);
+  const sentinelRef = useInfiniteScroll({
+    onIntersect: loadMore,
+    enabled: hasMore && !loading,
+    root: listEl,
+  });
+
+  async function toggle(listing: AffiliateListing) {
+    setPendingListingId(listing.id);
+    try {
+      await onToggle(listing);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't update this product.");
     } finally {

@@ -148,6 +148,27 @@ export class AffiliatesController {
     );
   }
 
+  // Everything the caller resells, across every active relationship at
+  // once — the affiliate products page. Optional relationshipId narrows to
+  // one shop; without it, every shop is merged into one paginated list.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
+  @Get('my-listings')
+  myListings(
+    @CurrentUser() user: SessionPayload,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+    @Query('relationshipId') relationshipId?: string,
+  ) {
+    return this.affiliatesService.myListingsPaginated(user.tenantId, {
+      cursor,
+      limit: limit ? Number(limit) : undefined,
+      q,
+      relationshipId,
+    });
+  }
+
   // paginate=true switches to the cursor-paginated + searchable variant
   // (listingsPaginated) instead of the plain-array one, same dual-mode
   // pattern as ProductsController's own GET /products — existing callers

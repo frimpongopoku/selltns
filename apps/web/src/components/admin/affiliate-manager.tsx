@@ -45,7 +45,7 @@ import {
   toggleAffiliateListing,
   updateAffiliateDisclosure,
 } from "@/lib/api";
-import { formatMoney } from "@/lib/format";
+import { capLabel, formatMoney } from "@/lib/format";
 import type {
   AffiliateCapType,
   AffiliateEligibleProduct,
@@ -60,10 +60,6 @@ const STATUS_STYLES: Record<string, string> = {
   DECLINED: "bg-neutral-100 text-neutral-700",
   TERMINATED: "bg-neutral-100 text-neutral-500",
 };
-
-function capLabel(capType: AffiliateCapType, capValue: number) {
-  return capType === "FIXED" ? `up to ${formatMoney(capValue)} extra` : `up to ${capValue}% extra`;
-}
 
 export function AffiliateManager({
   tenant,

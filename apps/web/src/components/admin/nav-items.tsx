@@ -16,18 +16,20 @@ import {
   Handshake,
   QrCode,
   Tags,
+  ShoppingBag,
 } from "lucide-react";
 import type { Role } from "@/lib/types";
 import { BILLING_ENABLED } from "@/lib/feature-flags";
 
 // `roles` omitted = every role can see it. Kept in sync with the backend
 // role matrix (apps/api's per-route @Roles(...) — see products/collections/
-// media/payment-methods/story/team/tenants controllers): this is UX
-// convenience (hide what a role can't use), the API is the real gate.
+// media/payment-methods/story/team/tenants/affiliates controllers): this is
+// UX convenience (hide what a role can't use), the API is the real gate.
 export const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon, roles: ["OWNER", "MANAGER"] as Role[] },
   { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/resell", label: "Products I resell", icon: ShoppingBag, roles: ["OWNER", "MANAGER"] as Role[] },
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
   { href: "/admin/preorders", label: "Pre-orders", icon: PackageSearch, roles: ["OWNER", "MANAGER"] as Role[] },
   { href: "/admin/collections", label: "Collections", icon: Layers, roles: ["OWNER", "MANAGER"] as Role[] },

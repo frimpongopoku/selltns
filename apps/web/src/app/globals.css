@@ -375,6 +375,17 @@
   font-size: 0.7rem;
 }
 
+/* Scrolls normally, just never paints a scrollbar track — for containers
+   like the admin sidebar nav where the scroll affordance itself is more
+   distracting than useful (it's obvious the list scrolls once you try). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* ==========================================================================
    Shared motion utilities — small, purposeful animations reused across the
    storefront and admin. Kept out of @layer components so they can freely
