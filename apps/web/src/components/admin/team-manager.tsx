@@ -65,9 +65,15 @@ export function TeamManager({
     }
   }
 
+  const ownerCount = members.filter((m) => m.role === "OWNER").length;
+
   async function handleRemove(id: string) {
-    await removeTeamMember(id, tenantId);
-    router.refresh();
+    try {
+      await removeTeamMember(id, tenantId);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't remove that member.");
+    }
   }
 
   return (
@@ -101,6 +107,7 @@ export function TeamManager({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="OWNER">Owner — full access, including team & billing</SelectItem>
                     <SelectItem value="MANAGER">Manager — products, orders, collections, payments</SelectItem>
                     <SelectItem value="STAFF">Staff — orders + product edits</SelectItem>
                   </SelectContent>
@@ -128,7 +135,7 @@ export function TeamManager({
               {!member.acceptedAt && (
                 <span className="text-xs text-muted-foreground">Invite pending</span>
               )}
-              {member.role !== "OWNER" && (
+              {(member.role !== "OWNER" || ownerCount > 1) && (
                 <button onClick={() => handleRemove(member.id)} aria-label="Remove member">
                   <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                 </button>

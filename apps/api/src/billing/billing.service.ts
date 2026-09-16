@@ -283,12 +283,12 @@ export class BillingService {
       });
   }
 
-  private async ownerEmail(tenantId: string): Promise<string | null> {
-    const ownerMembership = await this.prisma.tenantMembership.findFirst({
+  private async ownerEmails(tenantId: string): Promise<string[]> {
+    const ownerMemberships = await this.prisma.tenantMembership.findMany({
       where: { tenantId, role: 'OWNER' },
       include: { user: { select: { email: true } } },
     });
-    return ownerMembership?.user.email ?? null;
+    return ownerMemberships.map((m) => m.user.email);
   }
 
   private async sendIfOwner(
@@ -296,10 +296,11 @@ export class BillingService {
     build: () => { subject: string; html: string; text: string },
     label: string,
   ): Promise<void> {
-    const to = await this.ownerEmail(tenantId);
-    if (!to) return;
-    this.emailService.send({ to, ...build() }).catch((err) => {
-      this.logger.error(`Failed to send ${label} email: ${err}`);
-    });
+    const recipients = await this.ownerEmails(tenantId);
+    for (const to of recipients) {
+      this.emailService.send({ to, ...build() }).catch((err) => {
+        this.logger.error(`Failed to send ${label} email: ${err}`);
+      });
+    }
   }
 }

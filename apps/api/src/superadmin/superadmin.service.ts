@@ -121,11 +121,11 @@ export class SuperAdminService {
       throw new ConflictException('This application has already been reviewed.');
     }
 
-    const ownerMembership = await this.prisma.tenantMembership.findFirst({
+    const ownerMemberships = await this.prisma.tenantMembership.findMany({
       where: { tenantId: request.tenantId, role: 'OWNER' },
       include: { user: true, tenant: { select: { name: true } } },
     });
-    if (!ownerMembership) {
+    if (ownerMemberships.length === 0) {
       throw new NotFoundException('This shop has no owner to verify.');
     }
 
@@ -150,16 +150,18 @@ export class SuperAdminService {
       }),
     ]);
 
-    this.emailService
-      .send({
-        to: ownerMembership.user.email,
-        ...userVerifiedEmail([ownerMembership.tenant.name]),
-      })
-      .catch((err) => {
-        this.logger.error(
-          `Failed to send verified email to ${ownerMembership.user.email}: ${err}`,
-        );
-      });
+    for (const ownerMembership of ownerMemberships) {
+      this.emailService
+        .send({
+          to: ownerMembership.user.email,
+          ...userVerifiedEmail([ownerMembership.tenant.name]),
+        })
+        .catch((err) => {
+          this.logger.error(
+            `Failed to send verified email to ${ownerMembership.user.email}: ${err}`,
+          );
+        });
+    }
 
     return { ok: true };
   }
@@ -285,27 +287,28 @@ export class SuperAdminService {
       }),
     ]);
 
-    this.notifyOwner(tenant as unknown as Tenant, (t) => verificationRejectedEmail(t, reason));
+    this.notifyOwners(tenant as unknown as Tenant, (t) => verificationRejectedEmail(t, reason));
     return { ok: true };
   }
 
-  private async notifyOwner(
+  private async notifyOwners(
     tenant: Tenant,
     buildEmail: (tenant: Tenant) => { subject: string; html: string; text: string },
   ) {
-    const ownerMembership = await this.prisma.tenantMembership.findFirst({
+    const ownerMemberships = await this.prisma.tenantMembership.findMany({
       where: { tenantId: tenant.id, role: 'OWNER' },
       include: { user: { select: { email: true } } },
     });
-    if (!ownerMembership) return;
 
-    this.emailService
-      .send({ to: ownerMembership.user.email, ...buildEmail(tenant) })
-      .catch((err) => {
-        this.logger.error(
-          `Failed to send verification-status email to ${ownerMembership.user.email}: ${err}`,
-        );
-      });
+    for (const ownerMembership of ownerMemberships) {
+      this.emailService
+        .send({ to: ownerMembership.user.email, ...buildEmail(tenant) })
+        .catch((err) => {
+          this.logger.error(
+            `Failed to send verification-status email to ${ownerMembership.user.email}: ${err}`,
+          );
+        });
+    }
   }
 
   // --- Tenants -----------------------------------------------------------

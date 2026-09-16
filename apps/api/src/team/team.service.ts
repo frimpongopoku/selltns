@@ -63,9 +63,6 @@ export class TeamService {
     if (!email) {
       throw new BadRequestException('Email is required');
     }
-    if (input.role === 'OWNER') {
-      throw new BadRequestException('There can only be one owner.');
-    }
     const name = input.name.trim() || email;
 
     const existingMembership = await this.prisma.tenantMembership.findFirst({
@@ -116,7 +113,12 @@ export class TeamService {
       throw new NotFoundException(`Membership ${id} not found`);
     }
     if (membership.role === 'OWNER') {
-      throw new ForbiddenException('The owner cannot be removed.');
+      const ownerCount = await this.prisma.tenantMembership.count({
+        where: { tenantId, role: 'OWNER' },
+      });
+      if (ownerCount <= 1) {
+        throw new ForbiddenException('A shop must have at least one owner.');
+      }
     }
     await this.prisma.tenantMembership.delete({ where: { id: membership.id } });
     return { id: membership.id };

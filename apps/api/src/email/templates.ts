@@ -356,13 +356,14 @@ export function teamInviteEmail(
   loginUrl: string,
 ) {
   const roleLabel = member.role.charAt(0) + member.role.slice(1).toLowerCase();
+  const roleArticle = /^[AEIOU]/i.test(roleLabel) ? 'an' : 'a';
   const subject = `You've been invited to ${tenant.name} on Selltns`;
   const html = layout(
     tenant.name,
     `
     <h1 style="font-size: 20px; margin: 0 0 8px;">You're invited to ${tenant.name}</h1>
     <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 16px;">
-      You've been added to ${tenant.name}'s Selltns dashboard as a
+      You've been added to ${tenant.name}'s Selltns dashboard as ${roleArticle}
       <strong>${roleLabel}</strong>.
     </p>
     <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
