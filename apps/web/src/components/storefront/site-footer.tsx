@@ -9,8 +9,7 @@ import { VerifiedBadge } from "./verified-badge";
 import { BUILD_LABEL } from "@/lib/build-info";
 import { ContactBiibisoftDialog, BIIBISOFT_CONTACT_EMAIL } from "./contact-biibisoft-dialog";
 import { ContactSection } from "./contact-section";
-
-const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
+import { APP_DOMAIN } from "@/lib/app-domain";
 
 function AffiliateShopList({ label, shops }: { label: string; shops: { id: string; name: string; slug: string }[] }) {
   if (shops.length === 0) return null;

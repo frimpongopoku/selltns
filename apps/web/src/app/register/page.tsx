@@ -13,8 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { signInWithGooglePopup } from "@/lib/firebase-client";
 import { checkSlugAvailability } from "@/lib/api";
-
-const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
+import { APP_DOMAIN } from "@/lib/app-domain";
 
 function slugify(input: string) {
   return input

@@ -27,8 +27,7 @@ import { Label } from "@/components/ui/label";
 import { checkSlugAvailability } from "@/lib/api";
 import { createSpace, switchSpace } from "@/lib/auth-client";
 import type { Space, Tenant } from "@/lib/types";
-
-const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
+import { APP_DOMAIN } from "@/lib/app-domain";
 
 function slugify(input: string) {
   return input

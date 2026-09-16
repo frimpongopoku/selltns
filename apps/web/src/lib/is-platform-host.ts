@@ -1,4 +1,4 @@
-const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
+import { APP_DOMAIN } from "./app-domain";
 
 // Hosts that are always the platform itself, never a vendor's custom
 // domain. Shared by proxy.ts (custom-domain rewrite) and sitemap.ts/

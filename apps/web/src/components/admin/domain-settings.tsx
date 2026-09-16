@@ -17,8 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { getDomainStatus, setDomain, removeDomain } from "@/lib/api";
 import type { DomainStatus, Tenant } from "@/lib/types";
-
-const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_DOMAIN ?? "selltns.com";
+import { APP_DOMAIN } from "@/lib/app-domain";
 
 export function DomainSettings({ tenant }: { tenant: Tenant }) {
   const [status, setStatus] = useState<DomainStatus | null>(null);
