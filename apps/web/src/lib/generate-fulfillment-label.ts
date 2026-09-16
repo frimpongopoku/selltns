@@ -20,6 +20,24 @@ function prettyUrl(url: string): string {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
+// Phone and WhatsApp are the same underlying tenant.whatsappNumber field
+// today (it's dual-purpose everywhere else in the app — see
+// contact-section.tsx's "Call" + "WhatsApp" buttons off one number) — shown
+// as two labeled lines here since a packer glancing at the label shouldn't
+// have to guess which action a bare number implies. Each line is only
+// included if the shop actually has that contact info set.
+function buildContactLines(tenant: Tenant): string[] {
+  const lines: string[] = [];
+  if (tenant.whatsappNumber) {
+    lines.push(`Phone: ${tenant.whatsappNumber}`);
+    lines.push(`WhatsApp: ${tenant.whatsappNumber}`);
+  }
+  if (tenant.contactEmail) {
+    lines.push(`Email: ${tenant.contactEmail}`);
+  }
+  return lines;
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -211,10 +229,14 @@ async function renderClassicLabel(tenant: Tenant): Promise<HTMLCanvasElement> {
   ctx.fillStyle = "#111111";
   ctx.font = `800 32px ${FONT_STACK}`;
   ctx.fillText(tenant.name, textX, headerTop + 32, nameWidth);
-  if (tenant.whatsappNumber) {
+
+  const contactLines = buildContactLines(tenant);
+  if (contactLines.length > 0) {
     ctx.fillStyle = "#6b7280";
     ctx.font = `500 19px ${FONT_STACK}`;
-    ctx.fillText(tenant.whatsappNumber, textX, headerTop + 62, nameWidth);
+    contactLines.forEach((line, i) => {
+      ctx.fillText(line, textX, headerTop + 62 + i * 28, nameWidth);
+    });
   }
 
   const qrCanvas = await drawQr(url, qrSize);
@@ -297,9 +319,10 @@ async function renderModernLabel(tenant: Tenant): Promise<HTMLCanvasElement> {
   ctx.font = `500 17px ${FONT_STACK}`;
   ctx.globalAlpha = 0.85;
   ctx.fillText("Order fulfillment label", textX, 102, nameWidth);
-  if (tenant.whatsappNumber) {
-    ctx.fillText(tenant.whatsappNumber, textX, 128, nameWidth);
-  }
+  const contactLines = buildContactLines(tenant);
+  contactLines.forEach((line, i) => {
+    ctx.fillText(line, textX, 126 + i * 21, nameWidth);
+  });
   ctx.globalAlpha = 1;
 
   ctx.save();
