@@ -185,9 +185,9 @@ function drawFooter(ctx: CanvasRenderingContext2D) {
   ctx.fillText("Powered by selltns.com", LABEL_W / 2, LABEL_H - 26);
 }
 
-async function renderClassicLabel(tenant: Tenant): Promise<HTMLCanvasElement> {
+async function renderClassicLabel(tenant: Tenant, accentOverride?: string): Promise<HTMLCanvasElement> {
   const url = getCanonicalUrl(tenant);
-  const accent = tenant.themeTokens?.primary || "#1a1a1a";
+  const accent = accentOverride || tenant.themeTokens?.primary || "#1a1a1a";
   const canvas = document.createElement("canvas");
   canvas.width = LABEL_W;
   canvas.height = LABEL_H;
@@ -268,9 +268,9 @@ async function renderClassicLabel(tenant: Tenant): Promise<HTMLCanvasElement> {
   return canvas;
 }
 
-async function renderModernLabel(tenant: Tenant): Promise<HTMLCanvasElement> {
+async function renderModernLabel(tenant: Tenant, accentOverride?: string): Promise<HTMLCanvasElement> {
   const url = getCanonicalUrl(tenant);
-  const accent = tenant.themeTokens?.primary || "#1a1a1a";
+  const accent = accentOverride || tenant.themeTokens?.primary || "#1a1a1a";
   const canvas = document.createElement("canvas");
   canvas.width = LABEL_W;
   canvas.height = LABEL_H;
@@ -352,8 +352,11 @@ async function renderModernLabel(tenant: Tenant): Promise<HTMLCanvasElement> {
 export async function renderFulfillmentLabel(
   tenant: Tenant,
   template: LabelTemplate,
+  accentColor?: string,
 ): Promise<HTMLCanvasElement> {
-  return template === "modern" ? renderModernLabel(tenant) : renderClassicLabel(tenant);
+  return template === "modern"
+    ? renderModernLabel(tenant, accentColor)
+    : renderClassicLabel(tenant, accentColor);
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
@@ -379,16 +382,18 @@ function triggerBlobDownload(blob: Blob, filename: string) {
 export async function getFulfillmentLabelPngBlob(
   tenant: Tenant,
   template: LabelTemplate,
+  accentColor?: string,
 ): Promise<Blob> {
-  const canvas = await renderFulfillmentLabel(tenant, template);
+  const canvas = await renderFulfillmentLabel(tenant, template, accentColor);
   return canvasToBlob(canvas);
 }
 
 export async function downloadFulfillmentLabelPng(
   tenant: Tenant,
   template: LabelTemplate,
+  accentColor?: string,
 ): Promise<void> {
-  const blob = await getFulfillmentLabelPngBlob(tenant, template);
+  const blob = await getFulfillmentLabelPngBlob(tenant, template, accentColor);
   triggerBlobDownload(blob, `${tenant.slug}-fulfillment-label-${template}.png`);
 }
 
@@ -397,8 +402,9 @@ export async function downloadFulfillmentLabelPng(
 export async function downloadFulfillmentLabelPdf(
   tenant: Tenant,
   template: LabelTemplate,
+  accentColor?: string,
 ): Promise<void> {
-  const canvas = await renderFulfillmentLabel(tenant, template);
+  const canvas = await renderFulfillmentLabel(tenant, template, accentColor);
   const dataUrl = canvas.toDataURL("image/png");
   const doc = new jsPDF({ unit: "in", format: [4, 6] });
   doc.addImage(dataUrl, "PNG", 0, 0, 4, 6);
