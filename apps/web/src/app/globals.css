@@ -235,6 +235,38 @@
   --store-primary: #ffffff;
 }
 
+[data-template="BOLD"] {
+  --store-bg: #fff8f0;
+  --store-fg: #2b1810;
+  --store-secondary: #8c5a45;
+}
+.dark [data-template="BOLD"] {
+  --store-bg: #1c120b;
+  --store-fg: #fbe9dd;
+  --store-secondary: #d9a98c;
+  /* Bold's swatches range from mid to fairly dark primaries — rather than
+     relying on the bg-colored default (which would read dark-on-dark for
+     some), pin button text to the light warm tone every swatch is legible
+     against. */
+  --store-primary-fg: #fff8f0;
+}
+
+[data-template="LUXE"] {
+  --store-bg: #fbf8f5;
+  --store-fg: #241322;
+  --store-secondary: #6b4e63;
+}
+.dark [data-template="LUXE"] {
+  --store-bg: #130a12;
+  --store-fg: #f3e9f1;
+  --store-secondary: #b79bb0;
+  /* Luxe's primary is always a deep jewel tone in light mode (the button IS
+     the dark surface) — on a dark page that would disappear, so like Fashion
+     it flips to the swatch's gold/metal accent instead. */
+  --store-primary: var(--store-accent-custom);
+  --store-primary-fg: #130a12;
+}
+
 @layer components {
   .store-heading {
     font-family: var(--store-font-heading);
@@ -322,6 +354,25 @@
 
 [data-template="FASHION"] .store-heading {
   font-style: italic;
+}
+
+[data-template="BOLD"] .store-heading {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+[data-template="BOLD"] .store-nav-link {
+  font-weight: 700;
+}
+
+[data-template="LUXE"] .store-heading {
+  letter-spacing: 0.01em;
+}
+
+[data-template="LUXE"] .store-nav-link {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.7rem;
 }
 
 /* ==========================================================================

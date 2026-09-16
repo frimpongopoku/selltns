@@ -79,7 +79,7 @@ export function ThemePicker({
 
         <div className="mt-7">
           <p className="text-sm font-medium">Palette</p>
-          <div className="mt-3 flex gap-3">
+          <div className="mt-3 flex flex-wrap gap-3">
             {PALETTE_SWATCHES[template].map((p, i) => (
               <button
                 key={i}

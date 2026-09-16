@@ -15,7 +15,7 @@ export type OrderStatus =
   | "CANCELLED"
   | "COMPLETED";
 
-export type ThemeTemplate = "FASHION" | "GENERAL" | "CLEAN";
+export type ThemeTemplate = "FASHION" | "GENERAL" | "CLEAN" | "BOLD" | "LUXE";
 
 export type CollectionType = "STANDARD" | "PREORDER";
 export type OrderType = "STANDARD" | "PREORDER";

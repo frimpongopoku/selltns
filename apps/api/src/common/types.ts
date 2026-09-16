@@ -11,7 +11,7 @@ export type AffiliateStatus = 'PENDING' | 'ACTIVE' | 'DECLINED' | 'TERMINATED';
 export type AffiliateCapType = 'FIXED' | 'PERCENTAGE';
 export type OrderSource = 'DIRECT' | 'AFFILIATE';
 
-export type ThemeTemplate = 'FASHION' | 'GENERAL' | 'CLEAN';
+export type ThemeTemplate = 'FASHION' | 'GENERAL' | 'CLEAN' | 'BOLD' | 'LUXE';
 
 export interface ThemeTokens {
   template: ThemeTemplate;
