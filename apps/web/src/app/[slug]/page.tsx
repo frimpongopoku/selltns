@@ -55,7 +55,7 @@ export default async function StoreHomePage({
 
   const [products, collections, isCustomDomain] = await Promise.all([
     getProducts(tenant.id, true),
-    getCollections(tenant.id),
+    getCollections(tenant.id, true),
     isCustomDomainRequest(),
   ]);
   const activeProducts = products.filter((p) => p.isActive);

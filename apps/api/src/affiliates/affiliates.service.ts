@@ -838,9 +838,12 @@ export class AffiliatesService {
   // — same keyset-on-(displayOrder, id) shape as ProductsService's own
   // pagination. Deliberately a separate method behind a `paginate=true`
   // flag on the same route rather than changing listings()'s response
-  // shape, since existing callers expect a plain array. Only ever
-  // currently-visible listings — an inactive one wouldn't show up
-  // anywhere for a caller to usefully act on yet.
+  // shape, since existing callers expect a plain array. Deliberately NOT
+  // filtered by isActive — that flag only controls whether a product
+  // shows up in the affiliate's general storefront catalog
+  // (getActiveListingsForAffiliateTenant), a separate concern from
+  // picking one into a specific collection here. A product turned off
+  // from the general catalog should still be pickable into a collection.
   async listingsPaginated(
     id: string,
     affiliateTenantId: string,
@@ -860,7 +863,6 @@ export class AffiliatesService {
     const rows = await this.prisma.affiliateProductListing.findMany({
       where: {
         relationshipId: id,
-        isActive: true,
         ...(q
           ? { product: { title: { contains: q, mode: 'insensitive' } } }
           : {}),
@@ -1350,6 +1352,63 @@ export class AffiliatesService {
         ownerTenantName: row.listing.relationship.ownerTenant.name,
       },
     }));
+  }
+
+  // Batched sibling of getActiveCollectionItems, for a caller that's
+  // listing many collections at once (the storefront's collections list —
+  // findAll/findAllPaginated in CollectionsService) and needs each one's
+  // affiliate items without an N+1 query per collection.
+  async getActiveCollectionItemsForMany(
+    collectionIds: string[],
+  ): Promise<Map<string, Product[]>> {
+    const empty = new Map<string, Product[]>();
+    if (collectionIds.length === 0) return empty;
+    const rows = await this.prisma.affiliateCollectionItem.findMany({
+      where: {
+        collectionId: { in: collectionIds },
+        listing: { isActive: true, relationship: { status: 'ACTIVE' } },
+      },
+      include: {
+        listing: {
+          include: {
+            product: true,
+            relationship: {
+              include: {
+                ownerTenant: { select: { id: true, name: true, slug: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { position: 'asc' },
+    });
+    const preorderByProductId = await this.preorderMapAcrossOwners(
+      rows.map((r) => ({
+        productId: r.listing.product.id,
+        ownerTenantId: r.listing.relationship.ownerTenant.id,
+      })),
+    );
+    const byCollectionId = new Map<string, Product[]>();
+    for (const row of rows) {
+      const product: Product = {
+        ...mapProduct(
+          row.listing.product,
+          preorderByProductId.get(row.listing.product.id) ?? null,
+        ),
+        price:
+          row.listing.priceOverride ?? affiliateBasePrice(row.listing.product),
+        affiliateSource: {
+          listingId: row.listing.id,
+          relationshipId: row.listing.relationshipId,
+          ownerTenantId: row.listing.relationship.ownerTenant.id,
+          ownerTenantName: row.listing.relationship.ownerTenant.name,
+        },
+      };
+      const list = byCollectionId.get(row.collectionId);
+      if (list) list.push(product);
+      else byCollectionId.set(row.collectionId, [product]);
+    }
+    return byCollectionId;
   }
 
   // A single affiliate can resell for several owners at once, each with

@@ -30,16 +30,24 @@ export class CollectionsController {
     @Query('limit') limit?: string,
     @Query('q') q?: string,
     @Query('tag') tag?: string,
+    @Query('includeAffiliate') includeAffiliate?: string,
   ) {
     if (paginate === 'true') {
-      return this.collectionsService.findAllPaginated(tenantId, {
-        cursor,
-        limit: limit ? Number(limit) : undefined,
-        q,
-        tag,
-      });
+      return this.collectionsService.findAllPaginated(
+        tenantId,
+        {
+          cursor,
+          limit: limit ? Number(limit) : undefined,
+          q,
+          tag,
+        },
+        includeAffiliate === 'true',
+      );
     }
-    return this.collectionsService.findAll(tenantId);
+    return this.collectionsService.findAll(
+      tenantId,
+      includeAffiliate === 'true',
+    );
   }
 
   // Must come before `:id` or Nest would try to look up a collection with id "tags".

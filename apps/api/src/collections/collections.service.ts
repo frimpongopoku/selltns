@@ -163,19 +163,32 @@ export class CollectionsService {
     }));
   }
 
-  async findAll(tenantId: string) {
+  // includeAffiliate mirrors findOne's flag — merges each collection's
+  // active affiliate items into its products/productIds too, same
+  // native-then-affiliate ordering, so a list-level product count (e.g.
+  // the storefront home page's "N pieces" badge) isn't native-only and
+  // wrongly showing 0 for an affiliate-only collection.
+  async findAll(tenantId: string, includeAffiliate = false) {
     const collections = await this.prisma.collection.findMany({
       where: { tenantId },
       include: PRODUCTS_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
-    return this.withProductPreorderInfo(collections.map(mapCollection));
+    const withPreorder = await this.withProductPreorderInfo(
+      collections.map(mapCollection),
+    );
+    if (!includeAffiliate) return withPreorder;
+    return this.mergeAffiliateItems(withPreorder);
   }
 
   // Paginates the collections table directly via raw SQL (for search/cursor),
   // then hydrates product relations for just that page via the normal Prisma
   // include — simpler and safer than hand-rolling the join in raw SQL.
-  async findAllPaginated(tenantId: string, params: FindAllPaginatedParams) {
+  async findAllPaginated(
+    tenantId: string,
+    params: FindAllPaginatedParams,
+    includeAffiliate = false,
+  ) {
     const limit = Math.min(
       Math.max(params.limit ?? COLLECTIONS_PAGE_SIZE, 1),
       COLLECTIONS_PAGE_SIZE_MAX,
@@ -217,12 +230,15 @@ export class CollectionsService {
         })
       : [];
     const byId = new Map(collections.map((c) => [c.id, c]));
-    const items = await this.withProductPreorderInfo(
+    let items = await this.withProductPreorderInfo(
       ids
         .map((id) => byId.get(id))
         .filter((c): c is NonNullable<typeof c> => !!c)
         .map(mapCollection),
     );
+    if (includeAffiliate) {
+      items = await this.mergeAffiliateItems(items);
+    }
 
     const last = pageRows[pageRows.length - 1];
     const nextCursor =
@@ -231,6 +247,30 @@ export class CollectionsService {
         : null;
 
     return { items, nextCursor };
+  }
+
+  // Shared by findAll/findAllPaginated — batches every listed collection's
+  // affiliate items into one query (AffiliatesService.
+  // getActiveCollectionItemsForMany) instead of the N+1 a per-collection
+  // getActiveCollectionItems() call in a loop would cost here. Same
+  // native-then-affiliate append order as findOne's single-collection merge.
+  private async mergeAffiliateItems<
+    T extends { id: string; productIds: string[]; products: PrismaProduct[] },
+  >(collections: T[]): Promise<T[]> {
+    const byCollectionId =
+      await this.affiliatesService.getActiveCollectionItemsForMany(
+        collections.map((c) => c.id),
+      );
+    if (byCollectionId.size === 0) return collections;
+    return collections.map((c) => {
+      const affiliateProducts = byCollectionId.get(c.id);
+      if (!affiliateProducts || affiliateProducts.length === 0) return c;
+      return {
+        ...c,
+        productIds: [...c.productIds, ...affiliateProducts.map((p) => p.id)],
+        products: [...c.products, ...affiliateProducts],
+      };
+    });
   }
 
   async findDistinctTags(tenantId: string): Promise<string[]> {
@@ -345,7 +385,9 @@ export class CollectionsService {
         description: input.description ?? existing.description,
         coverImage: input.coverImage ?? existing.coverImage,
         unfurlImage:
-          input.unfurlImage !== undefined ? input.unfurlImage : existing.unfurlImage,
+          input.unfurlImage !== undefined
+            ? input.unfurlImage
+            : existing.unfurlImage,
         seoTitle: input.seoTitle ?? existing.seoTitle,
         seoDescription: input.seoDescription ?? existing.seoDescription,
         tags: input.tags !== undefined ? tagsOf(input) : existing.tags,

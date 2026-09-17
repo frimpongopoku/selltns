@@ -176,9 +176,15 @@ export class ProductsService {
       createdAt: p.createdAt.toISOString(),
       preorder: p.preorder,
     }));
-    return [...nativeAsProducts, ...affiliateProducts].sort(
-      (a, b) => a.displayOrder - b.displayOrder,
-    );
+    // Deliberately not a shared sort by displayOrder — that field is two
+    // unrelated namespaces (this tenant's own manual ordering vs. whatever
+    // the affiliate-listing row happens to carry, itself copied from the
+    // OWNER's displayOrder in getActiveListingsForAffiliateTenant). Sorting
+    // across both let a low owner-side number jump an affiliate item ahead
+    // of this tenant's own manually-ordered catalog. Native products keep
+    // their own order (already sorted by findAll), affiliate items always
+    // follow, in their own relative order.
+    return [...nativeAsProducts, ...affiliateProducts];
   }
 
   // Public product-detail fallback for a productId that isn't native to

@@ -70,7 +70,7 @@ export default async function ProductPage({
 
   const [allProducts, allCollections, isCustomDomain] = await Promise.all([
     getProducts(tenant.id, true).catch(() => []),
-    getCollections(tenant.id).catch(() => []),
+    getCollections(tenant.id, true).catch(() => []),
     isCustomDomainRequest(),
   ]);
   const otherProducts = allProducts

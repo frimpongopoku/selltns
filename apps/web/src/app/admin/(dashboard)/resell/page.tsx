@@ -21,6 +21,8 @@ export default async function ResellPage() {
       <p className="text-sm text-muted-foreground">
         Everything you resell across every shop you&apos;re an affiliate for, in one place —
         set your own price (within the agreed cap) and choose what shows on your storefront.
+        The &quot;Shown on your shop&quot; toggle only controls your general product listing —
+        it has no effect on whether you can add a product to a collection, on or off.
       </p>
       <div className="mt-7">
         {active.length === 0 ? (

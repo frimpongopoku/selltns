@@ -209,8 +209,10 @@ export const deleteProduct = (id: string, tenantId: string) =>
   });
 
 // Collections
-export const getCollections = (tenantId: string) =>
-  request<CollectionWithProducts[]>(`/collections?tenantId=${tenantId}`);
+export const getCollections = (tenantId: string, includeAffiliate = false) =>
+  request<CollectionWithProducts[]>(
+    `/collections?tenantId=${tenantId}${includeAffiliate ? "&includeAffiliate=true" : ""}`,
+  );
 export interface GetCollectionsPageParams {
   cursor?: string;
   limit?: number;
