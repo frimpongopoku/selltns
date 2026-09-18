@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getOrderByToken, getTenantBySlug } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
+import { OG_IMAGE_HEADERS_SHORT } from "@/lib/og-image-cache";
 
 export const alt = "Order status";
 export const size = { width: 1200, height: 630 };
@@ -77,6 +78,6 @@ export default async function Image({
         )}
       </div>
     ),
-    size,
+    { ...size, headers: OG_IMAGE_HEADERS_SHORT },
   );
 }

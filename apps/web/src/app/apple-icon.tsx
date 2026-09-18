@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { OG_IMAGE_HEADERS } from "@/lib/og-image-cache";
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
@@ -31,6 +32,6 @@ export default function AppleIcon() {
         </span>
       </div>
     ),
-    { ...size },
+    { ...size, headers: OG_IMAGE_HEADERS },
   );
 }

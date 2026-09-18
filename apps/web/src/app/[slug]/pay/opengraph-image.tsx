@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getTenantBySlug } from "@/lib/api";
+import { OG_IMAGE_HEADERS } from "@/lib/og-image-cache";
 
 export const alt = "Payment details";
 export const size = { width: 1200, height: 630 };
@@ -53,6 +54,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
       </div>
     ),
-    size,
+    { ...size, headers: OG_IMAGE_HEADERS },
   );
 }

@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getCollection, getTenantBySlug } from "@/lib/api";
+import { OG_IMAGE_HEADERS } from "@/lib/og-image-cache";
 
 // Only ever rendered as a fallback — when a collection (or one of its
 // products) has a photo, generateMetadata in page.tsx supplies that as
@@ -67,6 +68,6 @@ export default async function Image({
         </div>
       </div>
     ),
-    size,
+    { ...size, headers: OG_IMAGE_HEADERS },
   );
 }

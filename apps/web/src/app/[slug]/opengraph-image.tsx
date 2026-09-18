@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getTenantBySlug } from "@/lib/api";
+import { OG_IMAGE_HEADERS } from "@/lib/og-image-cache";
 
 // Only ever rendered as a fallback — when a tenant has a logo,
 // generateMetadata in page.tsx supplies that as the OG image directly and
@@ -107,6 +108,6 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
       </div>
     ),
-    size,
+    { ...size, headers: OG_IMAGE_HEADERS },
   );
 }
