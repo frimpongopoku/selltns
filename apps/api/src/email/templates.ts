@@ -666,3 +666,27 @@ export function superAdminInviteEmail(email: string, loginUrl: string) {
   const text = `You've been added as a Selltns superadmin. Sign in with Google using ${email} at ${loginUrl}`;
   return { subject, html, text };
 }
+
+// Sent to every superadmin when a vendor submits something that sits in a
+// manual review queue (identity verification, plan upgrade) — without it,
+// nobody knows to look and the vendor waits indefinitely.
+export function superAdminReviewNeededEmail(input: {
+  kind: string;
+  tenantName: string;
+  detail: string;
+  reviewUrl: string;
+}) {
+  const { kind, tenantName, detail, reviewUrl } = input;
+  const subject = `New ${kind} to review — ${tenantName}`;
+  const html = layout(
+    'Selltns',
+    `
+    <h1 style="font-size: 20px; margin: 0 0 8px;">New ${kind} waiting</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
+      <strong>${tenantName}</strong> just submitted a ${kind}. ${detail}
+    </p>
+    ${button(reviewUrl, 'Review it')}`,
+  );
+  const text = `${tenantName} just submitted a ${kind}. ${detail} Review: ${reviewUrl}`;
+  return { subject, html, text };
+}

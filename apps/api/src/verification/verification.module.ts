@@ -1,6 +1,7 @@
 import { Logger, Module } from '@nestjs/common';
 import { VerificationController } from './verification.controller';
 import { VerificationService } from './verification.service';
+import { EmailModule } from '../email/email.module';
 import { ImageProcessingService } from '../media/image-processing.service';
 import { PRIVATE_STORAGE_SERVICE } from '../media/storage/private-storage.service';
 import { R2PrivateStorageService } from '../media/storage/r2-private-storage.service';
@@ -9,6 +10,7 @@ import { LocalDiskPrivateStorageService } from '../media/storage/local-disk-priv
 const logger = new Logger('VerificationModule');
 
 @Module({
+  imports: [EmailModule],
   controllers: [VerificationController],
   providers: [
     VerificationService,

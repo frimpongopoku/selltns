@@ -13,7 +13,9 @@ import {
   upgradeApprovedEmail,
   upgradeRejectedEmail,
   upgradeRequestReceivedEmail,
+  superAdminReviewNeededEmail,
 } from '../email/templates';
+import { notifySuperAdmins } from '../email/notify-superadmins';
 import type { Tenant } from '../common/types';
 
 type PlatformPaymentMethodType = 'MOMO' | 'BANK';
@@ -160,6 +162,18 @@ export class BillingService {
           billingUrl,
         ),
       'upgrade-request-received',
+    );
+
+    void notifySuperAdmins(
+      this.prisma,
+      this.emailService,
+      this.logger,
+      superAdminReviewNeededEmail({
+        kind: 'plan upgrade request',
+        tenantName: tenant.name,
+        detail: `Requested plan: ${requestedPlan}. Payment reference: ${referenceNote}.`,
+        reviewUrl: `${this.webOrigin}/superadmin/billing`,
+      }),
     );
 
     return request;

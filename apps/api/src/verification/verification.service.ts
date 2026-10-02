@@ -3,8 +3,12 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EMAIL_SERVICE, type EmailService } from '../email/email.service';
+import { superAdminReviewNeededEmail } from '../email/templates';
+import { notifySuperAdmins } from '../email/notify-superadmins';
 import { ImageProcessingService } from '../media/image-processing.service';
 import {
   PRIVATE_STORAGE_SERVICE,
@@ -32,11 +36,15 @@ export interface SubmitVerificationInput {
 
 @Injectable()
 export class VerificationService {
+  private readonly logger = new Logger(VerificationService.name);
+  private readonly webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:4310';
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly imaging: ImageProcessingService,
     @Inject(PRIVATE_STORAGE_SERVICE)
     private readonly privateStorage: PrivateStorageService,
+    @Inject(EMAIL_SERVICE) private readonly emailService: EmailService,
   ) {}
 
   async getStatus(tenantId: string): Promise<VerificationStatusResult> {
@@ -124,7 +132,7 @@ export class VerificationService {
       );
     }
 
-    await this.prisma.$transaction([
+    const [request, tenant] = await this.prisma.$transaction([
       this.prisma.verificationRequest.upsert({
         where: { tenantId },
         create: {
@@ -150,8 +158,21 @@ export class VerificationService {
       this.prisma.tenant.update({
         where: { id: tenantId },
         data: { verificationStatus: 'PENDING' },
+        select: { name: true },
       }),
     ]);
+
+    void notifySuperAdmins(
+      this.prisma,
+      this.emailService,
+      this.logger,
+      superAdminReviewNeededEmail({
+        kind: 'verification request',
+        tenantName: tenant.name,
+        detail: `Submitted by ${legalName}.`,
+        reviewUrl: `${this.webOrigin}/superadmin/verifications/${request.id}`,
+      }),
+    );
 
     return this.getStatus(tenantId);
   }
