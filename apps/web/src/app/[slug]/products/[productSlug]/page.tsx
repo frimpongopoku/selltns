@@ -12,6 +12,7 @@ import { getCanonicalUrl } from "@/lib/canonical";
 import { jsonLdScriptProps, productJsonLd } from "@/lib/structured-data";
 import { isCustomDomainRequest } from "@/lib/request-host";
 import { storeHref } from "@/lib/store-href";
+import { productPath } from "@/lib/product-path";
 
 export async function generateMetadata({
   params,
@@ -24,7 +25,7 @@ export async function generateMetadata({
   const product = await getProduct(productSlug, tenant.id).catch(() => null);
   if (!product) return { title: "Product not found" };
   const description = product.description.slice(0, 160);
-  const canonical = getCanonicalUrl(tenant, `/products/${product.slug}`);
+  const canonical = getCanonicalUrl(tenant, productPath(product));
 
   // The price (and any discount) is the single most useful line a shared
   // link's preview can show — lead the social-card description with it

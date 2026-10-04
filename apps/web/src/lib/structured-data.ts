@@ -1,6 +1,7 @@
 import type { Collection, CollectionWithProducts, Product, Tenant } from "./types";
 import { getCanonicalUrl } from "./canonical";
 import { discountedPrice } from "./pricing";
+import { productPath } from "./product-path";
 
 // Plain JSON-LD builders — rendered via a <script type="application/ld+json">
 // tag on the relevant page. No library needed; schema.org JSON-LD is just
@@ -33,13 +34,13 @@ export function productJsonLd(tenant: Tenant, product: Product) {
     description: product.description,
     sku: product.sku || undefined,
     image: product.images.length ? product.images : undefined,
-    url: getCanonicalUrl(tenant, `/products/${product.slug}`),
+    url: getCanonicalUrl(tenant, productPath(product)),
     offers: {
       "@type": "Offer",
       price: discountedPrice(product),
       priceCurrency: "GHS",
       availability,
-      url: getCanonicalUrl(tenant, `/products/${product.slug}`),
+      url: getCanonicalUrl(tenant, productPath(product)),
     },
   };
 }
@@ -59,7 +60,7 @@ export function collectionJsonLd(tenant: Tenant, collection: CollectionWithProdu
         .map((product, index) => ({
           "@type": "ListItem",
           position: index + 1,
-          url: getCanonicalUrl(tenant, `/products/${product.slug}`),
+          url: getCanonicalUrl(tenant, productPath(product)),
           name: product.title,
         })),
     },

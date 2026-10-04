@@ -19,6 +19,7 @@ import { obscurePaymentMethodPhone, obscurePhone } from "@/lib/phone";
 import { isCustomDomainRequest } from "@/lib/request-host";
 import { storeHref } from "@/lib/store-href";
 import type { Product } from "@/lib/types";
+import { productPath } from "@/lib/product-path";
 
 export async function generateMetadata({
   params,
@@ -127,7 +128,7 @@ export default async function TrackOrderPage({
           return (
             <div key={item.productId} className="flex items-center gap-3 py-3.5 text-sm">
               {isLive && product ? (
-                <Link href={storeHref(slug, isCustomDomain, `/products/${product.slug}`)} className="group flex flex-1 items-center gap-3">
+                <Link href={storeHref(slug, isCustomDomain, productPath(product))} className="group flex flex-1 items-center gap-3">
                   {content}
                 </Link>
               ) : (

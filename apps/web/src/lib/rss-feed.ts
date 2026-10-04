@@ -2,6 +2,7 @@ import { getCanonicalUrl } from "./canonical";
 import { formatMoney } from "./format";
 import { discountedPrice, isOnSale } from "./pricing";
 import type { Product, Tenant } from "./types";
+import { productPath } from "./product-path";
 
 // A plain RSS 2.0 feed — deliberately NOT the Google Merchant/Pinterest
 // Catalog XML format (the xmlns:g one meant for Pinterest's Shopping/
@@ -97,7 +98,7 @@ export function feedItemFromProduct(tenant: Tenant, product: Product): FeedItemI
     id: product.id,
     title: product.title,
     description: `${priceLine}${product.description}`,
-    link: getCanonicalUrl(tenant, `/products/${product.slug}`),
+    link: getCanonicalUrl(tenant, productPath(product)),
     imageUrl: product.images[0] ?? null,
     publishedAt: product.createdAt,
   };

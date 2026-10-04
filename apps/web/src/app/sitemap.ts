@@ -11,6 +11,7 @@ import { meaningfulStoryBlocks } from "@/lib/story";
 import { getCanonicalUrl } from "@/lib/canonical";
 import { isPlatformHost } from "@/lib/is-platform-host";
 import type { Tenant } from "@/lib/types";
+import { productPath } from "@/lib/product-path";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4310";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
@@ -42,7 +43,7 @@ async function tenantEntries(tenant: Tenant): Promise<MetadataRoute.Sitemap> {
   }
   for (const product of products.filter((p) => p.isActive)) {
     entries.push({
-      url: getCanonicalUrl(tenant, `/products/${product.slug}`),
+      url: getCanonicalUrl(tenant, productPath(product)),
       changeFrequency: "weekly",
       priority: 0.8,
     });

@@ -8,9 +8,10 @@ import { formatMoney } from "@/lib/format";
 import { discountedPrice, isOnSale } from "@/lib/pricing";
 import { AddToCartButton } from "./add-to-cart-button";
 import { useStoreHref } from "./store-context";
+import { productPath } from "@/lib/product-path";
 
 export function ProductCard({ product }: { product: Product }) {
-  const href = useStoreHref(`/products/${product.slug}`);
+  const href = useStoreHref(productPath(product));
   const onSale = isOnSale(product);
 
   return (
