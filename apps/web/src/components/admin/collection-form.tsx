@@ -184,6 +184,7 @@ export function CollectionForm({
             tenantId={tenantId}
             selected={coverImage}
             onChange={(urls) => setCoverImage(urls.slice(-1))}
+            max={1}
           />
         </div>
       </div>

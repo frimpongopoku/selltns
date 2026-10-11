@@ -111,7 +111,7 @@ export function ProductForm({
       <div>
         <Label>Images</Label>
         <div className="mt-1.5">
-          <GalleryPicker tenantId={tenantId} selected={images} onChange={setImages} />
+          <GalleryPicker tenantId={tenantId} selected={images} onChange={setImages} showCover />
         </div>
       </div>
 

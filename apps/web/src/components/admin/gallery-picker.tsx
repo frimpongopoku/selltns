@@ -2,128 +2,245 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Check, Loader2, Plus, Search, X } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Star, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { MediaDropzone } from "@/components/admin/media-dropzone";
-import { useMediaLibrary } from "@/lib/use-media-library";
-import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
-import type { MediaAsset } from "@/lib/types";
+import { GalleryBrowser } from "@/components/admin/gallery-browser";
 
 export function GalleryPicker({
   tenantId,
   selected,
   onChange,
+  max,
+  showCover = false,
 }: {
   tenantId: string;
   selected: string[];
   onChange: (urls: string[]) => void;
+  /** Caps the selection; with 1, picking a photo replaces the current one. */
+  max?: number;
+  /** Labels the first image "Cover" and lets any other be promoted to it. */
+  showCover?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
-  const { assets, loading, loadingMore, hasMore, loadMore, query, setQuery, prepend } =
-    useMediaLibrary(tenantId, { enabled: open });
+  const single = max === 1;
 
-  const sentinelRef = useInfiniteScroll({
-    onIntersect: loadMore,
-    enabled: hasMore && !loading,
-    root: scrollEl,
-  });
-
-  function toggle(url: string) {
-    onChange(selected.includes(url) ? selected.filter((u) => u !== url) : [...selected, url]);
-  }
-
-  function handleUploaded(asset: MediaAsset) {
-    prepend(asset);
-    onChange([...selected, asset.url]);
+  function makeCover(url: string) {
+    onChange([url, ...selected.filter((u) => u !== url)]);
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap gap-3">
-        {selected.map((url, i) => (
-          <div key={`${url}-${i}`} className="group relative h-20 w-20 overflow-hidden rounded-lg border">
-            <Image src={url} alt="" fill sizes="80px" className="object-cover object-top" />
+    <div className="flex flex-wrap gap-3">
+      {selected.map((url, i) => (
+        <div key={`${url}-${i}`} className="group relative h-20 w-20 overflow-hidden rounded-lg border">
+          <Image src={url} alt="" fill sizes="80px" className="object-cover object-top" />
+          {showCover && i === 0 && selected.length > 1 && (
+            <span className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-center text-[10px] font-medium text-white">
+              Cover
+            </span>
+          )}
+          {showCover && i > 0 && (
             <button
               type="button"
-              onClick={() => toggle(url)}
-              aria-label="Remove image"
-              className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              onClick={() => makeCover(url)}
+              aria-label="Make this the cover photo"
+              title="Make cover"
+              className="absolute bottom-1 left-1 rounded-full bg-black/60 p-1 text-white transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
             >
-              <X className="h-4 w-4 text-white" />
+              <Star className="h-3 w-3" />
             </button>
-          </div>
-        ))}
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger
-            render={<Button type="button" variant="outline" className="h-20 w-20 flex-col gap-1 text-xs" />}
+          )}
+          <button
+            type="button"
+            onClick={() => onChange(selected.filter((u) => u !== url))}
+            aria-label="Remove image"
+            className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
           >
-            <Plus className="h-4 w-4" />
-            Add
-          </DialogTrigger>
-          <DialogContent className="max-h-[90vh] sm:max-w-3xl overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Choose from gallery</DialogTitle>
-            </DialogHeader>
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setOpen(true)}
+        className="h-20 w-20 flex-col gap-1 text-xs"
+      >
+        <Plus className="h-4 w-4" />
+        {selected.length > 0 ? (single ? "Change" : "Edit") : "Add"}
+      </Button>
+      <GalleryPickerDialog
+        tenantId={tenantId}
+        open={open}
+        onOpenChange={setOpen}
+        selected={selected}
+        onChange={onChange}
+        max={max}
+      />
+    </div>
+  );
+}
 
-            <MediaDropzone tenantId={tenantId} onUploaded={handleUploaded} compact />
+// The picker dialog on its own, for callers that want their own trigger.
+export function GalleryPickerDialog({
+  tenantId,
+  open,
+  onOpenChange,
+  selected,
+  onChange,
+  max,
+  title,
+}: {
+  tenantId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  selected: string[];
+  onChange: (urls: string[]) => void;
+  max?: number;
+  title?: string;
+}) {
+  // Picks are staged in a draft and only applied on "Done", so browsing a big
+  // library and changing your mind never half-edits the form underneath.
+  const [draft, setDraft] = useState<string[]>(selected);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setDraft(selected);
+  }
 
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by name or tag…"
-                className="pl-8"
-              />
+  const single = max === 1;
+
+  function add(url: string) {
+    setDraft((prev) => {
+      if (prev.includes(url)) return prev;
+      if (single) return [url];
+      if (max && prev.length >= max) return prev;
+      return [...prev, url];
+    });
+  }
+
+  function toggle(url: string) {
+    if (draft.includes(url)) setDraft((prev) => prev.filter((u) => u !== url));
+    else add(url);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex h-[90dvh] flex-col gap-3 sm:h-[85vh] sm:max-w-5xl">
+        <DialogHeader>
+          <DialogTitle>{title ?? (single ? "Choose a photo" : "Choose photos")}</DialogTitle>
+          <DialogDescription>
+            {single
+              ? "Pick one photo from your gallery, or upload a new one."
+              : "Tap photos in the order you want them — the first one is the cover."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <GalleryBrowser
+          tenantId={tenantId}
+          selected={draft}
+          onToggle={(asset) => toggle(asset.url)}
+          onUploaded={(asset) => add(asset.url)}
+          enabled={open}
+        />
+
+        <SelectionFooter
+          draft={draft}
+          max={max}
+          onRemove={toggle}
+          onClear={single ? undefined : () => setDraft([])}
+          onCancel={() => onOpenChange(false)}
+          onDone={() => {
+            onChange(draft);
+            onOpenChange(false);
+          }}
+          doneLabel={single ? "Use photo" : `Done${draft.length > 0 ? ` (${draft.length})` : ""}`}
+          doneDisabled={single && draft.length === 0}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function SelectionFooter({
+  draft,
+  max,
+  onRemove,
+  onClear,
+  onCancel,
+  onDone,
+  doneLabel,
+  doneDisabled = false,
+  emptyHint = "Nothing selected yet",
+}: {
+  draft: string[];
+  max?: number;
+  onRemove: (url: string) => void;
+  /** Omit to hide the "Clear" link. */
+  onClear?: () => void;
+  onCancel: () => void;
+  onDone: () => void;
+  doneLabel: string;
+  doneDisabled?: boolean;
+  emptyHint?: string;
+}) {
+  return (
+    <div className="-mx-4 -mb-4 flex flex-col gap-3 rounded-b-xl border-t bg-muted/50 p-3 sm:flex-row sm:items-center sm:px-4">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        {draft.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{emptyHint}</p>
+        ) : (
+          <>
+            <span className="shrink-0 text-sm font-medium">
+              {draft.length}
+              {max && max > 1 ? ` / ${max}` : ""} selected
+            </span>
+            <div className="flex min-w-0 gap-1.5 overflow-x-auto py-0.5">
+              {draft.map((url, i) => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => onRemove(url)}
+                  aria-label={`Remove photo ${i + 1} from selection`}
+                  className="group relative h-10 w-10 shrink-0 overflow-hidden rounded-md border"
+                >
+                  <Image src={url} alt="" fill sizes="40px" className="object-cover object-top" />
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                    <X className="h-3.5 w-3.5 text-white" />
+                  </span>
+                </button>
+              ))}
             </div>
-
-            {loading ? (
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
-                {Array.from({ length: 8 }, (_, i) => (
-                  <div key={i} className="aspect-square animate-pulse rounded-lg bg-muted" />
-                ))}
-              </div>
-            ) : assets.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                {query
-                  ? "No photos match your search."
-                  : "Your gallery is empty — upload your first photo above."}
-              </p>
-            ) : (
-              <div
-                ref={setScrollEl}
-                className="grid max-h-[28rem] grid-cols-3 gap-3 overflow-y-auto sm:grid-cols-4 md:grid-cols-5"
+            {onClear && (
+              <button
+                type="button"
+                onClick={onClear}
+                className="shrink-0 text-xs text-muted-foreground hover:text-foreground hover:underline"
               >
-                {assets.map((asset) => {
-                  const isSelected = selected.includes(asset.url);
-                  return (
-                    <button
-                      key={asset.id}
-                      type="button"
-                      onClick={() => toggle(asset.url)}
-                      className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all duration-150 hover:opacity-90 active:scale-95 ${
-                        isSelected ? "border-primary" : "border-transparent"
-                      }`}
-                    >
-                      <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="150px" className="object-cover object-top" />
-                      {isSelected && (
-                        <span className="absolute top-1.5 right-1.5 animate-in zoom-in-50 rounded-full bg-primary p-1 text-primary-foreground duration-150">
-                          <Check className="h-3 w-3" />
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-                <div ref={sentinelRef} className="col-span-full flex justify-center py-2">
-                  {loadingMore && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                </div>
-              </div>
+                Clear
+              </button>
             )}
-          </DialogContent>
-        </Dialog>
+          </>
+        )}
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <Button type="button" variant="ghost" onClick={onCancel} className="flex-1 sm:flex-none">
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          onClick={onDone}
+          disabled={doneDisabled}
+          className="flex-1 sm:flex-none"
+        >
+          {doneLabel}
+        </Button>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { getProducts } from "@/lib/api";
 import { getMe } from "@/lib/get-me";
 import { getCanonicalUrl } from "@/lib/canonical";
 import { ProductQuickCreateDialog } from "@/components/admin/product-quick-create-dialog";
+import { ProductBulkCreateDialog } from "@/components/admin/product-bulk-create-dialog";
 import { ProductsExplorer } from "@/components/admin/products-explorer";
 import { FeedLinkButton } from "@/components/admin/feed-link-button";
 
@@ -24,6 +25,7 @@ export default async function AdminProductsPage() {
         </div>
         <div className="flex items-center gap-2">
           <FeedLinkButton url={getCanonicalUrl(me.tenant, "/feed.xml")} />
+          <ProductBulkCreateDialog tenantId={me.tenant.id} />
           <ProductQuickCreateDialog tenantId={me.tenant.id} />
         </div>
       </div>
