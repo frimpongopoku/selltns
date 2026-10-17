@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Search, X } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -13,14 +13,15 @@ import type { Product } from "@/lib/types";
 // checkbox list doesn't scale once a shop has hundreds or thousands of
 // products, so this reuses the same search/pagination infrastructure as the
 // main Products page instead of ever holding the full catalog in memory.
+// The chosen products themselves (and their order) are shown separately, by
+// CollectionItemsOrderList.
 export function ProductPicker({
   tenantId,
-  selected,
+  selectedIds,
   onToggle,
 }: {
   tenantId: string;
-  /** Full Product objects for already-selected items, keyed by id — lets selected chips render titles even for products outside the current search page. */
-  selected: Map<string, Product>;
+  selectedIds: Set<string>;
   onToggle: (product: Product) => void;
 }) {
   const {
@@ -41,24 +42,6 @@ export function ProductPicker({
 
   return (
     <div>
-      {selected.size > 0 && (
-        <div className="mb-3 flex flex-wrap gap-1.5">
-          {Array.from(selected.values()).map((product) => (
-            <Badge key={product.id} variant="secondary" className="gap-1 py-1 pl-2.5 pr-1.5">
-              <span className="max-w-[160px] truncate">{product.title}</span>
-              <button
-                type="button"
-                onClick={() => onToggle(product)}
-                aria-label={`Remove ${product.title}`}
-                className="rounded-full p-0.5 hover:bg-muted-foreground/20"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
-
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -81,7 +64,7 @@ export function ProductPicker({
         ) : (
           <>
             {products.map((product) => {
-              const checked = selected.has(product.id);
+              const checked = selectedIds.has(product.id);
               const disabled = !product.isActive && !checked;
               return (
                 <label
@@ -93,6 +76,7 @@ export function ProductPicker({
                     disabled={disabled}
                     onCheckedChange={() => onToggle(product)}
                   />
+                  <ProductThumb product={product} />
                   <span className="flex-1 truncate">{product.title}</span>
                   {!product.isActive && (
                     <Badge variant="outline" className="shrink-0 text-[10px]">
@@ -109,5 +93,18 @@ export function ProductPicker({
         )}
       </div>
     </div>
+  );
+}
+
+export function ProductThumb({ product }: { product: Product }) {
+  return (
+    <div
+      className="h-10 w-10 shrink-0 rounded-md bg-cover bg-top"
+      style={
+        product.images[0]
+          ? { backgroundImage: `url(${product.images[0]})` }
+          : { backgroundColor: "var(--muted)" }
+      }
+    />
   );
 }

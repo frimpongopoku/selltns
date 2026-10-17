@@ -197,6 +197,14 @@ export interface Collection {
   isActive: boolean;
 }
 
+// One entry in a collection's full display order — one of the tenant's own
+// products, or a resold one (by listing). Both share one position space.
+export type CollectionItemRef = { productId: string } | { listingId: string };
+
+export interface CollectionInput extends Partial<Collection> {
+  itemOrder?: CollectionItemRef[];
+}
+
 export interface CollectionWithProducts extends Collection {
   products: Product[];
 }

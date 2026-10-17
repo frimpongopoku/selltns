@@ -1129,10 +1129,22 @@ export class AffiliatesService {
       throw new NotFoundException(`Collection ${collectionId} not found`);
     }
 
-    const maxPosition = await this.prisma.affiliateCollectionItem.aggregate({
-      where: { collectionId },
-      _max: { position: true },
-    });
+    // Appended after everything already in the collection — its own
+    // products and affiliate items share one position space.
+    const [maxAffiliate, maxNative] = await Promise.all([
+      this.prisma.affiliateCollectionItem.aggregate({
+        where: { collectionId },
+        _max: { position: true },
+      }),
+      this.prisma.collectionProduct.aggregate({
+        where: { collectionId },
+        _max: { position: true },
+      }),
+    ]);
+    const maxPosition = Math.max(
+      maxAffiliate._max.position ?? -1,
+      maxNative._max.position ?? -1,
+    );
     const row = await this.prisma.affiliateCollectionItem.upsert({
       where: {
         listingId_collectionId: { listingId: listing.id, collectionId },
@@ -1141,7 +1153,7 @@ export class AffiliatesService {
       create: {
         listingId: listing.id,
         collectionId,
-        position: (maxPosition._max.position ?? -1) + 1,
+        position: maxPosition + 1,
       },
     });
     return { id: row.id };
@@ -1311,8 +1323,12 @@ export class AffiliatesService {
     }));
   }
 
-  // Same merge, scoped to one of the affiliate's own collections.
-  async getActiveCollectionItems(collectionId: string): Promise<Product[]> {
+  // Same merge, scoped to one of the affiliate's own collections. Each item
+  // carries its position, which shares one space with the collection's own
+  // CollectionProduct rows — CollectionsService interleaves the two by it.
+  async getActiveCollectionItems(
+    collectionId: string,
+  ): Promise<{ position: number; product: Product }[]> {
     const rows = await this.prisma.affiliateCollectionItem.findMany({
       where: {
         collectionId,
@@ -1339,17 +1355,20 @@ export class AffiliatesService {
       })),
     );
     return rows.map((row) => ({
-      ...mapProduct(
-        row.listing.product,
-        preorderByProductId.get(row.listing.product.id) ?? null,
-      ),
-      price:
-        row.listing.priceOverride ?? affiliateBasePrice(row.listing.product),
-      affiliateSource: {
-        listingId: row.listing.id,
-        relationshipId: row.listing.relationshipId,
-        ownerTenantId: row.listing.relationship.ownerTenant.id,
-        ownerTenantName: row.listing.relationship.ownerTenant.name,
+      position: row.position,
+      product: {
+        ...mapProduct(
+          row.listing.product,
+          preorderByProductId.get(row.listing.product.id) ?? null,
+        ),
+        price:
+          row.listing.priceOverride ?? affiliateBasePrice(row.listing.product),
+        affiliateSource: {
+          listingId: row.listing.id,
+          relationshipId: row.listing.relationshipId,
+          ownerTenantId: row.listing.relationship.ownerTenant.id,
+          ownerTenantName: row.listing.relationship.ownerTenant.name,
+        },
       },
     }));
   }
@@ -1360,8 +1379,8 @@ export class AffiliatesService {
   // affiliate items without an N+1 query per collection.
   async getActiveCollectionItemsForMany(
     collectionIds: string[],
-  ): Promise<Map<string, Product[]>> {
-    const empty = new Map<string, Product[]>();
+  ): Promise<Map<string, { position: number; product: Product }[]>> {
+    const empty = new Map<string, { position: number; product: Product }[]>();
     if (collectionIds.length === 0) return empty;
     const rows = await this.prisma.affiliateCollectionItem.findMany({
       where: {
@@ -1388,7 +1407,10 @@ export class AffiliatesService {
         ownerTenantId: r.listing.relationship.ownerTenant.id,
       })),
     );
-    const byCollectionId = new Map<string, Product[]>();
+    const byCollectionId = new Map<
+      string,
+      { position: number; product: Product }[]
+    >();
     for (const row of rows) {
       const product: Product = {
         ...mapProduct(
@@ -1404,9 +1426,10 @@ export class AffiliatesService {
           ownerTenantName: row.listing.relationship.ownerTenant.name,
         },
       };
+      const item = { position: row.position, product };
       const list = byCollectionId.get(row.collectionId);
-      if (list) list.push(product);
-      else byCollectionId.set(row.collectionId, [product]);
+      if (list) list.push(item);
+      else byCollectionId.set(row.collectionId, [item]);
     }
     return byCollectionId;
   }

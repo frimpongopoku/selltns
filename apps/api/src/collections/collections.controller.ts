@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CollectionsService } from './collections.service';
-import type { Collection } from '../common/types';
+import type { CollectionInput } from '../common/types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -72,10 +72,7 @@ export class CollectionsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER')
   @Post()
-  create(
-    @CurrentUser() user: SessionPayload,
-    @Body() body: Partial<Collection>,
-  ) {
+  create(@CurrentUser() user: SessionPayload, @Body() body: CollectionInput) {
     return this.collectionsService.create({ ...body, tenantId: user.tenantId });
   }
 
@@ -85,7 +82,7 @@ export class CollectionsController {
   update(
     @Param('id') id: string,
     @CurrentUser() user: SessionPayload,
-    @Body() body: Partial<Collection>,
+    @Body() body: CollectionInput,
   ) {
     return this.collectionsService.update(id, user.tenantId, body);
   }

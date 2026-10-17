@@ -7,7 +7,7 @@ import type {
   AffiliateProductVisibility,
   AffiliatePublicSummary,
   AffiliateRelationship,
-  Collection,
+  CollectionInput,
   CollectionPage,
   CollectionWithProducts,
   ContentBlock,
@@ -237,7 +237,7 @@ export const getCollection = (
   request<CollectionWithProducts>(
     `/collections/${idOrSlug}?tenantId=${tenantId}${includeAffiliate ? "&includeAffiliate=true" : ""}`,
   );
-export const createCollection = (tenantId: string, input: Partial<Collection>) =>
+export const createCollection = (tenantId: string, input: CollectionInput) =>
   adminRequest<CollectionWithProducts>("/collections", {
     method: "POST",
     body: JSON.stringify({ ...input, tenantId }),
@@ -245,7 +245,7 @@ export const createCollection = (tenantId: string, input: Partial<Collection>) =
 export const updateCollection = (
   id: string,
   tenantId: string,
-  input: Partial<Collection>,
+  input: CollectionInput,
 ) =>
   adminRequest<CollectionWithProducts>(`/collections/${id}`, {
     method: "PATCH",

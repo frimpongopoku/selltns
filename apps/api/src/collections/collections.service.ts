@@ -11,18 +11,27 @@ import {
   MAX_TAG_LENGTH,
   MAX_TAGS_PER_COLLECTION,
 } from './collections.constants';
-import type { Collection, ThemeTokens } from '../common/types';
+import type {
+  Collection,
+  CollectionInput,
+  CollectionItemRef,
+  ThemeTokens,
+} from '../common/types';
 import { getPreorderInfoMap } from '../common/preorder-info';
 import { AffiliatesService } from '../affiliates/affiliates.service';
 
-// Ordered by each product's own displayOrder — the same order the vendor
-// already controls from the main products list — not the position column
-// (which only ever reflects the order products happened to get checked in
-// when added to the collection, never something a vendor deliberately
-// sets or sees again).
+// Ordered by the per-collection position column — the vendor arranges it
+// from the collection's edit page (itemOrder on save, see positionsOf) —
+// with each product's own displayOrder as a tiebreaker. Existing rows were
+// backfilled from displayOrder (see the
+// backfill_collection_product_positions migration), so collections nobody
+// has rearranged keep the order they had before.
 const PRODUCTS_INCLUDE = {
   products: {
-    orderBy: { product: { displayOrder: 'asc' as const } },
+    orderBy: [
+      { position: 'asc' as const },
+      { product: { displayOrder: 'asc' as const } },
+    ],
     include: { product: true },
   },
 } satisfies Prisma.CollectionInclude;
@@ -69,6 +78,77 @@ function mapCollection(row: CollectionRow) {
     productIds: row.products.map((cp) => cp.productId),
     products: row.products.map((cp) => cp.product),
   };
+}
+
+// Interleaves a collection's own products with its affiliate items by their
+// shared position column — both lists arrive already sorted, so this is a
+// plain merge. Ties (only possible for rows never re-saved since positions
+// became shared) keep the collection's own product first.
+function mergeByPosition<A, B>(
+  native: { position: number; product: A }[],
+  affiliate: { position: number; product: B }[],
+): (A | B)[] {
+  const merged: (A | B)[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < native.length || j < affiliate.length) {
+    if (
+      j >= affiliate.length ||
+      (i < native.length && native[i].position <= affiliate[j].position)
+    ) {
+      merged.push(native[i++].product);
+    } else {
+      merged.push(affiliate[j++].product);
+    }
+  }
+  return merged;
+}
+
+// Positions for the collection's own products: their index in itemOrder
+// when the caller sent one, else their index in productIds (the only order
+// a caller that doesn't know about itemOrder can express).
+function positionsOf(input: CollectionInput): Map<string, number> {
+  const positions = new Map<string, number>();
+  if (input.itemOrder) {
+    input.itemOrder.forEach((ref, index) => {
+      if ('productId' in ref) positions.set(ref.productId, index);
+    });
+  }
+  (input.productIds ?? []).forEach((productId, index) => {
+    if (!positions.has(productId)) positions.set(productId, index);
+  });
+  return positions;
+}
+
+function affiliatePositionsOf(itemOrder: CollectionItemRef[] | undefined) {
+  return (itemOrder ?? []).flatMap((ref, position) =>
+    'listingId' in ref ? [{ listingId: ref.listingId, position }] : [],
+  );
+}
+
+function withAffiliateItems<
+  T extends { productIds: string[]; products: PrismaProduct[] },
+>(
+  collection: T,
+  nativePositions: number[],
+  affiliateItems: { position: number; product: { id: string } }[],
+): T {
+  // Affiliate products are the API's mapped Product shape rather than a
+  // Prisma row — same mix the storefront has always received here.
+  const products = mergeByPosition(
+    collection.products.map((product, index) => ({
+      position: nativePositions[index] ?? index,
+      product,
+    })),
+    affiliateItems,
+  ) as T['products'];
+  return { ...collection, productIds: products.map((p) => p.id), products };
+}
+
+function positionsByCollection(
+  rows: { id: string; products: { position: number }[] }[],
+) {
+  return new Map(rows.map((r) => [r.id, r.products.map((cp) => cp.position)]));
 }
 
 function tagsOf(input: Partial<Collection>) {
@@ -178,7 +258,10 @@ export class CollectionsService {
       collections.map(mapCollection),
     );
     if (!includeAffiliate) return withPreorder;
-    return this.mergeAffiliateItems(withPreorder);
+    return this.mergeAffiliateItems(
+      withPreorder,
+      positionsByCollection(collections),
+    );
   }
 
   // Paginates the collections table directly via raw SQL (for search/cursor),
@@ -237,7 +320,10 @@ export class CollectionsService {
         .map(mapCollection),
     );
     if (includeAffiliate) {
-      items = await this.mergeAffiliateItems(items);
+      items = await this.mergeAffiliateItems(
+        items,
+        positionsByCollection(collections),
+      );
     }
 
     const last = pageRows[pageRows.length - 1];
@@ -253,23 +339,25 @@ export class CollectionsService {
   // affiliate items into one query (AffiliatesService.
   // getActiveCollectionItemsForMany) instead of the N+1 a per-collection
   // getActiveCollectionItems() call in a loop would cost here. Same
-  // native-then-affiliate append order as findOne's single-collection merge.
+  // position-interleaved order as findOne's single-collection merge;
+  // nativePositions holds each collection's own products' positions, in the
+  // same order as its `products`.
   private async mergeAffiliateItems<
     T extends { id: string; productIds: string[]; products: PrismaProduct[] },
-  >(collections: T[]): Promise<T[]> {
+  >(collections: T[], nativePositions: Map<string, number[]>): Promise<T[]> {
     const byCollectionId =
       await this.affiliatesService.getActiveCollectionItemsForMany(
         collections.map((c) => c.id),
       );
     if (byCollectionId.size === 0) return collections;
     return collections.map((c) => {
-      const affiliateProducts = byCollectionId.get(c.id);
-      if (!affiliateProducts || affiliateProducts.length === 0) return c;
-      return {
-        ...c,
-        productIds: [...c.productIds, ...affiliateProducts.map((p) => p.id)],
-        products: [...c.products, ...affiliateProducts],
-      };
+      const affiliateItems = byCollectionId.get(c.id);
+      if (!affiliateItems || affiliateItems.length === 0) return c;
+      return withAffiliateItems(
+        c,
+        nativePositions.get(c.id) ?? [],
+        affiliateItems,
+      );
     });
   }
 
@@ -284,9 +372,9 @@ export class CollectionsService {
   }
 
   // includeAffiliate merges in active affiliate-listed products this
-  // collection's owner has placed here — only the storefront passes this;
-  // the admin edit page stays native-only, since its product picker only
-  // knows how to add/remove this tenant's own products.
+  // collection's owner has placed here, interleaved by position — the
+  // storefront and the admin edit page (which orders both kinds together)
+  // pass this.
   async findOne(idOrSlug: string, tenantId: string, includeAffiliate = false) {
     const collection = await this.prisma.collection.findFirst({
       where: { tenantId, OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
@@ -299,25 +387,23 @@ export class CollectionsService {
     ]);
     if (!includeAffiliate) return withPreorder;
 
-    const affiliateProducts =
+    const affiliateItems =
       await this.affiliatesService.getActiveCollectionItems(withPreorder.id);
-    if (affiliateProducts.length === 0) return withPreorder;
-    return {
-      ...withPreorder,
-      productIds: [
-        ...withPreorder.productIds,
-        ...affiliateProducts.map((p) => p.id),
-      ],
-      products: [...withPreorder.products, ...affiliateProducts],
-    };
+    if (affiliateItems.length === 0) return withPreorder;
+    return withAffiliateItems(
+      withPreorder,
+      collection.products.map((cp) => cp.position),
+      affiliateItems,
+    );
   }
 
-  async create(input: Partial<Collection> & { tenantId: string }) {
+  async create(input: CollectionInput & { tenantId: string }) {
     const slug = await this.uniqueSlug(
       input.tenantId,
       input.slug || input.title || 'collection',
     );
     const productIds = input.productIds ?? [];
+    const positions = positionsOf(input);
     const preorder = preorderFieldsOf(input);
 
     const collection = await this.prisma.collection.create({
@@ -339,9 +425,9 @@ export class CollectionsService {
         fulfillmentNote: preorder.fulfillmentNote,
         isActive: input.isActive ?? true,
         products: {
-          create: productIds.map((productId, position) => ({
+          create: productIds.map((productId) => ({
             productId,
-            position,
+            position: positions.get(productId) ?? 0,
           })),
         },
       },
@@ -353,7 +439,7 @@ export class CollectionsService {
     return withPreorder;
   }
 
-  async update(id: string, tenantId: string, input: Partial<Collection>) {
+  async update(id: string, tenantId: string, input: CollectionInput) {
     const existing = await this.prisma.collection.findFirst({
       where: { id, tenantId },
     });
@@ -367,16 +453,28 @@ export class CollectionsService {
 
     const collection = await this.prisma.$transaction(async (tx) => {
       if (input.productIds) {
+        const positions = positionsOf(input);
         await tx.collectionProduct.deleteMany({ where: { collectionId: id } });
         if (input.productIds.length > 0) {
           await tx.collectionProduct.createMany({
-            data: input.productIds.map((productId, position) => ({
+            data: input.productIds.map((productId) => ({
               collectionId: id,
               productId,
-              position,
+              position: positions.get(productId) ?? 0,
             })),
           });
         }
+      }
+      // Affiliate membership is added/removed through AffiliatesService;
+      // here only the positions of items already in this collection move
+      // (scoped by collectionId, so a stray listingId is a no-op).
+      for (const { listingId, position } of affiliatePositionsOf(
+        input.itemOrder,
+      )) {
+        await tx.affiliateCollectionItem.updateMany({
+          where: { collectionId: id, listingId },
+          data: { position },
+        });
       }
       const preorder = preorderFieldsOf(input, existing);
       const data: Prisma.CollectionUpdateInput = {

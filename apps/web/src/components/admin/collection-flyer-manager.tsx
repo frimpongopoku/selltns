@@ -36,7 +36,7 @@ export function CollectionFlyerManager({
 }) {
   const router = useRouter();
   const liveProducts = useMemo(
-    () => collection.products.filter((p) => p.isActive).sort((a, b) => a.displayOrder - b.displayOrder),
+    () => collection.products.filter((p) => p.isActive),
     [collection.products],
   );
   const [selectedIds, setSelectedIds] = useState<string[]>(

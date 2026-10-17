@@ -6,7 +6,6 @@ import { getCanonicalUrl } from "@/lib/canonical";
 import { CollectionForm } from "@/components/admin/collection-form";
 import { CollectionFlyerManager } from "@/components/admin/collection-flyer-manager";
 import { FeedLinkButton } from "@/components/admin/feed-link-button";
-import { AffiliateCollectionItemsManager } from "@/components/admin/affiliate-collection-items-manager";
 
 export default async function EditCollectionPage({
   params,
@@ -17,8 +16,15 @@ export default async function EditCollectionPage({
   const me = await getMe();
   if (!me) redirect("/admin/login");
   requireRole(me.role, ["OWNER", "MANAGER"]);
-  const collection = await getCollection(id, me.tenant.id).catch(() => null);
+  // With resold products merged in, so the form can order them alongside
+  // the collection's own.
+  const collection = await getCollection(id, me.tenant.id, true).catch(() => null);
   if (!collection) notFound();
+  // The flyer has only ever covered the collection's own products.
+  const ownCollection = {
+    ...collection,
+    products: collection.products.filter((p) => !p.affiliateSource),
+  };
 
   return (
     <div className="pb-24">
@@ -28,8 +34,6 @@ export default async function EditCollectionPage({
         <CollectionForm tenantId={me.tenant.id} collection={collection} floatingSubmit />
       </div>
 
-      <AffiliateCollectionItemsManager tenantId={me.tenant.id} collectionId={collection.id} />
-
       <div className="mt-12 max-w-3xl border-t pt-8">
         <h2 className="text-lg font-semibold">Share flyer</h2>
         <p className="text-sm text-muted-foreground">
@@ -37,7 +41,7 @@ export default async function EditCollectionPage({
           product, your logo, and a QR code back to this page. Great for WhatsApp and social.
         </p>
         <div className="mt-5">
-          <CollectionFlyerManager tenant={me.tenant} collection={collection} />
+          <CollectionFlyerManager tenant={me.tenant} collection={ownCollection} />
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,19 +19,24 @@ import {
 import { GalleryPicker } from "@/components/admin/gallery-picker";
 import { TagInput } from "@/components/admin/tag-input";
 import { ProductPicker } from "@/components/admin/product-picker";
+import { AffiliateCollectionItemsManager } from "@/components/admin/affiliate-collection-items-manager";
 import {
-  AffiliateCollectionItemsManager,
-  type StagedAffiliateItem,
-} from "@/components/admin/affiliate-collection-items-manager";
+  CollectionItemsOrderList,
+  collectionItemKey,
+} from "@/components/admin/collection-items-order-list";
 import {
   addAffiliateCollectionItem,
   createCollection,
   deleteCollection,
+  removeAffiliateCollectionItem,
   updateCollection,
 } from "@/lib/api";
 import { THEME_PRESETS, THEME_TEMPLATE_META } from "@/lib/theme-presets";
 import { cn } from "@/lib/utils";
 import type {
+  AffiliateListing,
+  AffiliateRelationship,
+  CollectionItemRef,
   CollectionWithProducts,
   DepositType,
   Product,
@@ -63,14 +68,28 @@ export function CollectionForm({
   const [description, setDescription] = useState(collection?.description ?? "");
   const [seoTitle, setSeoTitle] = useState(collection?.seoTitle ?? "");
   const [seoDescription, setSeoDescription] = useState(collection?.seoDescription ?? "");
-  // Only ever this tenant's own products — an affiliate-resold item (see
-  // AffiliateCollectionItemsManager) isn't a valid native `productIds`
-  // entry, so it's filtered out here even if a caller ever passes one in.
-  const [selectedProducts, setSelectedProducts] = useState<Map<string, Product>>(
+  // Everything in the collection, in storefront order — the tenant's own
+  // products and resold ones (affiliateSource set) together, so the vendor
+  // can interleave them. The edit page fetches the collection with
+  // includeAffiliate for exactly this. Only own products become
+  // `productIds`; resold ones are added/removed through the affiliate API
+  // on save, and both kinds' positions are sent as `itemOrder`.
+  const [items, setItems] = useState<Product[]>(() => collection?.products ?? []);
+  const [initialListingIds] = useState(
     () =>
-      new Map(
-        (collection?.products ?? []).filter((p) => !p.affiliateSource).map((p) => [p.id, p]),
+      new Set(
+        (collection?.products ?? []).flatMap((p) =>
+          p.affiliateSource ? [p.affiliateSource.listingId] : [],
+        ),
       ),
+  );
+  const selectedProductIds = useMemo(
+    () => new Set(items.filter((p) => !p.affiliateSource).map((p) => p.id)),
+    [items],
+  );
+  const memberListingIds = useMemo(
+    () => new Set(items.flatMap((p) => (p.affiliateSource ? [p.affiliateSource.listingId] : []))),
+    [items],
   );
   const [tags, setTags] = useState<string[]>(collection?.tags ?? []);
   const [coverImage, setCoverImage] = useState<string[]>(
@@ -90,23 +109,76 @@ export function CollectionForm({
   );
   const [fulfillmentNote, setFulfillmentNote] = useState(collection?.fulfillmentNote ?? "");
   const [isActive, setIsActive] = useState(collection?.isActive ?? true);
-  // Only relevant while creating — an existing collection's affiliate
-  // members are managed by the sibling AffiliateCollectionItemsManager the
-  // edit page renders directly (each toggle there is already a live API
-  // call, so there's nothing to stage).
-  const [stagedAffiliateItems, setStagedAffiliateItems] = useState<StagedAffiliateItem[]>([]);
   const [saving, setSaving] = useState(false);
 
   function handleToggleProduct(product: Product) {
-    setSelectedProducts((prev) => {
-      const next = new Map(prev);
-      if (next.has(product.id)) {
-        next.delete(product.id);
-      } else {
-        next.set(product.id, product);
-      }
+    setItems((prev) =>
+      prev.some((p) => !p.affiliateSource && p.id === product.id)
+        ? prev.filter((p) => p.affiliateSource || p.id !== product.id)
+        : [...prev, product],
+    );
+  }
+
+  function handleToggleResold(relationship: AffiliateRelationship, listing: AffiliateListing) {
+    if (!listing.product) return;
+    const key = `listing:${listing.id}`;
+    setItems((prev) =>
+      prev.some((p) => collectionItemKey(p) === key)
+        ? prev.filter((p) => collectionItemKey(p) !== key)
+        : [
+            ...prev,
+            {
+              ...listing.product!,
+              price: listing.effectivePrice,
+              affiliateSource: {
+                listingId: listing.id,
+                relationshipId: relationship.id,
+                ownerTenantId: listing.ownerTenant.id,
+                ownerTenantName: listing.ownerTenant.name,
+              },
+            },
+          ],
+    );
+  }
+
+  function handleRemoveItem(product: Product) {
+    const key = collectionItemKey(product);
+    setItems((prev) => prev.filter((p) => collectionItemKey(p) !== key));
+  }
+
+  function handleMoveItem(key: string, direction: "up" | "down") {
+    setItems((prev) => {
+      const index = prev.findIndex((p) => collectionItemKey(p) === key);
+      const target = direction === "up" ? index - 1 : index + 1;
+      if (index < 0 || target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
       return next;
     });
+  }
+
+  // Replays resold-product membership changes against the affiliate API —
+  // they live in AffiliateCollectionItem, not the collection's own
+  // productIds. Returns how many of the calls failed.
+  async function syncResoldItems(collectionId: string) {
+    const current = items.filter((p) => p.affiliateSource);
+    const added = current.filter((p) => !initialListingIds.has(p.affiliateSource!.listingId));
+    const currentIds = new Set(current.map((p) => p.affiliateSource!.listingId));
+    const removed = (collection?.products ?? []).filter(
+      (p) => p.affiliateSource && !currentIds.has(p.affiliateSource.listingId),
+    );
+    const results = await Promise.allSettled([
+      ...added.map((p) =>
+        addAffiliateCollectionItem(p.affiliateSource!.relationshipId, tenantId, collectionId, p.id),
+      ),
+      ...removed.map((p) =>
+        removeAffiliateCollectionItem(p.affiliateSource!.relationshipId, tenantId, collectionId, p.id),
+      ),
+    ]);
+    return {
+      changed: added.length + removed.length,
+      failed: results.filter((r) => r.status === "rejected").length,
+    };
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -117,7 +189,7 @@ export function CollectionForm({
       description,
       seoTitle,
       seoDescription,
-      productIds: Array.from(selectedProducts.keys()),
+      productIds: Array.from(selectedProductIds),
       tags,
       coverImage: coverImage[0] ?? "",
       themeOverride: themeChoice === "none" ? null : THEME_PRESETS[themeChoice],
@@ -127,24 +199,33 @@ export function CollectionForm({
       fulfillmentNote: isPreorder ? fulfillmentNote : "",
       isActive,
     };
+    const itemOrder: CollectionItemRef[] = items.map((p) =>
+      p.affiliateSource ? { listingId: p.affiliateSource.listingId } : { productId: p.id },
+    );
     try {
-      const saved = collection
-        ? await updateCollection(collection.id, tenantId, payload)
-        : await createCollection(tenantId, payload);
-      if (!collection && stagedAffiliateItems.length > 0) {
-        const results = await Promise.allSettled(
-          stagedAffiliateItems.map((item) =>
-            addAffiliateCollectionItem(item.relationshipId, tenantId, saved.id, item.productId),
-          ),
-        );
-        const failed = results.filter((r) => r.status === "rejected").length;
-        if (failed > 0) {
-          toast.error(
-            failed === stagedAffiliateItems.length
-              ? "Collection created, but the resold products couldn't be added. Add them from the collection's edit page."
-              : `Collection created, but ${failed} resold product${failed === 1 ? "" : "s"} couldn't be added — check the collection's edit page.`,
-          );
+      let saved: CollectionWithProducts;
+      let resold: { changed: number; failed: number };
+      if (collection) {
+        // Resold items first, so the ones just added exist by the time
+        // itemOrder sets their positions.
+        resold = await syncResoldItems(collection.id);
+        saved = await updateCollection(collection.id, tenantId, { ...payload, itemOrder });
+      } else {
+        saved = await createCollection(tenantId, { ...payload, itemOrder });
+        resold = await syncResoldItems(saved.id);
+        // Newly added resold items land at the end — one more pass to put
+        // them where they were placed in the list.
+        if (resold.changed > resold.failed) {
+          saved = await updateCollection(saved.id, tenantId, {
+            productIds: payload.productIds,
+            itemOrder,
+          });
         }
+      }
+      if (resold.failed > 0) {
+        toast.error(
+          `${collection ? "Collection saved" : "Collection created"}, but ${resold.failed} resold product change${resold.failed === 1 ? "" : "s"} didn't go through — check the collection's edit page.`,
+        );
       }
       toast.success(collection ? "Collection updated" : "Collection created");
       if (onSaved) {
@@ -155,9 +236,7 @@ export function CollectionForm({
         // New collection, no custom onSaved handler (i.e. the standalone
         // /admin/collections/new page, not the quick-create dialog) —
         // land on its own edit page, where flyer/feed sections that only
-        // make sense for an existing collection live (affiliate items can
-        // now be picked during creation too, staged above and replayed
-        // once saved.id exists — see stagedAffiliateItems).
+        // make sense for an existing collection live.
         router.push(`/admin/collections/${saved.id}`);
       }
       router.refresh();
@@ -218,22 +297,36 @@ export function CollectionForm({
       <div>
         <Label>Products in this collection</Label>
         <p className="mt-1 text-xs text-muted-foreground">
-          Not-live products can&apos;t be newly added — turn a product live first.
+          Use the arrows to set the order they appear in on your storefront.
         </p>
         <div className="mt-2">
-          <ProductPicker tenantId={tenantId} selected={selectedProducts} onToggle={handleToggleProduct} />
+          <CollectionItemsOrderList
+            items={items}
+            onMove={handleMoveItem}
+            onRemove={handleRemoveItem}
+          />
         </div>
       </div>
 
-      {!collection && (
-        <AffiliateCollectionItemsManager
-          tenantId={tenantId}
-          collectionId={null}
-          stagedItems={stagedAffiliateItems}
-          onStagedItemsChange={setStagedAffiliateItems}
-          variant="inline"
-        />
-      )}
+      <div>
+        <p className="text-sm font-medium">Add your products</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Not-live products can&apos;t be newly added — turn a product live first.
+        </p>
+        <div className="mt-2">
+          <ProductPicker
+            tenantId={tenantId}
+            selectedIds={selectedProductIds}
+            onToggle={handleToggleProduct}
+          />
+        </div>
+      </div>
+
+      <AffiliateCollectionItemsManager
+        tenantId={tenantId}
+        memberListingIds={memberListingIds}
+        onToggle={handleToggleResold}
+      />
 
       <div className="rounded-lg border p-4">
         <label className="flex items-center gap-2 text-sm font-medium">

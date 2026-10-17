@@ -141,6 +141,16 @@ export interface Collection {
   isActive: boolean;
 }
 
+// One entry in a collection's full display order, sent on create/update —
+// either one of the tenant's own products or one of its affiliate items
+// (identified by listing, since that's what AffiliateCollectionItem keys
+// on). Both kinds share one position space, so they can be interleaved.
+export type CollectionItemRef = { productId: string } | { listingId: string };
+
+export interface CollectionInput extends Partial<Collection> {
+  itemOrder?: CollectionItemRef[];
+}
+
 export interface PaymentMethod {
   id: string;
   tenantId: string;
