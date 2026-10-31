@@ -3,10 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Download, Loader2, Share2, XCircle } from "lucide-react";
+import { Download, Loader2, MessageCircle, Share2, XCircle } from "lucide-react";
 import { cancelOrderByToken } from "@/lib/api";
 import type { Order, Tenant } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
+import { itemWithOptions } from "@/lib/item-options";
 import { waLink } from "@/lib/phone";
 import { useRevealedPhone } from "@/lib/use-revealed-phone";
 import { generateOrderBookletPdf } from "@/lib/generate-order-pdf";
@@ -21,6 +22,70 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+
+// The prefilled WhatsApp message with the order, sent to the vendor's own
+// number when they have one (else a generic share sheet).
+function useOrderWhatsApp(order: Order, tenant: Tenant, whatsappNumberEncoded: string | null) {
+  const whatsappNumber = useRevealedPhone(whatsappNumberEncoded);
+  const shareText = `Hi ${tenant.name}, here's my order:\n${order.items
+    .map((i) => `${i.quantity}x ${itemWithOptions(i)}`)
+    .join(", ")}\nTotal: ${formatMoney(order.total)}\n\nName: ${order.customerName}\nPhone: ${
+    order.customerContact
+  }\nEmail: ${order.customerEmail}\n\nDetails: ${
+    typeof window !== "undefined" ? window.location.href : ""
+  }`;
+  const whatsappUrl = whatsappNumber
+    ? waLink(whatsappNumber, shareText)
+    : `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+  return { whatsappNumber, whatsappUrl };
+}
+
+// Shown while an order is still pending: messaging the vendor directly is
+// the fastest way to get it reviewed and confirmed, so it's the one big
+// action on the page — plus a bar pinned to the bottom of the screen on
+// phones, so it's always in reach while scrolling.
+export function WhatsAppOrderPrompt({
+  order,
+  tenant,
+  whatsappNumberEncoded,
+}: {
+  order: Order;
+  tenant: Tenant;
+  whatsappNumberEncoded: string | null;
+}) {
+  const { whatsappNumber, whatsappUrl } = useOrderWhatsApp(order, tenant, whatsappNumberEncoded);
+  const label = whatsappNumber
+    ? `Send my order to ${tenant.name} on WhatsApp`
+    : "Share my order on WhatsApp";
+  const open = () => window.open(whatsappUrl, "_blank");
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={open}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-[var(--store-radius,0.5rem)] bg-[#25d366] px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition-transform hover:brightness-95 active:scale-[0.99]"
+      >
+        <MessageCircle className="h-5 w-5" />
+        {label}
+      </button>
+      <p className="store-muted mt-2 text-center text-xs">
+        It&apos;s the fastest way to get your order confirmed.
+      </p>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--store-border)] bg-[var(--store-bg)] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden">
+        <button
+          type="button"
+          onClick={open}
+          className="flex w-full items-center justify-center gap-2 rounded-[var(--store-radius,0.5rem)] bg-[#25d366] px-4 py-3 text-sm font-semibold text-white"
+        >
+          <MessageCircle className="h-5 w-5" />
+          {whatsappNumber ? "Send order on WhatsApp" : "Share order on WhatsApp"}
+        </button>
+      </div>
+    </>
+  );
+}
 
 export function TrackerActions({
   order,
@@ -37,18 +102,7 @@ export function TrackerActions({
   const [cancelling, setCancelling] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [reference, setReference] = useState("");
-  const whatsappNumber = useRevealedPhone(whatsappNumberEncoded);
-
-  const shareText = `Hi ${tenant.name}, here's my order:\n${order.items
-    .map((i) => `${i.quantity}x ${i.title}`)
-    .join(", ")}\nTotal: ${formatMoney(order.total)}\n\nName: ${order.customerName}\nPhone: ${
-    order.customerContact
-  }\nEmail: ${order.customerEmail}\n\nDetails: ${
-    typeof window !== "undefined" ? window.location.href : ""
-  }`;
-  const whatsappUrl = whatsappNumber
-    ? waLink(whatsappNumber, shareText)
-    : `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+  const { whatsappNumber, whatsappUrl } = useOrderWhatsApp(order, tenant, whatsappNumberEncoded);
 
   async function handleCancel(e: FormEvent) {
     e.preventDefault();

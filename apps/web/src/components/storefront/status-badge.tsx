@@ -16,7 +16,19 @@ const LABELS: Record<OrderStatus, string> = {
   CANCELLED: "Cancelled",
 };
 
-export function StatusBadge({ status }: { status: OrderStatus }) {
+// What the customer sees — "pending review" reads as if it might already be
+// settled, so it spells out that nothing is confirmed yet.
+const CUSTOMER_LABELS: Partial<Record<OrderStatus, string>> = {
+  PENDING: "Not confirmed yet",
+};
+
+export function StatusBadge({
+  status,
+  forCustomer = false,
+}: {
+  status: OrderStatus;
+  forCustomer?: boolean;
+}) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${STYLES[status]}`}
@@ -24,7 +36,7 @@ export function StatusBadge({ status }: { status: OrderStatus }) {
       {status === "PENDING" && (
         <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-amber-600 text-amber-600 dark:bg-amber-400 dark:text-amber-400" />
       )}
-      {LABELS[status]}
+      {(forCustomer && CUSTOMER_LABELS[status]) || LABELS[status]}
     </span>
   );
 }

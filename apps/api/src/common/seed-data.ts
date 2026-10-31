@@ -125,6 +125,8 @@ export const products: Product[] = [
     isActive: true,
     images: [gallery[2].url, gallery[0].url],
     videoUrls: [],
+    sizes: [],
+    colors: [],
     tags: ['dresses', 'wax-print', 'new-arrival'],
     displayOrder: 0,
     createdAt: '2026-01-10T10:00:00.000Z',
@@ -146,6 +148,8 @@ export const products: Product[] = [
     isActive: true,
     images: [gallery[1].url],
     videoUrls: [],
+    sizes: [],
+    colors: [],
     tags: ['bags', 'accessories', 'handwoven'],
     displayOrder: 1,
     createdAt: '2026-01-12T10:00:00.000Z',
@@ -167,6 +171,8 @@ export const products: Product[] = [
     isActive: true,
     images: [gallery[3].url],
     videoUrls: [],
+    sizes: [],
+    colors: [],
     tags: ['jewelry', 'accessories', 'bestseller'],
     displayOrder: 2,
     createdAt: '2026-01-14T10:00:00.000Z',
@@ -188,6 +194,8 @@ export const products: Product[] = [
     isActive: true,
     images: [gallery[4].url],
     videoUrls: [],
+    sizes: [],
+    colors: [],
     tags: ['footwear', 'leather'],
     displayOrder: 3,
     createdAt: '2026-01-16T10:00:00.000Z',
@@ -209,6 +217,8 @@ export const products: Product[] = [
     isActive: true,
     images: [gallery[5].url],
     videoUrls: [],
+    sizes: [],
+    colors: [],
     tags: ['outerwear', 'kente', 'new-arrival'],
     displayOrder: 4,
     createdAt: '2026-01-18T10:00:00.000Z',
@@ -230,6 +240,8 @@ export const products: Product[] = [
     isActive: false,
     images: [gallery[2].url],
     videoUrls: [],
+    sizes: [],
+    colors: [],
     tags: ['skirts'],
     displayOrder: 5,
     createdAt: '2026-01-20T10:00:00.000Z',
@@ -402,6 +414,7 @@ const ordersBase: Omit<
     confirmedAt: null,
     completedAt: null,
     seenByAdminAt: null,
+    stockDeducted: false,
     history: [
       {
         status: 'PENDING',
@@ -443,6 +456,7 @@ const ordersBase: Omit<
     confirmedAt: '2026-07-18T16:05:00.000Z',
     completedAt: null,
     seenByAdminAt: '2026-07-18T16:00:00.000Z',
+    stockDeducted: false,
     history: [
       {
         status: 'PENDING',
@@ -495,6 +509,7 @@ const ordersBase: Omit<
     confirmedAt: '2026-07-15T11:00:00.000Z',
     completedAt: null,
     seenByAdminAt: '2026-07-15T10:50:00.000Z',
+    stockDeducted: false,
     history: [
       {
         status: 'PENDING',
@@ -546,6 +561,7 @@ const ordersBase: Omit<
     confirmedAt: '2026-07-02T13:00:00.000Z',
     completedAt: '2026-07-04T09:00:00.000Z',
     seenByAdminAt: '2026-07-02T12:45:00.000Z',
+    stockDeducted: false,
     history: [
       {
         status: 'PENDING',
@@ -597,6 +613,7 @@ const ordersBase: Omit<
     confirmedAt: null,
     completedAt: null,
     seenByAdminAt: '2026-06-28T15:45:00.000Z',
+    stockDeducted: false,
     history: [
       {
         status: 'PENDING',
@@ -643,6 +660,7 @@ const ordersBase: Omit<
     confirmedAt: '2026-07-25T13:00:00.000Z',
     completedAt: null,
     seenByAdminAt: '2026-07-25T12:40:00.000Z',
+    stockDeducted: false,
     history: [
       {
         status: 'PENDING',

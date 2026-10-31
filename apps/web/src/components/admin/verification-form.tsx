@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { validateImageFile, ACCEPTED_IMAGE_INPUT_ACCEPT } from "@/lib/media-constraints";
+import { prepareImageFile, ACCEPTED_IMAGE_INPUT_ACCEPT } from "@/lib/media-constraints";
 import { submitVerification } from "@/lib/verification-upload";
 import type { VerificationStatusResult } from "@/lib/types";
 
@@ -29,17 +29,17 @@ function FilePicker({
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  function handleSelect(list: FileList | null) {
+  async function handleSelect(list: FileList | null) {
     const picked = list?.[0];
     if (!picked) return;
-    const error = validateImageFile(picked);
-    if (error) {
+    const { file: prepared, error } = await prepareImageFile(picked);
+    if (!prepared) {
       toast.error(error);
       return;
     }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(URL.createObjectURL(picked));
-    onChange(picked);
+    setPreviewUrl(URL.createObjectURL(prepared));
+    onChange(prepared);
   }
 
   function clear() {

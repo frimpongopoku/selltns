@@ -104,6 +104,10 @@ export interface Product {
   images: string[];
   videoUrls: string[];
   tags: string[];
+  // Options the customer must pick one of before ordering — empty means no
+  // choice to make. Stock is shared across them.
+  sizes: string[];
+  colors: string[];
   displayOrder: number;
   createdAt: string;
   preorder?: PreorderInfo | null;
@@ -166,6 +170,9 @@ export interface OrderItem {
   title: string;
   quantity: number;
   priceAtOrder: number;
+  // The option the customer picked, when the product offers sizes/colors.
+  size?: string | null;
+  color?: string | null;
 }
 
 export interface Order {
@@ -183,6 +190,7 @@ export interface Order {
   confirmedAt: string | null;
   completedAt: string | null;
   seenByAdminAt: string | null;
+  stockDeducted: boolean;
   history: { status: OrderStatus; note: string; at: string }[];
   type: OrderType;
   depositType: DepositType | null;

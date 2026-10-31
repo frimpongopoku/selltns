@@ -103,6 +103,8 @@ function mapProduct(
     images: row.images,
     videoUrls: row.videoUrls,
     tags: row.tags,
+    sizes: row.sizes,
+    colors: row.colors,
     displayOrder: row.displayOrder,
     createdAt: row.createdAt.toISOString(),
     preorder,

@@ -19,10 +19,13 @@ export function ProductPicker({
   tenantId,
   selectedIds,
   onToggle,
+  allowInactive = false,
 }: {
   tenantId: string;
   selectedIds: Set<string>;
   onToggle: (product: Product) => void;
+  /** Lets hidden products be picked too (collections can't hold them; recorded orders can). */
+  allowInactive?: boolean;
 }) {
   const {
     products,
@@ -65,7 +68,7 @@ export function ProductPicker({
           <>
             {products.map((product) => {
               const checked = selectedIds.has(product.id);
-              const disabled = !product.isActive && !checked;
+              const disabled = !allowInactive && !product.isActive && !checked;
               return (
                 <label
                   key={product.id}

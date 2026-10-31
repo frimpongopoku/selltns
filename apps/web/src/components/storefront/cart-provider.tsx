@@ -18,11 +18,65 @@ export interface CartLine {
   price: number;
   image: string | null;
   quantity: number;
+  // Picked option, when the product offers sizes/colors. Missing on lines
+  // saved before options existed — treated the same as null.
+  size?: string | null;
+  color?: string | null;
+  // Most of this product the cart may hold (across all its sizes/colors),
+  // as of when it was added or last re-checked. Null/missing = no limit
+  // (not tracking stock, or a pre-order). The API re-checks at checkout.
+  stockLimit?: number | null;
   preorderCollectionId: string | null;
   preorderCollectionTitle: string | null;
   preorderDepositType: "FULL" | "PERCENTAGE" | null;
   preorderDepositPercentage: number | null;
   preorderFulfillmentNote: string | null;
+}
+
+export interface CartLineOptions {
+  size?: string | null;
+  color?: string | null;
+}
+
+// The same product in two sizes/colors is two separate lines, so lines are
+// addressed by product + options rather than by productId alone.
+export function cartLineKey(line: { productId: string } & CartLineOptions): string {
+  return [line.productId, line.size ?? "", line.color ?? ""].join("|");
+}
+
+export type AddItemResult = "added" | "mixed-cart" | "stock-limit";
+
+export function stockLimitOf(product: Product): number | null {
+  return product.trackStock && !product.preorder ? product.stock : null;
+}
+
+// How many of a product the cart holds across all its size/color lines —
+// they all draw from the same stock.
+export function quantityInCart(lines: CartLine[], productId: string): number {
+  return lines.reduce((sum, l) => (l.productId === productId ? sum + l.quantity : sum), 0);
+}
+
+// Refreshes each line's stock limit and trims quantities to fit, earlier
+// lines first. A line trimmed to nothing is dropped.
+export function clampLinesToStock(
+  lines: CartLine[],
+  limits: Map<string, number | null>,
+): CartLine[] {
+  const used = new Map<string, number>();
+  const next: CartLine[] = [];
+  for (const line of lines) {
+    if (!limits.has(line.productId)) {
+      next.push(line);
+      continue;
+    }
+    const limit = limits.get(line.productId) ?? null;
+    const already = used.get(line.productId) ?? 0;
+    const quantity = limit === null ? line.quantity : Math.min(line.quantity, limit - already);
+    if (quantity <= 0) continue;
+    used.set(line.productId, already + quantity);
+    next.push({ ...line, quantity, stockLimit: limit });
+  }
+  return next;
 }
 
 interface CartContextValue {
@@ -32,14 +86,18 @@ interface CartContextValue {
   /** The pre-order collection this cart is locked to, or null for a regular cart. */
   preorderCollectionId: string | null;
   /**
-   * Adds a product to the cart. Returns false (without changing the cart) when
-   * it would mix regular items with pre-order items, or pre-order items from
-   * two different collections — the deposit math only makes sense when a
-   * cart is either all-regular or all-from-one pre-order collection.
+   * Adds a product to the cart. Leaves the cart unchanged and returns
+   * "mixed-cart" when it would mix regular items with pre-order items, or
+   * pre-order items from two different collections — the deposit math only
+   * makes sense when a cart is either all-regular or all-from-one pre-order
+   * collection — or "stock-limit" when the cart already holds all the stock.
    */
-  addItem: (product: Product, quantity?: number) => boolean;
-  updateQuantity: (productId: string, quantity: number) => void;
-  removeItem: (productId: string) => void;
+  addItem: (product: Product, quantity?: number, options?: CartLineOptions) => AddItemResult;
+  /** Capped at the product's stock limit. */
+  updateQuantity: (lineKey: string, quantity: number) => void;
+  removeItem: (lineKey: string) => void;
+  /** See clampLinesToStock. */
+  applyStockLimits: (limits: Map<string, number | null>) => void;
   clear: () => void;
 }
 
@@ -72,14 +130,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(storageKey, JSON.stringify(lines));
   }, [lines, hydrated, storageKey]);
 
-  const addItem = useCallback((product: Product, quantity = 1) => {
-    let ok = true;
+  const addItem = useCallback((product: Product, quantity = 1, options: CartLineOptions = {}) => {
+    let result: AddItemResult = "added";
+    const stockLimit = stockLimitOf(product);
+    const size = options.size ?? null;
+    const color = options.color ?? null;
+    const key = cartLineKey({ productId: product.id, size, color });
     setLines((prev) => {
-      const existing = prev.find((l) => l.productId === product.id);
+      if (stockLimit !== null && quantityInCart(prev, product.id) + quantity > stockLimit) {
+        result = "stock-limit";
+        return prev;
+      }
+      const existing = prev.find((l) => cartLineKey(l) === key);
       if (existing) {
         return prev.map((l) =>
-          l.productId === product.id
-            ? { ...l, quantity: l.quantity + quantity }
+          cartLineKey(l) === key
+            ? { ...l, quantity: l.quantity + quantity, stockLimit }
             : l,
         );
       }
@@ -95,7 +161,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         newIsPreorder &&
         product.preorder!.collectionId !== cartCollectionId;
       if (prev.length > 0 && (mixesRegularAndPreorder || mixesDifferentPreorders)) {
-        ok = false;
+        result = "mixed-cart";
         return prev;
       }
       return [
@@ -106,6 +172,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           price: discountedPrice(product),
           image: product.images[0] ?? null,
           quantity,
+          size,
+          color,
+          stockLimit,
           preorderCollectionId: product.preorder?.collectionId ?? null,
           preorderCollectionTitle: product.preorder?.collectionTitle ?? null,
           preorderDepositType: product.preorder?.depositType ?? null,
@@ -114,19 +183,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         },
       ];
     });
-    return ok;
+    return result;
   }, []);
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((lineKey: string, quantity: number) => {
     setLines((prev) =>
       quantity <= 0
-        ? prev.filter((l) => l.productId !== productId)
-        : prev.map((l) => (l.productId === productId ? { ...l, quantity } : l)),
+        ? prev.filter((l) => cartLineKey(l) !== lineKey)
+        : prev.map((l) => {
+            if (cartLineKey(l) !== lineKey) return l;
+            if (l.stockLimit == null) return { ...l, quantity };
+            const others = quantityInCart(prev, l.productId) - l.quantity;
+            return { ...l, quantity: Math.min(quantity, Math.max(l.stockLimit - others, 1)) };
+          }),
     );
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
-    setLines((prev) => prev.filter((l) => l.productId !== productId));
+  const applyStockLimits = useCallback((limits: Map<string, number | null>) => {
+    setLines((prev) => clampLinesToStock(prev, limits));
+  }, []);
+
+  const removeItem = useCallback((lineKey: string) => {
+    setLines((prev) => prev.filter((l) => cartLineKey(l) !== lineKey));
   }, []);
 
   const clear = useCallback(() => setLines([]), []);
@@ -144,9 +222,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addItem,
       updateQuantity,
       removeItem,
+      applyStockLimits,
       clear,
     };
-  }, [lines, addItem, updateQuantity, removeItem, clear]);
+  }, [lines, addItem, updateQuantity, removeItem, applyStockLimits, clear]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

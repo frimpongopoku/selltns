@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle";
 import { formatMoney } from "@/lib/format";
 import { discountedPrice, isOnSale } from "@/lib/pricing";
+import { productOptionsLine } from "@/lib/item-options";
 import type { Product } from "@/lib/types";
 
 export function ProductsTableView({
@@ -44,6 +45,7 @@ export function ProductsTableView({
               <TableHead>SKU</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Stock</TableHead>
+              <TableHead>Sizes &amp; colors</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,6 +135,18 @@ export function ProductsTableView({
                 </TableCell>
                 <TableCell className={product.trackStock && product.stock <= 0 ? "text-destructive" : ""}>
                   {product.trackStock ? product.stock : "Always available"}
+                </TableCell>
+                <TableCell className="whitespace-normal text-xs">
+                  {product.sizes.length === 0 && product.colors.length === 0 ? (
+                    <span className="text-muted-foreground">—</span>
+                  ) : (
+                    <div className="flex max-w-[220px] flex-col gap-0.5">
+                      {product.sizes.length > 0 && <span>{productOptionsLine(product.sizes)}</span>}
+                      {product.colors.length > 0 && (
+                        <span className="text-muted-foreground">{productOptionsLine(product.colors)}</span>
+                      )}
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

@@ -13,6 +13,7 @@ import { TagInput } from "@/components/admin/tag-input";
 import { VideoLinksInput } from "@/components/admin/video-links-input";
 import { createProduct, deleteProduct, updateProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
+import { MAX_OPTIONS } from "@/lib/item-options";
 
 export function ProductForm({
   tenantId,
@@ -45,6 +46,8 @@ export function ProductForm({
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [videoUrls, setVideoUrls] = useState<string[]>(product?.videoUrls ?? []);
   const [tags, setTags] = useState<string[]>(product?.tags ?? []);
+  const [sizes, setSizes] = useState<string[]>(product?.sizes ?? []);
+  const [colors, setColors] = useState<string[]>(product?.colors ?? []);
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -80,6 +83,8 @@ export function ProductForm({
       images,
       videoUrls,
       tags,
+      sizes,
+      colors,
     };
     try {
       const saved = product
@@ -149,6 +154,30 @@ export function ProductForm({
         </p>
         <div className="mt-1.5">
           <VideoLinksInput videos={videoUrls} onChange={setVideoUrls} />
+        </div>
+      </div>
+
+      <div>
+        <Label>Sizes &amp; colors</Label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Optional. Customers pick one of each before adding to cart. Press Enter or comma
+          after each one.
+        </p>
+        <div className="mt-1.5 grid gap-3 sm:grid-cols-2">
+          <TagInput
+            tags={sizes}
+            onChange={setSizes}
+            placeholder="Sizes, e.g. S, M, L"
+            preserveCase
+            maxTags={MAX_OPTIONS}
+          />
+          <TagInput
+            tags={colors}
+            onChange={setColors}
+            placeholder="Colors, e.g. Black, Red"
+            preserveCase
+            maxTags={MAX_OPTIONS}
+          />
         </div>
       </div>
 

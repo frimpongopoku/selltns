@@ -15,12 +15,17 @@ function formatGHS(amount: number): string {
   }).format(amount);
 }
 
+function itemOptions(item: Order['items'][number]): string {
+  const options = [item.size, item.color].filter(Boolean).join(', ');
+  return options ? ` <span style="color: #6b7280;">(${options})</span>` : '';
+}
+
 function itemsList(order: Order): string {
   return order.items
     .map(
       (item) => `
       <tr>
-        <td style="padding: 8px 0; font-size: 14px;">${item.title} &times; ${item.quantity}</td>
+        <td style="padding: 8px 0; font-size: 14px;">${item.title}${itemOptions(item)} &times; ${item.quantity}</td>
         <td style="padding: 8px 0; font-size: 14px; text-align: right; white-space: nowrap;">${formatGHS(item.priceAtOrder * item.quantity)}</td>
       </tr>`,
     )
@@ -43,6 +48,16 @@ function button(url: string, label: string): string {
     </a>`;
 }
 
+// wa.me needs digits-only international format — same normalization as the
+// web app's toWhatsAppNumber (Ghanaian numbers: leading 0 -> 233).
+function whatsappLink(number: string, text: string): string {
+  const digits = number.replace(/\D/g, '');
+  const international = digits.startsWith('0')
+    ? `233${digits.slice(1)}`
+    : digits;
+  return `https://wa.me/${international}?text=${encodeURIComponent(text)}`;
+}
+
 function layout(tenantName: string, bodyHtml: string): string {
   return `<!doctype html>
 <html>
@@ -61,7 +76,20 @@ export function orderPlacedCustomerEmail(
   tenant: Tenant,
   trackUrl: string,
 ) {
-  const subject = `Your order request to ${tenant.name} — ${formatGHS(order.total)}`;
+  const subject = `Order request received (not yet confirmed) — ${tenant.name}`;
+  // Messaging the vendor directly is the fastest way to get an order
+  // confirmed, so it's pushed right under the "not confirmed yet" notice.
+  const whatsappPrompt = tenant.whatsappNumber
+    ? `<p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0;">
+        <strong>Get it confirmed faster:</strong> send your order to ${tenant.name} on WhatsApp.
+      </p>
+      <a href="${whatsappLink(
+        tenant.whatsappNumber,
+        `Hi ${tenant.name}, I just placed an order (ref ${order.paymentReference}, ${formatGHS(order.total)}). Could you confirm it's available? ${trackUrl}`,
+      )}" style="display: inline-block; margin: 12px 0 24px; padding: 12px 24px; background: #25d366; color: #ffffff; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">
+        Send order on WhatsApp
+      </a>`
+    : '';
   const depositNote =
     order.type === 'PREORDER' && order.depositAmount != null
       ? `<p style="font-size: 13px; color: #9a3412; margin: 0 0 20px;">
@@ -75,10 +103,17 @@ export function orderPlacedCustomerEmail(
     `
     ${preorderBanner(order)}
     <h1 style="font-size: 20px; margin: 0 0 8px;">Thanks, ${order.customerName.split(' ')[0]}!</h1>
-    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 20px;">
-      Your order request has been sent to ${tenant.name}. No payment is needed yet —
-      they'll review it and confirm shortly.
+    <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 16px;">
+      Your order request has been sent to ${tenant.name}.
     </p>
+    <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; margin: 0 0 20px;">
+      <p style="font-size: 13px; font-weight: 600; color: #92400e; margin: 0;">Your order is not confirmed yet</p>
+      <p style="font-size: 13px; line-height: 1.5; color: #92400e; margin: 4px 0 0;">
+        ${tenant.name} will check their stock to make sure everything is available, then
+        confirm your order. We'll email you as soon as they do. Please don't pay until then.
+      </p>
+    </div>
+    ${whatsappPrompt}
     ${depositNote}
     <table style="width: 100%; border-collapse: collapse;">
       ${itemsList(order)}
@@ -95,7 +130,7 @@ export function orderPlacedCustomerEmail(
       Your reference: <strong style="color: #444;">${order.paymentReference}</strong> — you'll need this if you ever want to cancel the order.
     </p>`,
   );
-  const text = `Your order request to ${tenant.name} (${formatGHS(order.total)}) has been received. Track it: ${trackUrl}\nYour reference: ${order.paymentReference} (needed to cancel)`;
+  const text = `Your order request to ${tenant.name} (${formatGHS(order.total)}) has been received. It is NOT confirmed yet: ${tenant.name} will check their stock and confirm, and we'll email you when they do. Please don't pay until then.\nTrack it: ${trackUrl}\nYour reference: ${order.paymentReference} (needed to cancel)`;
   return { subject, html, text };
 }
 

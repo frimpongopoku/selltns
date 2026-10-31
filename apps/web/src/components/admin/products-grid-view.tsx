@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle";
 import { formatMoney } from "@/lib/format";
 import { discountedPrice, isOnSale } from "@/lib/pricing";
+import { productOptionsLine } from "@/lib/item-options";
 import type { Product } from "@/lib/types";
 
 export function ProductsGridView({
@@ -67,6 +68,18 @@ export function ProductsGridView({
                 {product.trackStock ? `${product.stock} in stock` : "Always available"}
               </span>
             </div>
+            {product.sizes.length > 0 && (
+              <p className="truncate text-xs" title={`Sizes: ${productOptionsLine(product.sizes)}`}>
+                <span className="text-muted-foreground">Sizes </span>
+                {productOptionsLine(product.sizes)}
+              </p>
+            )}
+            {product.colors.length > 0 && (
+              <p className="-mt-1 truncate text-xs" title={`Colors: ${productOptionsLine(product.colors)}`}>
+                <span className="text-muted-foreground">Colors </span>
+                {productOptionsLine(product.colors)}
+              </p>
+            )}
             {product.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {product.tags.slice(0, 3).map((tag) => (

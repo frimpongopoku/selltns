@@ -4,15 +4,21 @@ import { useState } from "react";
 import { Check, CalendarClock, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useCart } from "./cart-provider";
+import { useCart, type CartLineOptions } from "./cart-provider";
 import type { Product } from "@/lib/types";
 
 export function AddToCartButton({
   product,
   size = "default",
+  options,
+  missingOption = null,
 }: {
   product: Product;
   size?: "sm" | "default";
+  /** The customer's picked size/color, for a product that offers them. */
+  options?: CartLineOptions;
+  /** Shown in place of the label (and disables the button) until a required option is picked. */
+  missingOption?: string | null;
 }) {
   const { addItem, preorderCollectionId } = useCart();
   const [added, setAdded] = useState(false);
@@ -32,10 +38,16 @@ export function AddToCartButton({
   return (
     <Button
       type="button"
-      disabled={outOfStock}
+      disabled={outOfStock || !!missingOption}
       onClick={() => {
-        const ok = addItem(product);
-        if (!ok) {
+        const result = addItem(product, 1, options);
+        if (result === "stock-limit") {
+          toast.error(
+            `Only ${product.stock} available, and they're all in your cart already.`,
+          );
+          return;
+        }
+        if (result === "mixed-cart") {
           toast.error(
             preorderCollectionId
               ? "Your cart has a pre-order in it. Finish that checkout first, or clear your cart, before adding regular items."
@@ -46,7 +58,9 @@ export function AddToCartButton({
         setAdded(true);
         setTimeout(() => setAdded(false), 1200);
       }}
-      className={`store-btn-primary h-auto w-full gap-1.5 border-0 px-4 py-2.5 shadow-none ${
+      // The explicit radius beats Button's own rounded-* utility, which would
+      // otherwise override the theme's corners from .store-btn-primary.
+      className={`store-btn-primary h-auto w-full gap-1.5 rounded-[var(--store-radius)] border-0 px-4 py-2.5 shadow-none ${
         isPreorder && !added && !outOfStock ? "animate-attention-pulse" : ""
       }`}
       size={size}
@@ -55,14 +69,18 @@ export function AddToCartButton({
         key={added ? "added" : "idle"}
         className="flex items-center gap-1.5 animate-in fade-in-0 zoom-in-95 duration-150"
       >
-        {outOfStock ? null : added ? (
+        {outOfStock || (missingOption && !added) ? null : added ? (
           <Check className="h-4 w-4" />
         ) : isPreorder ? (
           <CalendarClock className="h-4 w-4" />
         ) : (
           <ShoppingBag className="h-4 w-4" />
         )}
-        {outOfStock ? "Out of stock" : added ? addedLabel : size === "sm" ? shortLabel : label}
+        {outOfStock
+          ? "Out of stock"
+          : missingOption && !added
+            ? missingOption
+            : added ? addedLabel : size === "sm" ? shortLabel : label}
       </span>
     </Button>
   );

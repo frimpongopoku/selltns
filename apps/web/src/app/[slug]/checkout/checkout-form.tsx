@@ -5,14 +5,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useCart } from "@/components/storefront/cart-provider";
+import { cartLineKey, useCart } from "@/components/storefront/cart-provider";
 import { useStoreHref, useStoreLinkBuilder } from "@/components/storefront/store-context";
 import { createOrder } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
-import { pruneStaleCartLines, notifyRemovedCartLines } from "@/lib/cart-validation";
+import { itemOptionsLabel } from "@/lib/item-options";
+import {
+  cartChanged,
+  notifyRemovedCartLines,
+  pruneStaleCartLines,
+} from "@/lib/cart-validation";
 
 export function CheckoutForm({ tenantId }: { tenantId: string }) {
-  const { lines, total, clear, removeItem } = useCart();
+  const { lines, total, clear, removeItem, applyStockLimits } = useCart();
   const homeHref = useStoreHref();
   const buildHref = useStoreLinkBuilder();
   const router = useRouter();
@@ -30,7 +35,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
   useEffect(() => {
     if (validated.current || lines.length === 0) return;
     validated.current = true;
-    pruneStaleCartLines(tenantId, lines, removeItem)
+    pruneStaleCartLines(tenantId, lines, removeItem, applyStockLimits)
       .then(notifyRemovedCartLines)
       .catch(() => {
         // A failed check shouldn't block checkout — submission re-validates
@@ -66,11 +71,11 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
     try {
       // Final cross-check right before the order is actually placed — the
       // mount-time check could be minutes stale by now.
-      const removedTitles = await pruneStaleCartLines(tenantId, lines, removeItem).catch(
-        () => [] as string[],
+      const check = await pruneStaleCartLines(tenantId, lines, removeItem, applyStockLimits).catch(
+        () => ({ removed: [], reduced: [] }),
       );
-      if (removedTitles.length > 0) {
-        notifyRemovedCartLines(removedTitles);
+      if (cartChanged(check)) {
+        notifyRemovedCartLines(check);
         toast.error("Your cart changed — please review it before submitting again.");
         setSubmitting(false);
         return;
@@ -85,12 +90,21 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
         items: lines.map((l) => ({
           productId: l.productId,
           quantity: l.quantity,
+          size: l.size ?? null,
+          color: l.color ?? null,
         })),
       });
       clear();
       router.push(`${buildHref(`/track/${order.trackingToken}`)}?new=1`);
-    } catch {
-      toast.error("Couldn't submit your order request. Please try again.");
+    } catch (err) {
+      // The API's own 400s (e.g. "Only 2 of … left in stock.") are written
+      // for customers; anything else gets the generic message.
+      const message = (err as Error).message;
+      toast.error(
+        message && !message.startsWith("API ")
+          ? message
+          : "Couldn't submit your order request. Please try again.",
+      );
       setSubmitting(false);
     }
   }
@@ -105,7 +119,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
           ? `This is a pre-order. Once confirmed, you'll pay ${
               preorderLine.preorderDepositType === "FULL" ? "the full amount" : "a deposit"
             } now, and the rest (if any) once it's ready.`
-          : "No payment yet. Confirm your details and we'll review your order. You'll get a link to track its status and pay once it's confirmed."}
+          : "This is a request, not a final order. Once you send it, the shop checks their stock to make sure everything is available, then confirms your order. Don't pay anything until then: you'll get an email and a tracking link that shows how to pay once it's confirmed."}
       </p>
       {isPreorder && preorderLine.preorderFulfillmentNote && (
         <p className="store-muted mt-2 max-w-md text-sm leading-relaxed">
@@ -115,9 +129,13 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
 
       <div className="store-card mt-8 divide-y divide-[var(--store-border)] p-5">
         {lines.map((line) => (
-          <div key={line.productId} className="flex items-center justify-between py-3 text-sm">
+          <div key={cartLineKey(line)} className="flex items-center justify-between py-3 text-sm">
             <span>
-              {line.title} <span className="store-muted">× {line.quantity}</span>
+              {line.title}
+              {itemOptionsLabel(line) && (
+                <span className="store-muted"> ({itemOptionsLabel(line)})</span>
+              )}{" "}
+              <span className="store-muted">× {line.quantity}</span>
             </span>
             <span className="font-medium">{formatMoney(line.price * line.quantity)}</span>
           </div>
@@ -218,7 +236,7 @@ export function CheckoutForm({ tenantId }: { tenantId: string }) {
           className="store-btn-primary mt-2 flex items-center justify-center gap-2 py-3.5 text-base font-medium disabled:opacity-60"
         >
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-          {submitting ? "Submitting…" : isPreorder ? "Submit pre-order request" : "Submit order request"}
+          {submitting ? "Sending…" : isPreorder ? "Send pre-order request" : "Send order request"}
         </button>
       </form>
     </div>

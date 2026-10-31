@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import { formatMoneyAscii, formatDateTime } from "./format";
+import { itemWithOptions } from "./item-options";
 import type { Order, Tenant } from "./types";
 
 const MARGIN = 48;
@@ -100,7 +101,7 @@ export function generateOrderBookletPdf(
       doc.addPage();
       y = MARGIN;
     }
-    const titleLines = doc.splitTextToSize(item.title, colQty - 40 - colTitle - 12);
+    const titleLines = doc.splitTextToSize(itemWithOptions(item), colQty - 40 - colTitle - 12);
     doc.text(titleLines, colTitle, y);
     doc.text(String(item.quantity), colQty, y, { align: "right" });
     doc.text(formatMoneyAscii(item.priceAtOrder), colPrice, y, { align: "right" });

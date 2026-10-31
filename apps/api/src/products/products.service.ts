@@ -10,6 +10,8 @@ import { slugify } from '../common/slugify';
 import { normalizeTags } from '../common/normalize-tags';
 import { decodeCursor, encodeCursor } from './products.utils';
 import {
+  MAX_OPTION_LENGTH,
+  MAX_OPTIONS_PER_PRODUCT,
   MAX_TAG_LENGTH,
   MAX_TAGS_PER_PRODUCT,
   MAX_VIDEOS_PER_PRODUCT,
@@ -44,6 +46,35 @@ function tagsOf(input: Partial<Product>) {
     maxTagLength: MAX_TAG_LENGTH,
     noun: 'product',
   });
+}
+
+// Sizes/colors keep the vendor's casing ("XL", "Navy Blue") — unlike tags,
+// they're shown to customers as typed — but are deduped case-insensitively.
+function optionsOf(raw: unknown, noun: 'sizes' | 'colors'): string[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) {
+    throw new BadRequestException(`${noun} must be an array of strings.`);
+  }
+  const seen = new Set<string>();
+  const options: string[] = [];
+  for (const value of raw) {
+    if (typeof value !== 'string') continue;
+    const option = value.trim();
+    if (!option || seen.has(option.toLowerCase())) continue;
+    if (option.length > MAX_OPTION_LENGTH) {
+      throw new BadRequestException(
+        `Each of a product's ${noun} must be ${MAX_OPTION_LENGTH} characters or fewer.`,
+      );
+    }
+    seen.add(option.toLowerCase());
+    options.push(option);
+  }
+  if (options.length > MAX_OPTIONS_PER_PRODUCT) {
+    throw new BadRequestException(
+      `A product can have at most ${MAX_OPTIONS_PER_PRODUCT} ${noun}.`,
+    );
+  }
+  return options;
 }
 
 // Only YouTube/TikTok links are accepted — the storefront only knows how to
@@ -172,6 +203,8 @@ export class ProductsService {
       images: p.images,
       videoUrls: p.videoUrls,
       tags: p.tags,
+      sizes: p.sizes,
+      colors: p.colors,
       displayOrder: p.displayOrder,
       createdAt: p.createdAt.toISOString(),
       preorder: p.preorder,
@@ -246,6 +279,7 @@ export class ProductsService {
              hidden_from_all_affiliates AS "hiddenFromAllAffiliates",
              sku, stock, track_stock AS "trackStock",
              is_active AS "isActive", images, video_urls AS "videoUrls", tags,
+             sizes, colors,
              display_order AS "displayOrder",
              created_at AS "createdAt", updated_at AS "updatedAt"
       FROM products
@@ -301,9 +335,12 @@ export class ProductsService {
       input.tenantId,
       input.slug || input.title || 'product',
     );
-    const maxOrder = await this.prisma.product.aggregate({
+    // New products go to the top of the display order (below the current
+    // minimum, which may go negative) so the most recent items come first in
+    // both the admin list and the storefront.
+    const minOrder = await this.prisma.product.aggregate({
       where: { tenantId: input.tenantId },
-      _max: { displayOrder: true },
+      _min: { displayOrder: true },
     });
     const price = input.price ?? 0;
 
@@ -327,8 +364,10 @@ export class ProductsService {
         images: input.images ?? [],
         videoUrls: videoUrlsOf(input),
         tags: tagsOf(input),
+        sizes: optionsOf(input.sizes, 'sizes'),
+        colors: optionsOf(input.colors, 'colors'),
         displayOrder:
-          input.displayOrder ?? (maxOrder._max.displayOrder ?? -1) + 1,
+          input.displayOrder ?? (minOrder._min.displayOrder ?? 1) - 1,
       },
     });
   }
@@ -374,6 +413,14 @@ export class ProductsService {
             ? videoUrlsOf(input)
             : existing.videoUrls,
         tags: input.tags !== undefined ? tagsOf(input) : existing.tags,
+        sizes:
+          input.sizes !== undefined
+            ? optionsOf(input.sizes, 'sizes')
+            : existing.sizes,
+        colors:
+          input.colors !== undefined
+            ? optionsOf(input.colors, 'colors')
+            : existing.colors,
         displayOrder: input.displayOrder ?? existing.displayOrder,
       },
     });

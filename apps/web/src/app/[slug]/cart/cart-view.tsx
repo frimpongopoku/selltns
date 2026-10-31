@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarClock, Minus, Plus, X } from "lucide-react";
-import { useCart } from "@/components/storefront/cart-provider";
+import { cartLineKey, quantityInCart, useCart } from "@/components/storefront/cart-provider";
 import { useStoreHref } from "@/components/storefront/store-context";
 import { formatMoney } from "@/lib/format";
+import { itemOptionsLabel } from "@/lib/item-options";
 import { pruneStaleCartLines, notifyRemovedCartLines } from "@/lib/cart-validation";
 
 // Matches the fade/slide-out below — the actual removal is deferred until
@@ -13,7 +14,8 @@ import { pruneStaleCartLines, notifyRemovedCartLines } from "@/lib/cart-validati
 const REMOVE_TRANSITION_MS = 180;
 
 export function CartView({ tenantId }: { tenantId: string }) {
-  const { lines, total, updateQuantity, removeItem, preorderCollectionId } = useCart();
+  const { lines, total, updateQuantity, removeItem, applyStockLimits, preorderCollectionId } =
+    useCart();
   const homeHref = useStoreHref();
   const checkoutHref = useStoreHref("/checkout");
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function CartView({ tenantId }: { tenantId: string }) {
   useEffect(() => {
     if (validated.current || lines.length === 0) return;
     validated.current = true;
-    pruneStaleCartLines(tenantId, lines, removeItem)
+    pruneStaleCartLines(tenantId, lines, removeItem, applyStockLimits)
       .then(notifyRemovedCartLines)
       .catch(() => {
         // A failed check shouldn't block browsing the cart — checkout
@@ -36,10 +38,10 @@ export function CartView({ tenantId }: { tenantId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId]);
 
-  function handleRemove(productId: string) {
-    setRemovingId(productId);
+  function handleRemove(lineKey: string) {
+    setRemovingId(lineKey);
     setTimeout(() => {
-      removeItem(productId);
+      removeItem(lineKey);
       setRemovingId(null);
     }, REMOVE_TRANSITION_MS);
   }
@@ -70,11 +72,16 @@ export function CartView({ tenantId }: { tenantId: string }) {
         </p>
       )}
       <div className="mt-8 divide-y divide-[var(--store-border)]">
-        {lines.map((line) => (
+        {lines.map((line) => {
+          const key = cartLineKey(line);
+          const options = itemOptionsLabel(line);
+          const atStockLimit =
+            line.stockLimit != null && quantityInCart(lines, line.productId) >= line.stockLimit;
+          return (
           <div
-            key={line.productId}
+            key={key}
             className={`flex gap-4 py-5 transition-all duration-200 ${
-              removingId === line.productId
+              removingId === key
                 ? "-translate-x-2 scale-[0.98] opacity-0"
                 : "translate-x-0 scale-100 opacity-100"
             }`}
@@ -87,10 +94,13 @@ export function CartView({ tenantId }: { tenantId: string }) {
             {/* Mobile: image on the left, everything else stacked in its own lines. */}
             <div className="flex flex-1 flex-col gap-2 sm:hidden">
               <div className="flex items-start justify-between gap-3">
-                <p className="store-heading text-base leading-snug">{line.title}</p>
+                <div>
+                  <p className="store-heading text-base leading-snug">{line.title}</p>
+                  {options && <p className="store-muted mt-0.5 text-xs">{options}</p>}
+                </div>
                 <button
                   type="button"
-                  onClick={() => handleRemove(line.productId)}
+                  onClick={() => handleRemove(key)}
                   className="shrink-0 rounded-full p-1 store-muted transition-colors hover:bg-[var(--store-hover-bg)] hover:text-[var(--store-fg)]"
                   aria-label="Remove item"
                 >
@@ -108,7 +118,7 @@ export function CartView({ tenantId }: { tenantId: string }) {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => updateQuantity(line.productId, line.quantity - 1)}
+                  onClick={() => updateQuantity(key, line.quantity - 1)}
                   className="store-card flex h-8 w-8 items-center justify-center transition-colors hover:bg-[var(--store-hover-bg)] active:scale-95"
                   aria-label="Decrease quantity"
                 >
@@ -117,8 +127,10 @@ export function CartView({ tenantId }: { tenantId: string }) {
                 <span className="w-6 text-center text-sm">{line.quantity}</span>
                 <button
                   type="button"
-                  onClick={() => updateQuantity(line.productId, line.quantity + 1)}
-                  className="store-card flex h-8 w-8 items-center justify-center transition-colors hover:bg-[var(--store-hover-bg)] active:scale-95"
+                  onClick={() => updateQuantity(key, line.quantity + 1)}
+                  disabled={atStockLimit}
+                  title={atStockLimit ? "No more in stock" : undefined}
+                  className="store-card flex h-8 w-8 items-center justify-center transition-colors hover:bg-[var(--store-hover-bg)] active:scale-95 disabled:pointer-events-none disabled:opacity-40"
                   aria-label="Increase quantity"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -130,12 +142,13 @@ export function CartView({ tenantId }: { tenantId: string }) {
             <div className="hidden flex-1 items-center gap-4 sm:flex">
               <div className="flex-1">
                 <p className="store-heading text-base">{line.title}</p>
+                {options && <p className="store-muted text-xs">{options}</p>}
                 <p className="store-accent-text text-sm">{formatMoney(line.price)}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => updateQuantity(line.productId, line.quantity - 1)}
+                  onClick={() => updateQuantity(key, line.quantity - 1)}
                   className="store-card flex h-8 w-8 items-center justify-center transition-colors hover:bg-[var(--store-hover-bg)] active:scale-95"
                   aria-label="Decrease quantity"
                 >
@@ -144,8 +157,10 @@ export function CartView({ tenantId }: { tenantId: string }) {
                 <span className="w-6 text-center text-sm">{line.quantity}</span>
                 <button
                   type="button"
-                  onClick={() => updateQuantity(line.productId, line.quantity + 1)}
-                  className="store-card flex h-8 w-8 items-center justify-center transition-colors hover:bg-[var(--store-hover-bg)] active:scale-95"
+                  onClick={() => updateQuantity(key, line.quantity + 1)}
+                  disabled={atStockLimit}
+                  title={atStockLimit ? "No more in stock" : undefined}
+                  className="store-card flex h-8 w-8 items-center justify-center transition-colors hover:bg-[var(--store-hover-bg)] active:scale-95 disabled:pointer-events-none disabled:opacity-40"
                   aria-label="Increase quantity"
                 >
                   <Plus className="h-3.5 w-3.5" />
@@ -156,7 +171,7 @@ export function CartView({ tenantId }: { tenantId: string }) {
               </p>
               <button
                 type="button"
-                onClick={() => handleRemove(line.productId)}
+                onClick={() => handleRemove(key)}
                 className="ml-2 rounded-full p-1 store-muted transition-colors hover:bg-[var(--store-hover-bg)] hover:text-[var(--store-fg)]"
                 aria-label="Remove item"
               >
@@ -164,7 +179,8 @@ export function CartView({ tenantId }: { tenantId: string }) {
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="mt-8 flex items-center justify-between border-t border-[var(--store-border)] pt-6">
         <p className="store-heading text-lg font-semibold">Total</p>

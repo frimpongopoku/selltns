@@ -10,17 +10,23 @@ export function TagInput({
   tags,
   onChange,
   placeholder = "Add a tag…",
+  preserveCase = false,
+  maxTags = MAX_TAGS,
 }: {
   tags: string[];
   onChange: (tags: string[]) => void;
   placeholder?: string;
+  /** Keep the vendor's casing (sizes like "XL") — still deduped case-insensitively. */
+  preserveCase?: boolean;
+  maxTags?: number;
 }) {
   const [draft, setDraft] = useState("");
 
   function commit(raw: string) {
-    const tag = raw.trim().toLowerCase();
+    const tag = preserveCase ? raw.trim() : raw.trim().toLowerCase();
     if (!tag) return;
-    if (tag.length > MAX_TAG_LENGTH || tags.includes(tag) || tags.length >= MAX_TAGS) {
+    const duplicate = tags.some((t) => t.toLowerCase() === tag.toLowerCase());
+    if (tag.length > MAX_TAG_LENGTH || duplicate || tags.length >= maxTags) {
       setDraft("");
       return;
     }
@@ -43,7 +49,7 @@ export function TagInput({
           <button
             type="button"
             onClick={() => removeAt(i)}
-            aria-label={`Remove tag ${tag}`}
+            aria-label={`Remove ${tag}`}
             className="text-muted-foreground hover:text-foreground"
           >
             <X className="h-3 w-3" />

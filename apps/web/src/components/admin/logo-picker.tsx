@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Check, Loader2, Store, Trash2, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
 import { uploadMedia } from "@/lib/upload";
-import { ACCEPTED_IMAGE_INPUT_ACCEPT, validateImageFile } from "@/lib/media-constraints";
+import { ACCEPTED_IMAGE_INPUT_ACCEPT, prepareImageFile } from "@/lib/media-constraints";
 
 interface StagedLogo {
   file: File;
@@ -35,10 +35,10 @@ export function LogoPicker({
     };
   }, [staged]);
 
-  function handleSelect(file: File) {
-    const error = validateImageFile(file);
-    if (error) {
-      toast.error(error, { description: file.name });
+  async function handleSelect(picked: File) {
+    const { file, error } = await prepareImageFile(picked);
+    if (!file) {
+      toast.error(error, { description: picked.name });
       return;
     }
     setStaged({ file, previewUrl: URL.createObjectURL(file) });

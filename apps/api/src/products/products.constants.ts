@@ -1,6 +1,8 @@
 export const MAX_TAGS_PER_PRODUCT = 10;
 export const MAX_TAG_LENGTH = 30;
 export const MAX_VIDEOS_PER_PRODUCT = 5;
+export const MAX_OPTIONS_PER_PRODUCT = 20;
+export const MAX_OPTION_LENGTH = 30;
 
 // Grid page size for the products explorer's infinite scroll — smaller than
 // media's (40) since product cards carry more info and render larger.

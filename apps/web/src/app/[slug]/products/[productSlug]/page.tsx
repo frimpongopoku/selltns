@@ -5,7 +5,7 @@ import { CalendarClock } from "lucide-react";
 import { getCollections, getProduct, getProducts, getTenantBySlug } from "@/lib/api";
 import { formatMoney } from "@/lib/format";
 import { discountedPrice, isOnSale } from "@/lib/pricing";
-import { AddToCartButton } from "@/components/storefront/add-to-cart-button";
+import { ProductPurchase } from "@/components/storefront/product-purchase";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { ProductCard } from "@/components/storefront/product-card";
 import { getCanonicalUrl } from "@/lib/canonical";
@@ -150,7 +150,7 @@ export default async function ProductPage({
             )}
           </dl>
           <div className="mt-9">
-            <AddToCartButton product={product} />
+            <ProductPurchase product={product} />
           </div>
           <p className="store-muted mt-5 max-w-sm text-xs leading-relaxed">
             {product.preorder

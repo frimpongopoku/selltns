@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { formatMoney, formatDateTime } from "@/lib/format";
+import { itemOptionsLabel } from "@/lib/item-options";
 import { StatusBadge } from "@/components/storefront/status-badge";
 import { OrderActions } from "@/components/admin/order-actions";
 import { PreorderActions } from "@/components/admin/preorder-actions";
@@ -64,10 +65,14 @@ export function OrderDetailContent({
       )}
 
       <Card className="mt-6 divide-y p-0">
-        {order.items.map((item) => (
-          <div key={item.productId} className="flex justify-between px-5 py-3.5 text-sm">
+        {order.items.map((item, index) => (
+          <div key={index} className="flex justify-between px-5 py-3.5 text-sm">
             <span>
-              {item.title} <span className="text-muted-foreground">× {item.quantity}</span>
+              {item.title}
+              {itemOptionsLabel(item) && (
+                <span className="font-medium"> ({itemOptionsLabel(item)})</span>
+              )}{" "}
+              <span className="text-muted-foreground">× {item.quantity}</span>
             </span>
             <span>{formatMoney(item.priceAtOrder * item.quantity)}</span>
           </div>

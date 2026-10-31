@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { OrdersService } from './orders.service';
+import { OrdersService, type ManualOrderInput } from './orders.service';
 import type { OrderItem, OrderStatus, OrderSource } from '../common/types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -20,6 +20,8 @@ import type { SessionPayload } from '../auth/jwt-auth.guard';
 interface CreateOrderItemInput {
   productId: string;
   quantity: number;
+  size?: string | null;
+  color?: string | null;
 }
 
 @Controller('orders')
@@ -77,6 +79,18 @@ export class OrdersController {
     },
   ) {
     return this.ordersService.create(body);
+  }
+
+  // An order the vendor took outside the storefront (in person, by phone,
+  // in DMs) — recorded so it counts toward their sales and stock.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER', 'STAFF')
+  @Post('manual')
+  createManual(
+    @CurrentUser() user: SessionPayload,
+    @Body() body: ManualOrderInput,
+  ) {
+    return this.ordersService.createManual(user.tenantId, body);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

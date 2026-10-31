@@ -9,10 +9,18 @@ import { discountedPrice, isOnSale } from "@/lib/pricing";
 import { AddToCartButton } from "./add-to-cart-button";
 import { useStoreHref } from "./store-context";
 import { productPath } from "@/lib/product-path";
+import { productOptionsLine } from "@/lib/item-options";
 
 export function ProductCard({ product }: { product: Product }) {
   const href = useStoreHref(productPath(product));
   const onSale = isOnSale(product);
+  const hasOptions = (product.sizes?.length ?? 0) > 0 || (product.colors?.length ?? 0) > 0;
+  // Sizes and colors on one quiet, single-line row — truncated rather than
+  // wrapped so cards in a grid stay the same height.
+  const optionsLine = [productOptionsLine(product.sizes), productOptionsLine(product.colors)]
+    .filter(Boolean)
+    .join("  |  ");
+  const outOfStock = product.trackStock && product.stock <= 0 && !product.preorder;
 
   return (
     <div className="store-card group flex h-full flex-col overflow-hidden bg-[var(--store-bg)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
@@ -46,12 +54,17 @@ export function ProductCard({ product }: { product: Product }) {
           </span>
         )}
       </Link>
-      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-5">
+      <div className="flex flex-1 flex-col gap-1 p-3 sm:p-5">
         <Link href={href}>
-          <h3 className="store-heading line-clamp-2 min-h-[2.75em] text-sm leading-snug transition-colors group-hover:text-[var(--store-primary)] sm:text-base">
+          <h3 className="store-heading line-clamp-2 text-sm leading-snug transition-colors group-hover:text-[var(--store-primary)] sm:text-base">
             {product.title}
           </h3>
         </Link>
+        {optionsLine && (
+          <p className="store-muted -mt-0.5 truncate text-[0.7rem] sm:text-xs" title={optionsLine}>
+            {optionsLine}
+          </p>
+        )}
         <p className="flex items-baseline gap-1.5">
           {onSale && (
             <span className="store-muted text-[0.7rem] line-through sm:text-xs">
@@ -63,7 +76,17 @@ export function ProductCard({ product }: { product: Product }) {
           </span>
         </p>
         <div className="mt-auto pt-2 sm:pt-3">
-          <AddToCartButton product={product} size="sm" />
+          {/* A size/color has to be picked first, which only the product page offers. */}
+          {hasOptions && !outOfStock ? (
+            <Link
+              href={href}
+              className="store-btn-primary flex w-full items-center justify-center px-4 py-2.5 text-sm font-medium"
+            >
+              Choose options
+            </Link>
+          ) : (
+            <AddToCartButton product={product} size="sm" />
+          )}
         </div>
       </div>
     </div>

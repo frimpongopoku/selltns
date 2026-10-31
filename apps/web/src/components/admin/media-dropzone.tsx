@@ -12,7 +12,8 @@ import {
   ACCEPTED_IMAGE_INPUT_ACCEPT,
   formatBytes,
   MAX_UPLOAD_BYTES,
-  validateImageFile,
+  isHeicFile,
+  prepareImageFile,
 } from "@/lib/media-constraints";
 import type { MediaAsset } from "@/lib/types";
 
@@ -53,14 +54,26 @@ export function MediaDropzone({
     };
   }, []);
 
-  const handleFiles = useCallback((fileList: FileList | null) => {
+  const handleFiles = useCallback(async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
 
+    const picked = Array.from(fileList);
+    // Converting iPhone photos takes a moment each, so say what's happening.
+    const heicCount = picked.filter(isHeicFile).length;
+    const converting =
+      heicCount > 0
+        ? toast.loading(heicCount === 1 ? "Preparing iPhone photo…" : `Preparing ${heicCount} iPhone photos…`)
+        : undefined;
+    // One at a time: decoding several full-size HEICs at once can run a
+    // phone out of memory.
+    const prepared = [];
+    for (const file of picked) prepared.push(await prepareImageFile(file));
+    if (converting !== undefined) toast.dismiss(converting);
+
     const additions: StagedFile[] = [];
-    for (const file of Array.from(fileList)) {
-      const error = validateImageFile(file);
-      if (error) {
-        toast.error(error, { description: file.name });
+    for (const [i, { file, error }] of prepared.entries()) {
+      if (!file) {
+        toast.error(error, { description: picked[i].name });
         continue;
       }
       additions.push({

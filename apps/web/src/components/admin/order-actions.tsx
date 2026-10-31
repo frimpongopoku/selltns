@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { modifyOrderItems, reopenOrder, updateOrderStatus } from "@/lib/api";
 import type { Order, OrderStatus } from "@/lib/types";
+import { itemWithOptions } from "@/lib/item-options";
 
 // Matches OrdersService.reopen's server-side window — kept here purely to
 // decide whether to show the button at all; the server is the actual gate.
@@ -33,9 +34,9 @@ export function OrderActions({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [modifyOpen, setModifyOpen] = useState(false);
-  const [quantities, setQuantities] = useState<Record<string, number>>(
-    Object.fromEntries(order.items.map((i) => [i.productId, i.quantity])),
-  );
+  // By position, not productId — one product can be on an order twice in
+  // different sizes/colors.
+  const [quantities, setQuantities] = useState<number[]>(order.items.map((i) => i.quantity));
 
   async function setStatus(status: OrderStatus, note?: string) {
     setBusy(true);
@@ -44,6 +45,9 @@ export function OrderActions({
       toast.success(`Order marked ${status.toLowerCase()}`);
       onUpdated?.(updated);
       router.refresh();
+    } catch (err) {
+      // e.g. not enough stock left to confirm — the API explains which item.
+      toast.error((err as Error).message || "Couldn't update this order");
     } finally {
       setBusy(false);
     }
@@ -83,7 +87,7 @@ export function OrderActions({
   async function submitModification() {
     setBusy(true);
     try {
-      const items = order.items.map((i) => ({ ...i, quantity: quantities[i.productId] }));
+      const items = order.items.map((i, index) => ({ ...i, quantity: quantities[index] }));
       const updated = await modifyOrderItems(order.id, tenantId, items, "Quantities updated by admin");
       toast.success(
         willNewlyConfirm
@@ -93,6 +97,8 @@ export function OrderActions({
       onUpdated?.(updated);
       setModifyOpen(false);
       router.refresh();
+    } catch (err) {
+      toast.error((err as Error).message || "Couldn't modify this order");
     } finally {
       setBusy(false);
     }
@@ -144,16 +150,16 @@ export function OrderActions({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
-            {order.items.map((item) => (
-              <div key={item.productId} className="flex items-center justify-between gap-3">
-                <span className="text-sm">{item.title}</span>
+            {order.items.map((item, index) => (
+              <div key={index} className="flex items-center justify-between gap-3">
+                <span className="text-sm">{itemWithOptions(item)}</span>
                 <Input
                   type="number"
                   min={0}
                   className="w-20"
-                  value={quantities[item.productId]}
+                  value={quantities[index]}
                   onChange={(e) =>
-                    setQuantities((q) => ({ ...q, [item.productId]: Number(e.target.value) }))
+                    setQuantities((q) => q.map((n, i) => (i === index ? Number(e.target.value) : n)))
                   }
                 />
               </div>

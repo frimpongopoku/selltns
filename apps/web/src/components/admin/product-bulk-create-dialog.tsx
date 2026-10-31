@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
   ImagePlus,
   Infinity as InfinityIcon,
   Layers,
@@ -32,6 +33,7 @@ import { GalleryPickerDialog, SelectionFooter } from "@/components/admin/gallery
 import { TagInput } from "@/components/admin/tag-input";
 import { createProduct } from "@/lib/api";
 import { emitProductCreated } from "@/lib/product-events";
+import { MAX_OPTIONS } from "@/lib/item-options";
 import type { MediaAsset } from "@/lib/types";
 
 interface DraftRow {
@@ -42,6 +44,8 @@ interface DraftRow {
   stock: string;
   alwaysInStock: boolean;
   isActive: boolean;
+  sizes: string[];
+  colors: string[];
   status: "idle" | "saving" | "saved" | "error";
   error?: string;
 }
@@ -59,6 +63,8 @@ function newRow(patch: Partial<DraftRow> = {}): DraftRow {
     stock: "",
     alwaysInStock: false,
     isActive: true,
+    sizes: [],
+    colors: [],
     status: "idle",
     ...patch,
   };
@@ -89,6 +95,8 @@ export function ProductBulkCreateDialog({ tenantId }: { tenantId: string }) {
 
   const [bulkPrice, setBulkPrice] = useState("");
   const [bulkTags, setBulkTags] = useState<string[]>([]);
+  const [bulkSizes, setBulkSizes] = useState<string[]>([]);
+  const [bulkColors, setBulkColors] = useState<string[]>([]);
 
   const pending = rows.filter((r) => r.status !== "saved");
   const savedCount = rows.length - pending.length;
@@ -135,6 +143,8 @@ export function ProductBulkCreateDialog({ tenantId }: { tenantId: string }) {
     setTitles({});
     setBulkPrice("");
     setBulkTags([]);
+    setBulkSizes([]);
+    setBulkColors([]);
     setShowErrors(false);
     setStep("photos");
   }
@@ -157,6 +167,8 @@ export function ProductBulkCreateDialog({ tenantId }: { tenantId: string }) {
           price: Number(row.price) || 0,
           images: row.images,
           tags: bulkTags,
+          sizes: row.sizes,
+          colors: row.colors,
           stock: Number(row.stock) || 0,
           trackStock: !row.alwaysInStock,
           isActive: row.isActive,
@@ -249,6 +261,10 @@ export function ProductBulkCreateDialog({ tenantId }: { tenantId: string }) {
                 onPriceChange={setBulkPrice}
                 tags={bulkTags}
                 onTagsChange={setBulkTags}
+                sizes={bulkSizes}
+                onSizesChange={setBulkSizes}
+                colors={bulkColors}
+                onColorsChange={setBulkColors}
                 onApply={applyToAll}
                 allAlwaysInStock={pending.length > 0 && pending.every((r) => r.alwaysInStock)}
                 allHidden={pending.length > 0 && pending.every((r) => !r.isActive)}
@@ -390,6 +406,10 @@ function BulkDefaults({
   onPriceChange,
   tags,
   onTagsChange,
+  sizes,
+  onSizesChange,
+  colors,
+  onColorsChange,
   onApply,
   allAlwaysInStock,
   allHidden,
@@ -399,6 +419,10 @@ function BulkDefaults({
   onPriceChange: (v: string) => void;
   tags: string[];
   onTagsChange: (v: string[]) => void;
+  sizes: string[];
+  onSizesChange: (v: string[]) => void;
+  colors: string[];
+  onColorsChange: (v: string[]) => void;
   onApply: (patch: Partial<DraftRow>) => void;
   allAlwaysInStock: boolean;
   allHidden: boolean;
@@ -466,6 +490,40 @@ function BulkDefaults({
           </div>
         </div>
       </div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <div className="min-w-0">
+          <Label className="text-xs">Sizes</Label>
+          <div className="mt-1">
+            <TagInput
+              tags={sizes}
+              onChange={onSizesChange}
+              placeholder="e.g. S, M, L"
+              preserveCase
+              maxTags={MAX_OPTIONS}
+            />
+          </div>
+        </div>
+        <div className="min-w-0">
+          <Label className="text-xs">Colors</Label>
+          <div className="mt-1">
+            <TagInput
+              tags={colors}
+              onChange={onColorsChange}
+              placeholder="e.g. Black, Red"
+              preserveCase
+              maxTags={MAX_OPTIONS}
+            />
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => onApply({ sizes, colors })}
+          disabled={disabled || (sizes.length === 0 && colors.length === 0)}
+        >
+          Apply sizes &amp; colors
+        </Button>
+      </div>
     </div>
   );
 }
@@ -488,6 +546,13 @@ function BulkRow({
   onEditPhotos: () => void;
 }) {
   const locked = disabled || row.status === "saved" || row.status === "saving";
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const optionsSummary = [
+    row.sizes.length > 0 && `Sizes: ${row.sizes.join(", ")}`,
+    row.colors.length > 0 && `Colors: ${row.colors.join(", ")}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const titleMissing = problem === "Needs a title";
   const priceMissing = problem === "Needs a price";
 
@@ -596,6 +661,41 @@ function BulkRow({
           </div>
           <RowStatus row={row} locked={locked} onRemove={onRemove} className="hidden sm:flex" />
         </div>
+      </div>
+
+      <div className="mt-2 sm:pl-[4.25rem]">
+        <button
+          type="button"
+          onClick={() => setOptionsOpen((o) => !o)}
+          disabled={locked}
+          aria-expanded={optionsOpen}
+          className="inline-flex max-w-full items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground"
+        >
+          <span className="truncate">{optionsSummary || "Add sizes & colors"}</span>
+          {!locked && (
+            <ChevronDown
+              className={`h-3 w-3 shrink-0 transition-transform ${optionsOpen ? "rotate-180" : ""}`}
+            />
+          )}
+        </button>
+        {optionsOpen && !locked && (
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            <TagInput
+              tags={row.sizes}
+              onChange={(sizes) => onPatch({ sizes })}
+              placeholder="Sizes, e.g. S, M, L"
+              preserveCase
+              maxTags={MAX_OPTIONS}
+            />
+            <TagInput
+              tags={row.colors}
+              onChange={(colors) => onPatch({ colors })}
+              placeholder="Colors, e.g. Black, Red"
+              preserveCase
+              maxTags={MAX_OPTIONS}
+            />
+          </div>
+        )}
       </div>
 
       {(problem || row.status === "error") && (

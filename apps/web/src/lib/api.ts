@@ -331,7 +331,12 @@ export const createOrder = (input: {
   customerEmail: string;
   whatsappNumber?: string;
   deliveryAddress?: string;
-  items: { productId: string; quantity: number }[];
+  items: {
+    productId: string;
+    quantity: number;
+    size?: string | null;
+    color?: string | null;
+  }[];
 }) => request<Order>("/orders", { method: "POST", body: JSON.stringify(input) });
 export const markOrderSeen = (id: string, tenantId: string) =>
   adminRequest<Order>(`/orders/${id}/seen`, {
@@ -352,6 +357,25 @@ export const reopenOrder = (id: string, tenantId: string) =>
   adminRequest<Order>(`/orders/${id}/reopen`, {
     method: "PATCH",
     body: JSON.stringify({ tenantId }),
+  });
+export const createManualOrder = (input: {
+  customerName: string;
+  customerContact?: string;
+  customerEmail?: string;
+  status: "CONFIRMED" | "COMPLETED";
+  orderedAt?: string;
+  note?: string;
+  items: {
+    productId: string;
+    quantity: number;
+    price?: number;
+    size?: string | null;
+    color?: string | null;
+  }[];
+}) =>
+  adminRequest<Order>("/orders/manual", {
+    method: "POST",
+    body: JSON.stringify(input),
   });
 export const modifyOrderItems = (
   id: string,

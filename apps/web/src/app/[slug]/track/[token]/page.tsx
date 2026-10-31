@@ -10,8 +10,9 @@ import {
   getTenantBySlug,
 } from "@/lib/api";
 import { formatMoney, formatDateTime } from "@/lib/format";
+import { itemOptionsLabel, itemWithOptions } from "@/lib/item-options";
 import { StatusBadge } from "@/components/storefront/status-badge";
-import { TrackerActions } from "@/components/storefront/order-tracker";
+import { TrackerActions, WhatsAppOrderPrompt } from "@/components/storefront/order-tracker";
 import { CopyValue } from "@/components/storefront/copy-value";
 import { PaymentMethodCard } from "@/components/storefront/payment-method-card";
 import { PaymentSafetyNotice } from "@/components/storefront/payment-safety-notice";
@@ -29,7 +30,7 @@ export async function generateMetadata({
   const { token } = await params;
   const order = await getOrderByToken(token).catch(() => null);
   if (!order) return { title: "Order not found" };
-  const summary = order.items.map((i) => `${i.quantity}x ${i.title}`).join(", ");
+  const summary = order.items.map((i) => `${i.quantity}x ${itemWithOptions(i)}`).join(", ");
   return {
     title: `Order for ${order.customerName}, ${formatMoney(order.total)}`,
     description: `${summary} · Total ${formatMoney(order.total)}`,
@@ -76,13 +77,38 @@ export default async function TrackOrderPage({
   const balanceAmount = order.balanceAmount ?? 0;
   const balanceDue = isPreorder && !!order.balanceRequestedAt && !order.balancePaid;
   const amountDueNow = balanceDue ? balanceAmount : depositAmount;
+  const isPending = order.status === "PENDING";
+  const whatsappNumberEncoded = tenant.whatsappNumber ? obscurePhone(tenant.whatsappNumber) : null;
+  const publicTenant = { ...tenant, phoneNumber: null, whatsappNumber: null };
 
   return (
-    <div className="mx-auto max-w-2xl animate-in fade-in-0 slide-in-from-bottom-2 px-4 py-12 duration-500 sm:px-6 sm:py-16 lg:px-8">
-      {isNew === "1" && (
-        <div className="store-card mb-7 animate-in zoom-in-95 bg-[color-mix(in_oklab,var(--store-accent)_15%,var(--store-bg))] p-4 text-sm duration-300">
-          Order request submitted! Save this link. It&apos;s the only way to
-          check your order status.
+    <div
+      className={`mx-auto max-w-2xl animate-in fade-in-0 slide-in-from-bottom-2 px-4 py-12 duration-500 sm:px-6 sm:py-16 lg:px-8 ${
+        isPending ? "pb-28 sm:pb-16" : ""
+      }`}
+    >
+      {isPending && (
+        <div className="store-card mb-8 animate-in zoom-in-95 border-amber-300 bg-amber-50 p-5 text-amber-950 duration-300 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+          <p className="store-heading text-lg font-semibold">
+            {isNew === "1"
+              ? "Order request sent, but it's not confirmed yet"
+              : `Waiting for ${tenant.name} to confirm`}
+          </p>
+          <p className="mt-2 text-sm leading-relaxed">
+            {tenant.name} needs to check their stock and make sure everything is available
+            before your order is final. Once they confirm, you&apos;ll get an email and this
+            page will show you how to pay. <strong>Please don&apos;t pay before then.</strong>
+          </p>
+          {isNew === "1" && (
+            <p className="mt-2 text-xs opacity-80">
+              Save this link. It&apos;s the only way to check your order status.
+            </p>
+          )}
+          <WhatsAppOrderPrompt
+            order={order}
+            tenant={publicTenant}
+            whatsappNumberEncoded={whatsappNumberEncoded}
+          />
         </div>
       )}
 
@@ -90,12 +116,12 @@ export default async function TrackOrderPage({
         <h1 className="store-heading text-2xl font-semibold">
           {isPreorder ? "Pre-order tracking" : "Order tracking"}
         </h1>
-        <StatusBadge status={order.status} />
+        <StatusBadge status={order.status} forCustomer />
       </div>
       <p className="store-muted mt-1.5 text-sm">Requested {formatDateTime(order.createdAt)}</p>
 
       <div className="store-card mt-7 divide-y divide-[var(--store-border)] p-5">
-        {order.items.map((item) => {
+        {order.items.map((item, index) => {
           const product = productByItem.get(item.productId);
           const isLive = Boolean(product && product.isActive);
           const image = product?.images[0];
@@ -117,7 +143,9 @@ export default async function TrackOrderPage({
                 <p className={isLive ? "transition-colors group-hover:text-[var(--store-primary)]" : ""}>
                   {item.title}
                 </p>
-                <p className="store-muted text-xs">Qty {item.quantity}</p>
+                <p className="store-muted text-xs">
+                  {itemOptionsLabel(item) && `${itemOptionsLabel(item)} · `}Qty {item.quantity}
+                </p>
               </div>
               <span className="text-sm font-medium">
                 {formatMoney(item.priceAtOrder * item.quantity)}
@@ -126,7 +154,7 @@ export default async function TrackOrderPage({
           );
 
           return (
-            <div key={item.productId} className="flex items-center gap-3 py-3.5 text-sm">
+            <div key={index} className="flex items-center gap-3 py-3.5 text-sm">
               {isLive && product ? (
                 <Link href={storeHref(slug, isCustomDomain, productPath(product))} className="group flex flex-1 items-center gap-3">
                   {content}
@@ -242,8 +270,8 @@ export default async function TrackOrderPage({
       <div className="mt-10">
         <TrackerActions
           order={order}
-          tenant={{ ...tenant, phoneNumber: null, whatsappNumber: null }}
-          whatsappNumberEncoded={tenant.whatsappNumber ? obscurePhone(tenant.whatsappNumber) : null}
+          tenant={publicTenant}
+          whatsappNumberEncoded={whatsappNumberEncoded}
           collectionTitle={collection?.title ?? null}
         />
       </div>

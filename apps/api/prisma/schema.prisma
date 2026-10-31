@@ -233,6 +233,11 @@ model Product {
   images                  String[] @default([])
   videoUrls               String[] @default([]) @map("video_urls")
   tags                    String[] @default([])
+  // Options the customer picks one of at add-to-cart time (e.g. S/M/L,
+  // Black/Red). Empty means the product has no such choice. Stock stays one
+  // number for the whole product — not tracked per size/color.
+  sizes                   String[] @default([])
+  colors                  String[] @default([])
   displayOrder            Int      @default(0) @map("display_order")
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
@@ -338,6 +343,10 @@ model Order {
   confirmedAt          DateTime?    @map("confirmed_at")
   completedAt          DateTime?    @map("completed_at")
   seenByAdminAt        DateTime?    @map("seen_by_admin_at")
+  // Whether this order's quantities are currently taken off product stock —
+  // set when the vendor confirms (or modifies) it, cleared when it's
+  // cancelled and the stock goes back. See OrdersService.
+  stockDeducted        Boolean      @default(false) @map("stock_deducted")
 
   // AFFILIATE orders are auto-created on the owner's tenant alongside the
   // affiliate's own customer-facing (DIRECT) order — see AffiliatesService/
