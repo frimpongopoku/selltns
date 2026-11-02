@@ -74,7 +74,15 @@ export class ProductsController {
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Post()
   create(@CurrentUser() user: SessionPayload, @Body() body: Partial<Product>) {
-    return this.productsService.create({ ...body, tenantId: user.tenantId });
+    // Hiding from affiliates is an OWNER/MANAGER call (same as the
+    // affiliate visibility endpoints), so STAFF can't set it at creation.
+    const { hiddenFromAllAffiliates, ...rest } = body;
+    const canSetVisibility = user.role === 'OWNER' || user.role === 'MANAGER';
+    return this.productsService.create({
+      ...rest,
+      ...(canSetVisibility ? { hiddenFromAllAffiliates } : {}),
+      tenantId: user.tenantId,
+    });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -1,4 +1,6 @@
-import type { MediaAsset } from "./types";
+import type { DropItem, MediaAsset } from "./types";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4311";
 
 // Plain fetch has no upload-progress event, so a real progress bar needs
 // XHR. Kept separate from lib/api.ts's JSON `request()` helper since this is
@@ -42,6 +44,34 @@ export function uploadMedia(
     };
     xhr.onerror = () => reject(new Error("Upload failed — check your connection."));
 
+    xhr.send(form);
+  });
+}
+
+// Photo Drop's public link: no session, so this goes straight to the API
+// (CORS allows any origin) rather than through the admin proxy.
+export function uploadDropPhoto(
+  token: string,
+  file: File,
+  onProgress?: (fraction: number) => void,
+): Promise<DropItem> {
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append("file", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}/photo-drop/public/${encodeURIComponent(token)}/photos`);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total);
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(JSON.parse(xhr.responseText) as DropItem);
+        return;
+      }
+      reject(new Error(parseErrorMessage(xhr.responseText, xhr.status)));
+    };
+    xhr.onerror = () => reject(new Error("Upload failed — check your connection."));
     xhr.send(form);
   });
 }

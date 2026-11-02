@@ -21,6 +21,7 @@ import { SuperAdminModule } from './superadmin/superadmin.module';
 import { BillingModule } from './billing/billing.module';
 import { HealthModule } from './health/health.module';
 import { AffiliatesModule } from './affiliates/affiliates.module';
+import { PhotoDropModule } from './photo-drop/photo-drop.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { AffiliatesModule } from './affiliates/affiliates.module';
     BillingModule,
     HealthModule,
     AffiliatesModule,
+    PhotoDropModule,
   ],
   controllers: [AppController],
   providers: [

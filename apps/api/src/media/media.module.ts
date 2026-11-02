@@ -36,5 +36,6 @@ const logger = new Logger('MediaModule');
       },
     },
   ],
+  exports: [MediaService],
 })
 export class MediaModule {}

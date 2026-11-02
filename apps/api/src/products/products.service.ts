@@ -50,7 +50,7 @@ function tagsOf(input: Partial<Product>) {
 
 // Sizes/colors keep the vendor's casing ("XL", "Navy Blue") — unlike tags,
 // they're shown to customers as typed — but are deduped case-insensitively.
-function optionsOf(raw: unknown, noun: 'sizes' | 'colors'): string[] {
+export function optionsOf(raw: unknown, noun: 'sizes' | 'colors'): string[] {
   if (raw === undefined || raw === null) return [];
   if (!Array.isArray(raw)) {
     throw new BadRequestException(`${noun} must be an array of strings.`);
@@ -361,6 +361,9 @@ export class ProductsService {
         stock: input.stock ?? 0,
         trackStock: input.trackStock ?? true,
         isActive: input.isActive ?? true,
+        // Set at creation so a product meant to be hidden is never briefly
+        // listed for affiliates (listings are reconciled lazily on read).
+        hiddenFromAllAffiliates: input.hiddenFromAllAffiliates ?? false,
         images: input.images ?? [],
         videoUrls: videoUrlsOf(input),
         tags: tagsOf(input),

@@ -118,6 +118,11 @@ model Tenant {
   heroTagline                String   @default("Small-batch, handmade pieces. Request your favorites and we'll confirm before arranging payment.") @map("hero_tagline")
   footerTagline              String   @default("Handmade, made-to-order pieces. Requested here, confirmed by us, paid your way.") @map("footer_tagline")
   storyBlocks                Json     @default("[]") @map("story_blocks")
+  // Photo Drop: a no-login link the vendor's team uses to dump product
+  // photos (see photo-drop/). Null token = never set up; a new token kills
+  // the old link.
+  photoDropToken             String?  @unique @map("photo_drop_token")
+  photoDropEnabled           Boolean  @default(false) @map("photo_drop_enabled")
   themeTokens                Json     @map("theme_tokens")
   createdAt                  DateTime @default(now()) @map("created_at")
 
@@ -136,6 +141,7 @@ model Tenant {
 
   memberships         TenantMembership[]
   mediaAssets         MediaAsset[]
+  dropItems           DropItem[]
   products            Product[]
   collections         Collection[]
   paymentMethods      PaymentMethod[]
@@ -202,6 +208,49 @@ model MediaAsset {
 
   @@index([tenantId])
   @@map("media_assets")
+}
+
+// A product-to-be sitting in the vendor's Photo Drop. Deliberately
+// separate from MediaAsset: nothing here shows in the gallery until the
+// admin sends it there (or turns it into a product), at which point its
+// photos become MediaAssets reusing the same storage keys and the item is
+// deleted.
+model DropItem {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  title     String   @default("")
+  // Whole GHS; null = not priced yet.
+  price     Int?
+  sizes     String[] @default([])
+  colors    String[] @default([])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id])
+  photos DropPhoto[]
+
+  @@index([tenantId])
+  @@map("drop_items")
+}
+
+model DropPhoto {
+  id        String   @id @default(cuid())
+  itemId    String   @map("item_id")
+  key       String
+  url       String
+  thumbKey  String   @map("thumb_key")
+  thumbUrl  String   @map("thumb_url")
+  width     Int
+  height    Int
+  bytes     Int
+  // Order within the item; 0 is the cover.
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  item DropItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("drop_photos")
 }
 
 model Product {

@@ -16,6 +16,11 @@ import type {
   MediaPage,
   MediaUsage,
   BulkDeleteMediaResult,
+  DropItem,
+  DropItemInput,
+  PhotoDropAdmin,
+  PhotoDropLink,
+  PhotoDropPublic,
   Order,
   OrderItem,
   OrderStatus,
@@ -298,6 +303,53 @@ export const bulkDeleteMedia = (ids: string[]) =>
   adminRequest<BulkDeleteMediaResult>("/media/bulk-delete", {
     method: "POST",
     body: JSON.stringify({ ids }),
+  });
+
+// Photo Drop — public (team link, by token)
+export const getPhotoDrop = (token: string) =>
+  request<PhotoDropPublic>(`/photo-drop/public/${encodeURIComponent(token)}`);
+export const updateDropItem = (token: string, id: string, input: DropItemInput) =>
+  request<DropItem>(`/photo-drop/public/${encodeURIComponent(token)}/items/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+export const groupDropItems = (token: string, ids: string[]) =>
+  request<DropItem>(`/photo-drop/public/${encodeURIComponent(token)}/items/group`, {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+export const removeDropItems = (token: string, ids: string[]) =>
+  request<{ removed: number }>(`/photo-drop/public/${encodeURIComponent(token)}/items/delete`, {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+
+// Photo Drop — admin
+export const getPhotoDropAdmin = () => adminRequest<PhotoDropAdmin>("/photo-drop");
+export const setPhotoDropEnabled = (enabled: boolean) =>
+  adminRequest<PhotoDropLink>("/photo-drop/link", {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+export const regeneratePhotoDropLink = () =>
+  adminRequest<PhotoDropLink>("/photo-drop/link/regenerate", { method: "POST" });
+export const adminRemoveDropItems = (ids: string[]) =>
+  adminRequest<{ removed: number }>("/photo-drop/items/delete", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+export const clearPhotoDrop = () =>
+  adminRequest<{ removed: number }>("/photo-drop/items/clear", { method: "POST" });
+export const dropItemsToGallery = (ids: string[]) =>
+  adminRequest<{ added: number }>("/photo-drop/items/to-gallery", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+// Creates one product from drop items and moves their photos to the gallery.
+export const createProductFromDrop = (ids: string[], product: Partial<Product>) =>
+  adminRequest<Product>("/photo-drop/items/to-product", {
+    method: "POST",
+    body: JSON.stringify({ ids, product }),
   });
 
 // Payment methods

@@ -127,6 +127,45 @@ export type MediaUsage =
   | { kind: "story" }
   | { kind: "logo" };
 
+// Photo Drop — the team's no-login photo link. Items aren't in the gallery
+// until the admin sends them there or turns them into products.
+export interface DropPhoto {
+  id: string;
+  url: string;
+  thumbUrl: string;
+}
+
+export interface DropItem {
+  id: string;
+  title: string;
+  price: number | null;
+  sizes: string[];
+  colors: string[];
+  createdAt: string;
+  photos: DropPhoto[];
+}
+
+export interface DropItemInput {
+  title?: string;
+  price?: number | null;
+  sizes?: string[];
+  colors?: string[];
+}
+
+export interface PhotoDropPublic {
+  shop: { name: string; logoUrl: string | null };
+  items: DropItem[];
+}
+
+export interface PhotoDropLink {
+  token: string | null;
+  enabled: boolean;
+}
+
+export interface PhotoDropAdmin extends PhotoDropLink {
+  items: DropItem[];
+}
+
 export interface BulkDeleteMediaResult {
   deleted: string[];
   skipped: { id: string; usages: MediaUsage[] }[];

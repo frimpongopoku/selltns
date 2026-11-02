@@ -8,7 +8,10 @@ import {
 import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { ImageProcessingService } from './image-processing.service';
+import {
+  ImageProcessingService,
+  type ProcessedImage,
+} from './image-processing.service';
 import {
   STORAGE_SERVICE,
   type StorageService,
@@ -56,6 +59,16 @@ export interface BulkRemoveResult {
 }
 
 const MAX_BULK_IDS = 500;
+
+export interface StoredImage {
+  key: string;
+  url: string;
+  thumbKey: string;
+  thumbUrl: string;
+  width: number;
+  height: number;
+  bytes: number;
+}
 
 // Raw query returns snake_case DB columns — map back to the Prisma shape so
 // callers (and the frontend) see one consistent MediaAsset regardless of
@@ -159,6 +172,34 @@ export class MediaService {
     input: { altText?: string; title?: string; tags?: unknown },
   ): Promise<MediaAsset> {
     if (!tenantId) throw new BadRequestException('tenantId is required');
+    const title = normalizeTitle(input.title);
+    const tags = normalizeTags(input.tags);
+
+    const id = randomUUID();
+    const stored = await this.processAndStore(
+      `tenants/${tenantId}/media/${id}`,
+      file,
+    );
+
+    return this.prisma.mediaAsset.create({
+      data: {
+        id,
+        tenantId,
+        ...stored,
+        title,
+        tags,
+        altText: input.altText ?? title ?? '',
+      },
+    });
+  }
+
+  // Validates, resizes and stores an uploaded image under `prefix` without
+  // creating a gallery entry — for Photo Drop, whose photos only become
+  // MediaAssets later (see adopt()).
+  async processAndStore(
+    prefix: string,
+    file: Express.Multer.File | undefined,
+  ): Promise<StoredImage> {
     if (!file) throw new BadRequestException('No file provided');
     if (
       !ALLOWED_MIME_TYPES.includes(
@@ -169,10 +210,6 @@ export class MediaService {
         'Unsupported file type — upload a JPEG, PNG, WebP or GIF image.',
       );
     }
-
-    const title = normalizeTitle(input.title);
-    const tags = normalizeTags(input.tags);
-
     const { display, thumb } = await this.imaging
       .process(file.buffer)
       .catch(() => {
@@ -180,32 +217,55 @@ export class MediaService {
           "Couldn't read that file — is it a valid image?",
         );
       });
+    return this.storeProcessed(prefix, display, thumb);
+  }
 
-    const id = randomUUID();
-    const key = `tenants/${tenantId}/media/${id}/original.webp`;
-    const thumbKey = `tenants/${tenantId}/media/${id}/thumb.webp`;
+  // Turns already-stored images into gallery entries, reusing their storage
+  // keys (nothing is copied), so URLs already in use stay valid.
+  async adopt(
+    tenantId: string,
+    images: (StoredImage & { title?: string | null })[],
+  ): Promise<void> {
+    if (images.length === 0) return;
+    await this.prisma.mediaAsset.createMany({
+      data: images.map(({ title, ...image }) => ({
+        tenantId,
+        ...image,
+        title: title || null,
+        altText: title || '',
+      })),
+    });
+  }
 
+  async deleteStored(images: { key: string; thumbKey: string }[]) {
+    await Promise.all(
+      images.flatMap((i) => [
+        this.storage.deleteObject(i.key),
+        this.storage.deleteObject(i.thumbKey),
+      ]),
+    );
+  }
+
+  private async storeProcessed(
+    prefix: string,
+    display: ProcessedImage,
+    thumb: ProcessedImage,
+  ): Promise<StoredImage> {
+    const key = `${prefix}/original.webp`;
+    const thumbKey = `${prefix}/thumb.webp`;
     await Promise.all([
       this.storage.putObject(key, display.buffer, 'image/webp'),
       this.storage.putObject(thumbKey, thumb.buffer, 'image/webp'),
     ]);
-
-    return this.prisma.mediaAsset.create({
-      data: {
-        id,
-        tenantId,
-        key,
-        url: this.storage.publicUrl(key),
-        thumbKey,
-        thumbUrl: this.storage.publicUrl(thumbKey),
-        width: display.width,
-        height: display.height,
-        bytes: display.buffer.length,
-        title,
-        tags,
-        altText: input.altText ?? title ?? '',
-      },
-    });
+    return {
+      key,
+      url: this.storage.publicUrl(key),
+      thumbKey,
+      thumbUrl: this.storage.publicUrl(thumbKey),
+      width: display.width,
+      height: display.height,
+      bytes: display.buffer.length,
+    };
   }
 
   async update(
