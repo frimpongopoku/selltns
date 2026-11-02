@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Copy, Loader2, Trash2 } from "lucide-react";
+import { AlertTriangle, Copy, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -15,10 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TagInput } from "@/components/admin/tag-input";
-import { deleteMedia, updateMedia } from "@/lib/api";
+import { MediaUsageList } from "@/components/admin/bulk-delete-media-dialog";
+import { deleteMedia, getMediaUsage, updateMedia } from "@/lib/api";
 import { formatBytes } from "@/lib/media-constraints";
 import { formatDateTime } from "@/lib/format";
-import type { MediaAsset } from "@/lib/types";
+import type { MediaAsset, MediaUsage } from "@/lib/types";
 
 export function MediaDetailDialog({
   asset,
@@ -73,6 +74,8 @@ function MediaDetailBody({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // null while checking where the photo is used.
+  const [usages, setUsages] = useState<MediaUsage[] | null>(null);
 
   const dirty = title !== (asset.title ?? "") || tags.join(",") !== asset.tags.join(",");
 
@@ -89,6 +92,18 @@ function MediaDetailBody({
     }
   }
 
+  async function handleStartDelete() {
+    setConfirmingDelete(true);
+    setUsages(null);
+    try {
+      const res = await getMediaUsage([asset.id]);
+      setUsages(res[asset.id] ?? []);
+    } catch {
+      toast.error("Couldn't check where this photo is used");
+      setConfirmingDelete(false);
+    }
+  }
+
   async function handleDelete() {
     setDeleting(true);
     try {
@@ -96,8 +111,8 @@ function MediaDetailBody({
       onDeleted(asset.id);
       onOpenChange(false);
       toast.success("Photo deleted");
-    } catch {
-      toast.error("Couldn't delete photo");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't delete photo");
     } finally {
       setDeleting(false);
     }
@@ -153,10 +168,29 @@ function MediaDetailBody({
         </div>
       </div>
 
+      {confirmingDelete && usages !== null && usages.length > 0 && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+          <p className="flex items-start gap-2 font-medium">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            This photo is in use, so it can&apos;t be deleted.
+          </p>
+          <p className="mt-1 pl-6 text-xs">Remove it from these places first, then delete again:</p>
+          <div className="mt-2 pl-6 text-xs">
+            <MediaUsageList usages={usages} />
+          </div>
+        </div>
+      )}
+
       <DialogFooter className="justify-between sm:justify-between">
         {confirmingDelete ? (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Delete this photo? Can&apos;t be undone.</span>
+            <span className="text-xs text-muted-foreground">
+              {usages === null
+                ? "Checking where it's used…"
+                : usages.length > 0
+                  ? "In use — can't delete."
+                  : "Delete this photo? Can't be undone."}
+            </span>
             <Button
               type="button"
               variant="ghost"
@@ -171,7 +205,7 @@ function MediaDetailBody({
               variant="destructive"
               size="sm"
               onClick={handleDelete}
-              disabled={deleting}
+              disabled={deleting || usages === null || usages.length > 0}
               className="gap-1.5"
             >
               {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -182,7 +216,7 @@ function MediaDetailBody({
           <Button
             type="button"
             variant="ghost"
-            onClick={() => setConfirmingDelete(true)}
+            onClick={handleStartDelete}
             className="gap-1.5 text-destructive hover:text-destructive"
           >
             <Trash2 className="h-4 w-4" />

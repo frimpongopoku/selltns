@@ -120,6 +120,18 @@ export interface MediaPage {
   nextCursor: string | null;
 }
 
+// Somewhere a photo is currently shown — in-use photos can't be bulk deleted.
+export type MediaUsage =
+  | { kind: "product"; id: string; title: string }
+  | { kind: "collection"; id: string; title: string }
+  | { kind: "story" }
+  | { kind: "logo" };
+
+export interface BulkDeleteMediaResult {
+  deleted: string[];
+  skipped: { id: string; usages: MediaUsage[] }[];
+}
+
 export interface PreorderInfo {
   collectionId: string;
   collectionTitle: string;

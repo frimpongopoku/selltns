@@ -14,6 +14,8 @@ import type {
   DomainStatus,
   MediaAsset,
   MediaPage,
+  MediaUsage,
+  BulkDeleteMediaResult,
   Order,
   OrderItem,
   OrderStatus,
@@ -285,6 +287,17 @@ export const updateMedia = (
 export const deleteMedia = (id: string, tenantId: string) =>
   adminRequest<{ id: string }>(`/media/${id}?tenantId=${tenantId}`, {
     method: "DELETE",
+  });
+export const getMediaUsage = (ids: string[]) =>
+  adminRequest<Record<string, MediaUsage[]>>("/media/usage", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+// Deletes only the photos that aren't in use; in-use ones come back in `skipped`.
+export const bulkDeleteMedia = (ids: string[]) =>
+  adminRequest<BulkDeleteMediaResult>("/media/bulk-delete", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
   });
 
 // Payment methods

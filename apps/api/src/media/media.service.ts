@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   NotFoundException,
@@ -24,6 +25,7 @@ import {
   normalizeTitle,
 } from './media.utils';
 import type { MediaAsset } from '@prisma/client';
+import type { ContentBlock } from '../common/types';
 
 export interface FindAllParams {
   cursor?: string;
@@ -37,6 +39,23 @@ export interface FindAllResult {
   items: MediaAsset[];
   nextCursor: string | null;
 }
+
+// Somewhere a photo is currently shown. Products, collections, the story
+// page and the store logo all store the photo's URL rather than its id, so
+// usage is found by matching URLs.
+export type MediaUsage =
+  | { kind: 'product'; id: string; title: string }
+  | { kind: 'collection'; id: string; title: string }
+  | { kind: 'story' }
+  | { kind: 'logo' };
+
+export interface BulkRemoveResult {
+  deleted: string[];
+  // Photos left alone because they're still in use somewhere.
+  skipped: { id: string; usages: MediaUsage[] }[];
+}
+
+const MAX_BULK_IDS = 500;
 
 // Raw query returns snake_case DB columns — map back to the Prisma shape so
 // callers (and the frontend) see one consistent MediaAsset regardless of
@@ -212,13 +231,121 @@ export class MediaService {
     });
     if (!asset) throw new NotFoundException(`Media ${id} not found`);
 
+    const usages = (await this.usagesFor([asset], tenantId))[asset.id];
+    if (usages.length > 0) {
+      throw new ConflictException(
+        "This photo is in use — remove it from wherever it's shown before deleting it.",
+      );
+    }
+    await this.deleteAsset(asset);
+    return { id: asset.id };
+  }
+
+  async findUsages(
+    ids: unknown,
+    tenantId: string,
+  ): Promise<Record<string, MediaUsage[]>> {
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: normalizeIds(ids) }, tenantId },
+    });
+    return this.usagesFor(assets, tenantId);
+  }
+
+  // Deletes only the photos nobody is using — in-use ones are skipped and
+  // reported back so the vendor can remove them from wherever they're shown
+  // first. Enforced here rather than trusted from the client.
+  async bulkRemove(ids: unknown, tenantId: string): Promise<BulkRemoveResult> {
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: normalizeIds(ids) }, tenantId },
+    });
+    const usages = await this.usagesFor(assets, tenantId);
+
+    const deleted: string[] = [];
+    const skipped: BulkRemoveResult['skipped'] = [];
+    for (const asset of assets) {
+      if (usages[asset.id].length > 0) {
+        skipped.push({ id: asset.id, usages: usages[asset.id] });
+        continue;
+      }
+      await this.deleteAsset(asset);
+      deleted.push(asset.id);
+    }
+    return { deleted, skipped };
+  }
+
+  private async deleteAsset(asset: MediaAsset): Promise<void> {
     await Promise.all([
       this.storage.deleteObject(asset.key),
       this.storage.deleteObject(asset.thumbKey),
     ]);
     await this.prisma.mediaAsset.delete({ where: { id: asset.id } });
-    return { id: asset.id };
   }
+
+  private async usagesFor(
+    assets: MediaAsset[],
+    tenantId: string,
+  ): Promise<Record<string, MediaUsage[]>> {
+    const result: Record<string, MediaUsage[]> = {};
+    if (assets.length === 0) return result;
+
+    const urls = assets.flatMap((a) => [a.url, a.thumbUrl]);
+    const [products, collections, tenant] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { tenantId, images: { hasSome: urls } },
+        select: { id: true, title: true, images: true },
+      }),
+      this.prisma.collection.findMany({
+        where: {
+          tenantId,
+          OR: [{ coverImage: { in: urls } }, { unfurlImage: { in: urls } }],
+        },
+        select: { id: true, title: true, coverImage: true, unfurlImage: true },
+      }),
+      this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { logoUrl: true, storyBlocks: true },
+      }),
+    ]);
+    const storyUrls = new Set(
+      ((tenant?.storyBlocks ?? []) as unknown as ContentBlock[]).flatMap(
+        (b) => b.imageUrls ?? [],
+      ),
+    );
+
+    for (const asset of assets) {
+      const matches = (url: string | null | undefined) =>
+        url === asset.url || url === asset.thumbUrl;
+      const usages: MediaUsage[] = [];
+      for (const p of products) {
+        if (p.images.some(matches)) {
+          usages.push({ kind: 'product', id: p.id, title: p.title });
+        }
+      }
+      for (const c of collections) {
+        if (matches(c.coverImage) || matches(c.unfurlImage)) {
+          usages.push({ kind: 'collection', id: c.id, title: c.title });
+        }
+      }
+      if (storyUrls.has(asset.url) || storyUrls.has(asset.thumbUrl)) {
+        usages.push({ kind: 'story' });
+      }
+      if (matches(tenant?.logoUrl)) usages.push({ kind: 'logo' });
+      result[asset.id] = usages;
+    }
+    return result;
+  }
+}
+
+function normalizeIds(raw: unknown): string[] {
+  if (!Array.isArray(raw))
+    throw new BadRequestException('ids must be an array');
+  const ids = [
+    ...new Set(raw.filter((v): v is string => typeof v === 'string')),
+  ];
+  if (ids.length > MAX_BULK_IDS) {
+    throw new BadRequestException(`At most ${MAX_BULK_IDS} photos at a time`);
+  }
+  return ids;
 }
 
 function parseDate(

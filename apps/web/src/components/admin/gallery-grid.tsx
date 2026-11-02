@@ -2,15 +2,14 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Check, Download, Loader2, Search, X } from "lucide-react";
+import { Check, Download, Loader2, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { MediaDetailDialog } from "@/components/admin/media-detail-dialog";
-import { ConfirmDeleteDialog } from "@/components/admin/confirm-delete-dialog";
+import { BulkDeleteMediaDialog } from "@/components/admin/bulk-delete-media-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { deleteMedia } from "@/lib/api";
 import { formatBytes } from "@/lib/media-constraints";
 import { useMediaLibrary } from "@/lib/use-media-library";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
@@ -36,10 +35,12 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
     removeAsset,
   } = useMediaLibrary(tenantId);
   const [selected, setSelected] = useState<MediaAsset | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  // Kept after closing so the dialog doesn't go blank during its exit animation.
+  const [pendingDelete, setPendingDelete] = useState<MediaAsset | null>(null);
+  const [quickDeleteOpen, setQuickDeleteOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(
     null,
   );
@@ -50,25 +51,10 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
     enabled: hasMore && !loading,
   });
 
-  function handleQuickDeleteClick(e: React.MouseEvent, id: string) {
+  function handleQuickDeleteClick(e: React.MouseEvent, asset: MediaAsset) {
     e.stopPropagation();
-    setPendingDeleteId(id);
-  }
-
-  async function handleConfirmDelete() {
-    if (!pendingDeleteId) return;
-    const id = pendingDeleteId;
-    setDeleting(true);
-    try {
-      await deleteMedia(id, tenantId);
-      removeAsset(id);
-      toast.success("Photo deleted");
-      setPendingDeleteId(null);
-    } catch {
-      toast.error("Couldn't delete photo. Please try again.");
-    } finally {
-      setDeleting(false);
-    }
+    setPendingDelete(asset);
+    setQuickDeleteOpen(true);
   }
 
   function handleCardClick(asset: MediaAsset) {
@@ -245,7 +231,7 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
                   ) : (
                     <button
                       type="button"
-                      onClick={(e) => handleQuickDeleteClick(e, asset.id)}
+                      onClick={(e) => handleQuickDeleteClick(e, asset)}
                       aria-label="Delete photo"
                       className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
                     >
@@ -301,6 +287,17 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
               </Button>
               <Button
                 type="button"
+                variant="outline"
+                size="sm"
+                disabled={selectedIds.size === 0 || downloadProgress !== null}
+                onClick={() => setBulkDeleteOpen(true)}
+                className="gap-1.5 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+              <Button
+                type="button"
                 size="sm"
                 disabled={selectedIds.size === 0 || downloadProgress !== null}
                 onClick={handleDownload}
@@ -331,13 +328,25 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
         }}
       />
 
-      <ConfirmDeleteDialog
-        open={pendingDeleteId !== null}
-        onOpenChange={(open) => !open && setPendingDeleteId(null)}
-        title="Delete this photo?"
-        description="This can't be undone — it'll also disappear anywhere it's currently in use (products, collections, story blocks)."
-        deleting={deleting}
-        onConfirm={handleConfirmDelete}
+      <BulkDeleteMediaDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        assets={assets.filter((a) => selectedIds.has(a.id))}
+        onDeleted={(ids) => {
+          ids.forEach(removeAsset);
+          // Keep the in-use photos selected so it's clear what was left behind.
+          const remaining = new Set(selectedIds);
+          ids.forEach((id) => remaining.delete(id));
+          if (remaining.size === 0) exitSelectMode();
+          else setSelectedIds(remaining);
+        }}
+      />
+
+      <BulkDeleteMediaDialog
+        open={quickDeleteOpen}
+        onOpenChange={setQuickDeleteOpen}
+        assets={pendingDelete ? [pendingDelete] : []}
+        onDeleted={(ids) => ids.forEach(removeAsset)}
       />
     </div>
   );

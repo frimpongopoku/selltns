@@ -57,7 +57,27 @@ export class MediaController {
     @Body('title') title?: string,
     @Body('tags') tags?: string,
   ) {
-    return this.mediaService.upload(user.tenantId, file, { altText, title, tags });
+    return this.mediaService.upload(user.tenantId, file, {
+      altText,
+      title,
+      tags,
+    });
+  }
+
+  // POST (not GET) so a large selection of ids fits in the body. Declared
+  // before the ':id' routes so "usage"/"bulk-delete" aren't read as ids.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
+  @Post('usage')
+  findUsages(@CurrentUser() user: SessionPayload, @Body('ids') ids: unknown) {
+    return this.mediaService.findUsages(ids, user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
+  @Post('bulk-delete')
+  bulkRemove(@CurrentUser() user: SessionPayload, @Body('ids') ids: unknown) {
+    return this.mediaService.bulkRemove(ids, user.tenantId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
