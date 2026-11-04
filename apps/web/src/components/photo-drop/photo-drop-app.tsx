@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { Camera, Check, ChevronLeft, Copy, Layers, Loader2, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { Ban, Camera, Check, ChevronLeft, Copy, Layers, Loader2, Plus, RotateCcw, Trash2, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,14 +14,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getPhotoDrop, groupDropItems, removeDropItems, updateDropItem } from "@/lib/api";
+import {
+  getPhotoDrop,
+  groupDropItems,
+  removeDropItemPhoto,
+  removeDropItems,
+  setDropItemsUnavailable,
+  updateDropItem,
+} from "@/lib/api";
 import { uploadDropPhoto } from "@/lib/upload";
 import { ACCEPTED_IMAGE_INPUT_ACCEPT, isHeicFile, prepareImageFile } from "@/lib/media-constraints";
 import { COLOR_PRESETS, SIZE_PRESETS, swatchFor } from "@/lib/drop-options";
 import { cn } from "@/lib/utils";
+import { PhotoDropHelp } from "./photo-drop-help";
 import type { DropItem, DropItemInput, PhotoDropPublic } from "@/lib/types";
 
-type Filter = "all" | "needs" | "ready";
+type Filter = "all" | "needs" | "ready" | "unavailable";
 
 interface Upload {
   key: string;
@@ -41,7 +49,9 @@ function newUploadKey() {
   return `upload-${uploadSeq}`;
 }
 
-const isReady = (item: DropItem) => item.price !== null;
+const isReady = (item: DropItem) => item.price !== null && !item.unavailable;
+// Unavailable items need no details, so they never count as "needs details".
+const needsDetails = (item: DropItem) => item.price === null && !item.unavailable;
 
 // The team's side of Photo Drop: a no-login page, built for phones, where
 // photos are dumped in bulk and then given a price, sizes and colors one
@@ -63,8 +73,21 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
   const uploadsRef = useRef<Upload[]>([]);
   const activeUploads = useRef(0);
 
-  const needs = items.filter((i) => !isReady(i));
-  const visible = filter === "all" ? items : filter === "needs" ? needs : items.filter(isReady);
+  const needs = items.filter(needsDetails);
+  const ready = items.filter(isReady);
+  const unavailable = items.filter((i) => i.unavailable);
+  const visible =
+    filter === "all"
+      ? items
+      : filter === "needs"
+        ? needs
+        : filter === "ready"
+          ? ready
+          : unavailable;
+  // In select mode, one button marks the picks unavailable — or, when every
+  // pick already is, makes them available again.
+  const allPickedUnavailable =
+    selected.length > 0 && selected.every((id) => items.find((i) => i.id === id)?.unavailable);
   const uploadingCount = uploads.filter((u) => u.status !== "error").length;
 
   const refresh = useCallback(async () => {
@@ -178,6 +201,26 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
     }
   }
 
+  async function handleUnavailable() {
+    const next = !allPickedUnavailable;
+    setBusy(true);
+    try {
+      await setDropItemsUnavailable(token, selected, next);
+      const picked = new Set(selected);
+      setItems((prev) => prev.map((i) => (picked.has(i.id) ? { ...i, unavailable: next } : i)));
+      toast.success(
+        next
+          ? `Marked ${selected.length === 1 ? "1 item" : `${selected.length} items`} unavailable`
+          : `${selected.length === 1 ? "1 item is" : `${selected.length} items are`} available again`,
+      );
+      exitSelect();
+    } catch (err) {
+      toast.error((err as Error).message || "Couldn't update those items");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleRemove() {
     setBusy(true);
     try {
@@ -264,24 +307,30 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
                 <Image
                   src={initial.shop.logoUrl}
                   alt=""
-                  width={36}
-                  height={36}
-                  className="size-9 rounded-full border object-cover"
+                  width={48}
+                  height={48}
+                  className="size-12 shrink-0 rounded-full border object-cover"
                 />
               ) : (
-                <span className="flex size-9 items-center justify-center rounded-full bg-foreground text-sm font-bold text-background">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
                   {initial.shop.name.slice(0, 2).toUpperCase()}
                 </span>
               )}
-              <div className="min-w-0">
-                <p className="truncate font-semibold">{initial.shop.name}</p>
+              <div className="min-w-0 flex-1">
+                <p className="font-heading truncate text-lg leading-tight font-semibold">{initial.shop.name}</p>
                 <p className="text-xs text-muted-foreground">Photo drop · anyone with this link can add</p>
               </div>
+              <div className="sm:hidden">
+                <PhotoDropHelp audience="team" shopName={initial.shop.name} trigger="icon" />
+              </div>
+            </div>
+            <div className="hidden sm:block sm:ml-auto">
+              <PhotoDropHelp audience="team" shopName={initial.shop.name} trigger="icon" />
             </div>
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="flex h-16 items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-muted-foreground/40 bg-muted/60 text-base font-semibold hover:bg-muted active:bg-muted sm:h-12 sm:px-6"
+              className="flex h-16 items-center justify-center gap-2.5 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/10 text-base font-semibold hover:bg-primary/15 active:bg-primary/20 sm:h-12 sm:px-6"
             >
               <Camera className="size-5" />
               Take or choose photos
@@ -314,7 +363,10 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
             [
               ["all", `All ${items.length}`],
               ["needs", `Needs details ${needs.length}`],
-              ["ready", `Ready ${items.length - needs.length}`],
+              ["ready", `Ready ${ready.length}`],
+              ...(unavailable.length > 0 || filter === "unavailable"
+                ? ([["unavailable", `Unavailable ${unavailable.length}`]] as const)
+                : []),
             ] as const
           ).map(([value, label]) => (
             <button
@@ -380,7 +432,13 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
                   )}
                 >
                   {item.photos[0] && (
-                    <Image src={item.photos[0].thumbUrl} alt={item.title} fill sizes="(min-width: 1024px) 16vw, (min-width: 768px) 20vw, (min-width: 640px) 25vw, 33vw" className="object-cover" />
+                    <Image
+                      src={item.photos[0].thumbUrl}
+                      alt={item.title}
+                      fill
+                      sizes="(min-width: 1024px) 16vw, (min-width: 768px) 20vw, (min-width: 640px) 25vw, 33vw"
+                      className={cn("object-cover", item.unavailable && "opacity-45 grayscale")}
+                    />
                   )}
                   {item.photos.length > 1 && (
                     <span className="absolute top-1.5 right-1.5 flex h-5 items-center gap-0.5 rounded-md bg-black/75 px-1.5 text-[11px] font-semibold text-white">
@@ -396,6 +454,11 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
                       )}
                     >
                       {pick >= 0 ? pick + 1 : ""}
+                    </span>
+                  ) : item.unavailable ? (
+                    <span className="absolute bottom-1.5 left-1.5 flex h-[22px] items-center gap-1 rounded-md bg-zinc-800 px-1.5 text-[11px] font-bold text-white">
+                      <Ban className="size-3" />
+                      Unavailable
                     </span>
                   ) : isReady(item) ? (
                     <span className="absolute bottom-1.5 left-1.5 flex h-[22px] items-center rounded-md bg-white px-1.5 text-[11px] font-bold text-green-800">
@@ -426,13 +489,23 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
                   className="h-12 gap-1.5 border-red-200 px-4 text-base text-red-700"
                   disabled={selected.length === 0 || busy}
                   onClick={() => setConfirmRemove(true)}
+                  aria-label="Remove"
                 >
                   <Trash2 className="size-4" />
-                  Remove
+                  <span className="hidden sm:inline">Remove</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 gap-1.5 px-4 text-base"
+                  disabled={selected.length === 0 || busy}
+                  onClick={handleUnavailable}
+                >
+                  {allPickedUnavailable ? <Undo2 className="size-4" /> : <Ban className="size-4" />}
+                  {allPickedUnavailable ? "Available" : "Unavailable"}
                 </Button>
                 <Button className="h-12 flex-1 gap-1.5 text-base sm:flex-none sm:px-8" disabled={selected.length < 2 || busy} onClick={handleGroup}>
                   {busy ? <Loader2 className="size-4 animate-spin" /> : <Layers className="size-4" />}
-                  {selected.length < 2 ? "Pick 2+ to group" : "Group as one product"}
+                  {selected.length < 2 ? "Pick 2+ to group" : "Group"}
                 </Button>
               </>
             ) : (
@@ -455,7 +528,9 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
           item={editingItem}
           position={editor.index + 1}
           total={editor.queue.length}
+          token={token}
           lastPrice={lastPrice}
+          onItemChange={(updated) => setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))}
           onSave={(input) => saveItem(editingItem.id, input)}
           onNext={advance}
           onClose={() => setEditor(null)}
@@ -489,7 +564,9 @@ function ItemEditor({
   item,
   position,
   total,
+  token,
   lastPrice,
+  onItemChange,
   onSave,
   onNext,
   onClose,
@@ -497,7 +574,9 @@ function ItemEditor({
   item: DropItem;
   position: number;
   total: number;
+  token: string;
   lastPrice: number | null;
+  onItemChange: (item: DropItem) => void;
   onSave: (input: DropItemInput) => Promise<void>;
   onNext: () => void;
   onClose: () => void;
@@ -508,6 +587,50 @@ function ItemEditor({
   const [colors, setColors] = useState<string[]>(item.colors);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [addingPhotos, setAddingPhotos] = useState(0);
+  // Removing a photo takes two taps so a stray tap can't lose one.
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  async function addPhotos(list: FileList | null) {
+    if (!list || list.length === 0) return;
+    const picked = Array.from(list);
+    setAddingPhotos(picked.length);
+    // One at a time, like the main uploader: HEIC decoding is memory-hungry.
+    for (const original of picked) {
+      const { file, error } = await prepareImageFile(original);
+      if (!file) {
+        toast.error(error, { description: original.name });
+      } else {
+        try {
+          const updated = await uploadDropPhoto(token, file, undefined, item.id);
+          onItemChange(updated);
+          setPhotoIndex(updated.photos.length - 1);
+        } catch (err) {
+          toast.error((err as Error).message || "Couldn't add that photo");
+        }
+      }
+      setAddingPhotos((n) => n - 1);
+    }
+  }
+
+  async function removePhoto(photoId: string) {
+    if (confirmRemove !== photoId) {
+      setConfirmRemove(photoId);
+      return;
+    }
+    setRemoving(true);
+    try {
+      onItemChange(await removeDropItemPhoto(token, item.id, photoId));
+      setPhotoIndex(0);
+    } catch (err) {
+      toast.error((err as Error).message || "Couldn't remove that photo");
+    } finally {
+      setRemoving(false);
+      setConfirmRemove(null);
+    }
+  }
 
   const sizeOptions = [...SIZE_PRESETS, ...sizes.filter((s) => !SIZE_PRESETS.some((p) => p.toLowerCase() === s.toLowerCase()))];
   const colorOptions = [
@@ -534,6 +657,30 @@ function ItemEditor({
 
   const photo = item.photos[photoIndex] ?? item.photos[0];
 
+  // Unavailable products need no details: mark and move straight on.
+  async function markUnavailable() {
+    setSaving(true);
+    try {
+      await onSave({ unavailable: true });
+      toast.success("Marked unavailable");
+      onNext();
+    } catch (err) {
+      toast.error((err as Error).message || "Couldn't update — try again");
+      setSaving(false);
+    }
+  }
+
+  async function markAvailable() {
+    setSaving(true);
+    try {
+      await onSave({ unavailable: false });
+    } catch (err) {
+      toast.error((err as Error).message || "Couldn't update — try again");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-30 flex flex-col bg-background sm:items-center sm:justify-center sm:bg-black/50 sm:p-6">
       <div className="flex w-full flex-1 flex-col overflow-hidden bg-background sm:max-h-[min(880px,92dvh)] sm:max-w-2xl sm:flex-none sm:rounded-2xl sm:shadow-2xl md:max-w-5xl">
@@ -549,31 +696,90 @@ function ItemEditor({
               <div className="h-full bg-foreground" style={{ width: `${(position / total) * 100}%` }} />
             </div>
           </div>
+          {!item.unavailable && (
+            <Button variant="outline" className="h-10 shrink-0 gap-1.5" onClick={markUnavailable} disabled={saving}>
+              <Ban className="size-4" />
+              Unavailable
+            </Button>
+          )}
         </div>
+        {item.unavailable && (
+          <div className="mx-4 mb-3 flex items-center justify-between gap-3 rounded-xl bg-zinc-800 px-3.5 py-2.5 text-sm text-white sm:mx-6">
+            <span className="flex items-center gap-2 font-medium">
+              <Ban className="size-4 shrink-0" />
+              Marked unavailable. No details needed.
+            </span>
+            <button
+              type="button"
+              onClick={markAvailable}
+              disabled={saving}
+              className="flex shrink-0 items-center gap-1 rounded-lg bg-white/15 px-2.5 py-1.5 text-xs font-semibold"
+            >
+              <Undo2 className="size-3.5" />
+              Mark available
+            </button>
+          </div>
+        )}
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-6 md:grid md:grid-cols-2 md:gap-8">
+          <input
+            ref={addInputRef}
+            type="file"
+            multiple
+            accept={ACCEPTED_IMAGE_INPUT_ACCEPT}
+            className="hidden"
+            onChange={(e) => {
+              void addPhotos(e.target.files);
+              e.target.value = "";
+            }}
+          />
           <div className="flex gap-2 md:self-start">
             <div className="relative h-[34dvh] min-h-48 flex-1 overflow-hidden rounded-2xl bg-muted md:h-[min(560px,64dvh)]">
               {photo && <Image src={photo.url} alt={title} fill sizes="(min-width: 768px) 480px, 80vw" className="object-contain" />}
+              {photo && item.photos.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removePhoto(photo.id)}
+                  disabled={removing}
+                  className={cn(
+                    "absolute top-2 right-2 flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold shadow-sm",
+                    confirmRemove === photo.id ? "bg-destructive text-white" : "bg-background/90 text-foreground",
+                  )}
+                >
+                  {removing ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                  {confirmRemove === photo.id ? "Tap again to remove" : "Remove photo"}
+                </button>
+              )}
             </div>
-            {item.photos.length > 1 && (
-              <div className="flex w-14 flex-col gap-1.5 overflow-y-auto">
-                {item.photos.map((p, i) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setPhotoIndex(i)}
-                    aria-label={`Photo ${i + 1}`}
-                    className={cn(
-                      "relative aspect-square shrink-0 overflow-hidden rounded-lg bg-muted",
-                      i === photoIndex && "ring-2 ring-foreground ring-inset",
-                    )}
-                  >
-                    <Image src={p.thumbUrl} alt="" fill sizes="56px" className="object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="flex w-14 flex-col gap-1.5 overflow-y-auto">
+              {item.photos.map((p, i) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    setPhotoIndex(i);
+                    setConfirmRemove(null);
+                  }}
+                  aria-label={`Photo ${i + 1}`}
+                  className={cn(
+                    "relative aspect-square shrink-0 overflow-hidden rounded-lg bg-muted",
+                    i === photoIndex && "ring-2 ring-foreground ring-inset",
+                  )}
+                >
+                  <Image src={p.thumbUrl} alt="" fill sizes="56px" className="object-cover" />
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => addInputRef.current?.click()}
+                disabled={addingPhotos > 0}
+                aria-label="Add more photos of this product"
+                className="flex aspect-square shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-muted-foreground/50 text-[10px] font-medium text-muted-foreground"
+              >
+                {addingPhotos > 0 ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                {addingPhotos > 0 ? addingPhotos : "Add"}
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 flex flex-col gap-5 md:mt-0">

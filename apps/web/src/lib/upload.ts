@@ -50,17 +50,20 @@ export function uploadMedia(
 
 // Photo Drop's public link: no session, so this goes straight to the API
 // (CORS allows any origin) rather than through the admin proxy.
+// With `itemId`, the photo is added to that item instead of starting a new one.
 export function uploadDropPhoto(
   token: string,
   file: File,
   onProgress?: (fraction: number) => void,
+  itemId?: string,
 ): Promise<DropItem> {
   return new Promise((resolve, reject) => {
     const form = new FormData();
     form.append("file", file);
 
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${API_URL}/photo-drop/public/${encodeURIComponent(token)}/photos`);
+    const base = `${API_URL}/photo-drop/public/${encodeURIComponent(token)}`;
+    xhr.open("POST", itemId ? `${base}/items/${itemId}/photos` : `${base}/photos`);
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress?.(event.loaded / event.total);
     };

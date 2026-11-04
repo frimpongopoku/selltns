@@ -10,6 +10,7 @@ import { AddToCartButton } from "./add-to-cart-button";
 import { useStoreHref } from "./store-context";
 import { productPath } from "@/lib/product-path";
 import { productOptionsLine } from "@/lib/item-options";
+import { productImagePosition } from "@/lib/image-focus";
 
 export function ProductCard({ product }: { product: Product }) {
   const href = useStoreHref(productPath(product));
@@ -31,7 +32,8 @@ export function ProductCard({ product }: { product: Product }) {
             alt={product.title}
             fill
             sizes="(max-width: 768px) 33vw, 25vw"
-            className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            style={{ objectPosition: productImagePosition(product, product.images[0]) }}
           />
         ) : (
           <div className="h-full w-full bg-[var(--store-hover-bg)]" />

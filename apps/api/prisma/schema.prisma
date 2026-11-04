@@ -202,6 +202,11 @@ model MediaAsset {
   title     String?
   tags      String[] @default([])
   altText   String   @default("") @map("alt_text")
+  // Optional focus point (0–100 % from the left / top) for when the photo is
+  // cropped, e.g. a product shot whose subject sits at the bottom of a tall
+  // photo. Null = the default crop (top centre), so unset photos never move.
+  focusX    Int?     @map("focus_x")
+  focusY    Int?     @map("focus_y")
   createdAt DateTime @default(now()) @map("created_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
@@ -223,6 +228,9 @@ model DropItem {
   price     Int?
   sizes     String[] @default([])
   colors    String[] @default([])
+  // Marked by the team when the product isn't available — no details
+  // needed; the admin usually just removes these.
+  unavailable Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -244,12 +252,20 @@ model DropPhoto {
   height    Int
   bytes     Int
   // Order within the item; 0 is the cover.
-  position  Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
+  position     Int      @default(0)
+  // Set when the admin sent an existing gallery photo to the drop: the
+  // storage files belong to that MediaAsset, so the drop never deletes or
+  // re-adds them (and the gallery won't delete the asset while it's here).
+  mediaAssetId String?  @map("media_asset_id")
+  // Suggested focus point (% from left/top), carried into the gallery.
+  focusX       Int?     @map("focus_x")
+  focusY       Int?     @map("focus_y")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   item DropItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([itemId])
+  @@index([mediaAssetId])
   @@map("drop_photos")
 }
 
@@ -287,6 +303,11 @@ model Product {
   // number for the whole product — not tracked per size/color.
   sizes                   String[] @default([])
   colors                  String[] @default([])
+  // Copy of each image's gallery focus point, keyed by image URL, as a CSS
+  // object-position ("50% 80%"). Kept in sync from MediaAsset (see
+  // common/image-focus.ts) so every read path — including affiliates'
+  // storefronts — gets it without a lookup. Missing URL = default crop.
+  imageFocus              Json     @default("{}") @map("image_focus")
   displayOrder            Int      @default(0) @map("display_order")
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")

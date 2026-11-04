@@ -450,3 +450,32 @@
 .animate-count-in {
   animation: count-in 0.4s ease-out both;
 }
+/* Maps the shared UI kit's tokens onto a shop's theme, so plain Buttons,
+   Inputs and Dialogs pick up the shop's colors, fonts and corners — used by
+   pages that should look like the shop but are built from admin components
+   (e.g. the Photo Drop team link). Needs [data-template] on the same element
+   or an ancestor. */
+.store-ui {
+  --background: var(--store-bg);
+  --foreground: var(--store-fg);
+  --card: var(--store-surface);
+  --card-foreground: var(--store-fg);
+  --popover: var(--store-bg);
+  --popover-foreground: var(--store-fg);
+  --primary: var(--store-primary);
+  --primary-foreground: var(--store-primary-fg);
+  --secondary: var(--store-hover-bg);
+  --secondary-foreground: var(--store-fg);
+  --muted: var(--store-hover-bg);
+  --muted-foreground: var(--store-muted-fg);
+  --accent: var(--store-hover-bg);
+  --accent-foreground: var(--store-fg);
+  --border: var(--store-border);
+  --input: var(--store-border);
+  --ring: var(--store-primary);
+  --radius: var(--store-radius);
+  font-family: var(--store-font-body);
+}
+.store-ui .font-heading {
+  font-family: var(--store-font-heading);
+}

@@ -108,6 +108,8 @@ export interface Product {
   // choice to make. Stock is shared across them.
   sizes: string[];
   colors: string[];
+  // image URL -> CSS object-position, for photos with a focus point set.
+  imageFocus?: Record<string, string>;
   displayOrder: number;
   createdAt: string;
   preorder?: PreorderInfo | null;

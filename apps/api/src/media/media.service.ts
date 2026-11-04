@@ -29,6 +29,7 @@ import {
 } from './media.utils';
 import type { MediaAsset } from '@prisma/client';
 import type { ContentBlock } from '../common/types';
+import { parseFocus, syncProductImageFocus } from '../common/image-focus';
 
 export interface FindAllParams {
   cursor?: string;
@@ -50,7 +51,8 @@ export type MediaUsage =
   | { kind: 'product'; id: string; title: string }
   | { kind: 'collection'; id: string; title: string }
   | { kind: 'story' }
-  | { kind: 'logo' };
+  | { kind: 'logo' }
+  | { kind: 'drop' };
 
 export interface BulkRemoveResult {
   deleted: string[];
@@ -68,6 +70,8 @@ export interface StoredImage {
   width: number;
   height: number;
   bytes: number;
+  focusX: number | null;
+  focusY: number | null;
 }
 
 // Raw query returns snake_case DB columns — map back to the Prisma shape so
@@ -86,6 +90,8 @@ interface MediaAssetRow {
   title: string | null;
   tags: string[];
   alt_text: string;
+  focus_x: number | null;
+  focus_y: number | null;
   created_at: Date;
 }
 
@@ -103,6 +109,8 @@ function mapRow(row: MediaAssetRow): MediaAsset {
     title: row.title,
     tags: row.tags,
     altText: row.alt_text,
+    focusX: row.focus_x,
+    focusY: row.focus_y,
     createdAt: row.created_at,
   };
 }
@@ -143,7 +151,7 @@ export class MediaService {
       : Prisma.empty;
 
     const rows = await this.prisma.$queryRaw<MediaAssetRow[]>`
-      SELECT id, tenant_id, key, url, thumb_key, thumb_url, width, height, bytes, title, tags, alt_text, created_at
+      SELECT id, tenant_id, key, url, thumb_key, thumb_url, width, height, bytes, title, tags, alt_text, focus_x, focus_y, created_at
       FROM media_assets
       WHERE tenant_id = ${tenantId}
       ${searchClause}
@@ -210,14 +218,18 @@ export class MediaService {
         'Unsupported file type — upload a JPEG, PNG, WebP or GIF image.',
       );
     }
-    const { display, thumb } = await this.imaging
+    const { display, thumb, focus } = await this.imaging
       .process(file.buffer)
       .catch(() => {
         throw new BadRequestException(
           "Couldn't read that file — is it a valid image?",
         );
       });
-    return this.storeProcessed(prefix, display, thumb);
+    return {
+      ...(await this.storeProcessed(prefix, display, thumb)),
+      focusX: focus?.x ?? null,
+      focusY: focus?.y ?? null,
+    };
   }
 
   // Turns already-stored images into gallery entries, reusing their storage
@@ -250,7 +262,7 @@ export class MediaService {
     prefix: string,
     display: ProcessedImage,
     thumb: ProcessedImage,
-  ): Promise<StoredImage> {
+  ): Promise<Omit<StoredImage, 'focusX' | 'focusY'>> {
     const key = `${prefix}/original.webp`;
     const thumbKey = `${prefix}/thumb.webp`;
     await Promise.all([
@@ -271,7 +283,7 @@ export class MediaService {
   async update(
     id: string,
     tenantId: string,
-    input: { title?: string | null; tags?: unknown },
+    input: { title?: string | null; tags?: unknown; focus?: unknown },
   ): Promise<MediaAsset> {
     const asset = await this.prisma.mediaAsset.findFirst({
       where: { id, tenantId },
@@ -281,8 +293,86 @@ export class MediaService {
     const data: Prisma.MediaAssetUpdateInput = {};
     if (input.title !== undefined) data.title = normalizeTitle(input.title);
     if (input.tags !== undefined) data.tags = normalizeTags(input.tags);
+    if (input.focus !== undefined) {
+      const focus = parseFocus(input.focus);
+      data.focusX = focus?.x ?? null;
+      data.focusY = focus?.y ?? null;
+    }
 
-    return this.prisma.mediaAsset.update({ where: { id }, data });
+    const updated = await this.prisma.mediaAsset.update({
+      where: { id },
+      data,
+    });
+    if (input.focus !== undefined) {
+      await syncProductImageFocus(this.prisma, tenantId, [asset.url]);
+    }
+    return updated;
+  }
+
+  // Sets (or clears, with null) one focus point on many photos at once, and
+  // carries it onto the products showing them.
+  async setFocus(
+    ids: unknown,
+    rawFocus: unknown,
+    tenantId: string,
+  ): Promise<{ updated: number }> {
+    const focus = parseFocus(rawFocus);
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: normalizeIds(ids) }, tenantId },
+      select: { id: true, url: true },
+    });
+    await this.prisma.mediaAsset.updateMany({
+      where: { id: { in: assets.map((a) => a.id) } },
+      data: { focusX: focus?.x ?? null, focusY: focus?.y ?? null },
+    });
+    await syncProductImageFocus(
+      this.prisma,
+      tenantId,
+      assets.map((a) => a.url),
+    );
+    return { updated: assets.length };
+  }
+
+  // Runs the automatic suggestion on photos already in the gallery (whose
+  // focus was never set). The stored files are only read, never changed.
+  async suggestFocus(
+    ids: unknown,
+    tenantId: string,
+  ): Promise<{
+    updated: { id: string; focusX: number | null; focusY: number | null }[];
+  }> {
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: normalizeIds(ids) }, tenantId },
+      select: { id: true, url: true, thumbUrl: true },
+    });
+    const updated: {
+      id: string;
+      focusX: number | null;
+      focusY: number | null;
+    }[] = [];
+    for (const asset of assets) {
+      const res = await fetch(asset.thumbUrl).catch(() => null);
+      if (!res?.ok) continue;
+      const focus = await this.imaging
+        .suggestFocus(Buffer.from(await res.arrayBuffer()))
+        .catch(() => null);
+      const row = {
+        id: asset.id,
+        focusX: focus?.x ?? null,
+        focusY: focus?.y ?? null,
+      };
+      await this.prisma.mediaAsset.update({
+        where: { id: asset.id },
+        data: { focusX: row.focusX, focusY: row.focusY },
+      });
+      updated.push(row);
+    }
+    await syncProductImageFocus(
+      this.prisma,
+      tenantId,
+      assets.map((a) => a.url),
+    );
+    return { updated };
   }
 
   async remove(id: string, tenantId: string): Promise<{ id: string }> {
@@ -349,7 +439,7 @@ export class MediaService {
     if (assets.length === 0) return result;
 
     const urls = assets.flatMap((a) => [a.url, a.thumbUrl]);
-    const [products, collections, tenant] = await Promise.all([
+    const [products, collections, tenant, dropPhotos] = await Promise.all([
       this.prisma.product.findMany({
         where: { tenantId, images: { hasSome: urls } },
         select: { id: true, title: true, images: true },
@@ -365,7 +455,13 @@ export class MediaService {
         where: { id: tenantId },
         select: { logoUrl: true, storyBlocks: true },
       }),
+      // Gallery photos the admin handed to the team via Photo Drop.
+      this.prisma.dropPhoto.findMany({
+        where: { mediaAssetId: { in: assets.map((a) => a.id) } },
+        select: { mediaAssetId: true },
+      }),
     ]);
+    const inDrop = new Set(dropPhotos.map((p) => p.mediaAssetId));
     const storyUrls = new Set(
       ((tenant?.storyBlocks ?? []) as unknown as ContentBlock[]).flatMap(
         (b) => b.imageUrls ?? [],
@@ -390,6 +486,7 @@ export class MediaService {
         usages.push({ kind: 'story' });
       }
       if (matches(tenant?.logoUrl)) usages.push({ kind: 'logo' });
+      if (inDrop.has(asset.id)) usages.push({ kind: 'drop' });
       result[asset.id] = usages;
     }
     return result;

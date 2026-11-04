@@ -1,4 +1,5 @@
 import { cache } from "react";
+import type { Focus } from "./image-focus";
 import type {
   AffiliateCapType,
   AffiliateEligibleProduct,
@@ -283,7 +284,7 @@ export const getGallery = (tenantId: string, params: GetGalleryParams = {}) => {
 export const updateMedia = (
   id: string,
   tenantId: string,
-  input: { title?: string | null; tags?: string[] },
+  input: { title?: string | null; tags?: string[]; focus?: Focus | null },
 ) =>
   adminRequest<MediaAsset>(`/media/${id}`, {
     method: "PATCH",
@@ -299,6 +300,20 @@ export const getMediaUsage = (ids: string[]) =>
     body: JSON.stringify({ ids }),
   });
 // Deletes only the photos that aren't in use; in-use ones come back in `skipped`.
+// Sets (or clears, with null) the same focus point on many photos.
+export const setMediaFocus = (ids: string[], focus: Focus | null) =>
+  adminRequest<{ updated: number }>("/media/focus", {
+    method: "POST",
+    body: JSON.stringify({ ids, focus }),
+  });
+
+// Lets the server suggest a focus point for each photo (it only reads them).
+export const suggestMediaFocus = (ids: string[]) =>
+  adminRequest<{ updated: { id: string; focusX: number | null; focusY: number | null }[] }>(
+    "/media/focus/suggest",
+    { method: "POST", body: JSON.stringify({ ids }) },
+  );
+
 export const bulkDeleteMedia = (ids: string[]) =>
   adminRequest<BulkDeleteMediaResult>("/media/bulk-delete", {
     method: "POST",
@@ -324,6 +339,18 @@ export const removeDropItems = (token: string, ids: string[]) =>
     body: JSON.stringify({ ids }),
   });
 
+export const setDropItemsUnavailable = (token: string, ids: string[], unavailable: boolean) =>
+  request<{ updated: number }>(`/photo-drop/public/${encodeURIComponent(token)}/items/unavailable`, {
+    method: "POST",
+    body: JSON.stringify({ ids, unavailable }),
+  });
+
+export const removeDropItemPhoto = (token: string, itemId: string, photoId: string) =>
+  request<DropItem>(
+    `/photo-drop/public/${encodeURIComponent(token)}/items/${itemId}/photos/${photoId}/delete`,
+    { method: "POST" },
+  );
+
 // Photo Drop — admin
 export const getPhotoDropAdmin = () => adminRequest<PhotoDropAdmin>("/photo-drop");
 export const setPhotoDropEnabled = (enabled: boolean) =>
@@ -340,6 +367,12 @@ export const adminRemoveDropItems = (ids: string[]) =>
   });
 export const clearPhotoDrop = () =>
   adminRequest<{ removed: number }>("/photo-drop/items/clear", { method: "POST" });
+// Hands gallery photos to the team: one item per photo, or one item for all.
+export const sendGalleryToDrop = (ids: string[], asOne: boolean) =>
+  adminRequest<{ added: number; skipped: number }>("/photo-drop/items/from-gallery", {
+    method: "POST",
+    body: JSON.stringify({ ids, asOne }),
+  });
 export const dropItemsToGallery = (ids: string[]) =>
   adminRequest<{ added: number }>("/photo-drop/items/to-gallery", {
     method: "POST",

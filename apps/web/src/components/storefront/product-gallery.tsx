@@ -8,6 +8,7 @@ import {
   getYouTubeThumbnailUrl,
   isVerticalVideo,
 } from "@/lib/video";
+import { productImagePosition } from "@/lib/image-focus";
 
 type MediaItem = { type: "image"; url: string } | { type: "video"; url: string };
 
@@ -15,10 +16,12 @@ export function ProductGallery({
   images,
   videoUrls = [],
   alt,
+  imageFocus,
 }: {
   images: string[];
   videoUrls?: string[];
   alt: string;
+  imageFocus?: Record<string, string>;
 }) {
   const media: MediaItem[] = [
     ...images.map((url) => ({ type: "image" as const, url })),
@@ -63,7 +66,14 @@ export function ProductGallery({
               }`}
             >
               {item.type === "image" ? (
-                <Image src={item.url} alt="" fill sizes="120px" className="object-cover object-top" />
+                <Image
+                  src={item.url}
+                  alt=""
+                  fill
+                  sizes="120px"
+                  className="object-cover"
+                  style={{ objectPosition: productImagePosition({ imageFocus }, item.url) }}
+                />
               ) : (
                 <VideoThumb url={item.url} />
               )}

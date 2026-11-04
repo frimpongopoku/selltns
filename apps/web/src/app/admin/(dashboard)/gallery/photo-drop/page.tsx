@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { getMe } from "@/lib/get-me";
 import { requireRole } from "@/lib/require-role";
 import { PhotoDropManager } from "@/components/admin/photo-drop-manager";
+import { PhotoDropHelp } from "@/components/photo-drop/photo-drop-help";
 
 export const metadata = { title: "Photo drop" };
 
@@ -21,10 +22,15 @@ export default async function AdminPhotoDropPage() {
         <ChevronLeft className="h-4 w-4" />
         Gallery
       </Link>
-      <h1 className="text-2xl font-semibold">Photo drop</h1>
-      <p className="text-sm text-muted-foreground">
-        Photos your team drops land here first. They only join your gallery or become products when you send them.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold">Photo drop</h1>
+          <p className="text-sm text-muted-foreground">
+            Photos your team drops land here first. They only join your gallery or become products when you send them.
+          </p>
+        </div>
+        <PhotoDropHelp audience="admin" />
+      </div>
       <div className="mt-7">
         <PhotoDropManager tenantId={me.tenant.id} />
       </div>

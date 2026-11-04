@@ -82,14 +82,33 @@ export class MediaController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER')
+  @Post('focus')
+  setFocus(
+    @CurrentUser() user: SessionPayload,
+    @Body('ids') ids: unknown,
+    @Body('focus') focus: unknown,
+  ) {
+    return this.mediaService.setFocus(ids, focus, user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
+  @Post('focus/suggest')
+  suggestFocus(@CurrentUser() user: SessionPayload, @Body('ids') ids: unknown) {
+    return this.mediaService.suggestFocus(ids, user.tenantId);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER')
   @Patch(':id')
   update(
     @Param('id') id: string,
     @CurrentUser() user: SessionPayload,
     @Body('title') title?: string | null,
     @Body('tags') tags?: unknown,
+    @Body('focus') focus?: unknown,
   ) {
-    return this.mediaService.update(id, user.tenantId, { title, tags });
+    return this.mediaService.update(id, user.tenantId, { title, tags, focus });
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

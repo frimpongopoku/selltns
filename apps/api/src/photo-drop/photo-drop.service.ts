@@ -6,6 +6,7 @@ import {
 import { randomBytes, randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { syncProductImageFocus } from '../common/image-focus';
 import { MediaService } from '../media/media.service';
 import { ProductsService, optionsOf } from '../products/products.service';
 import type { Product } from '../common/types';
@@ -14,6 +15,7 @@ import type { Product } from '../common/types';
 const MAX_DROP_ITEMS = 1000;
 const MAX_IDS = 500;
 const MAX_TITLE_LENGTH = 120;
+const MAX_PHOTOS_PER_ITEM = 20;
 
 const itemInclude = {
   photos: { orderBy: { position: 'asc' } },
@@ -29,6 +31,7 @@ export interface DropItemView {
   price: number | null;
   sizes: string[];
   colors: string[];
+  unavailable: boolean;
   createdAt: Date;
   photos: { id: string; url: string; thumbUrl: string }[];
 }
@@ -38,6 +41,7 @@ export interface DropItemInput {
   price?: unknown;
   sizes?: unknown;
   colors?: unknown;
+  unavailable?: unknown;
 }
 
 function toView(item: DropItemWithPhotos): DropItemView {
@@ -47,6 +51,7 @@ function toView(item: DropItemWithPhotos): DropItemView {
     price: item.price,
     sizes: item.sizes,
     colors: item.colors,
+    unavailable: item.unavailable,
     createdAt: item.createdAt,
     photos: item.photos.map((p) => ({
       id: p.id,
@@ -96,9 +101,11 @@ export class PhotoDropService {
 
   async publicView(token: string) {
     const tenantId = await this.resolveToken(token);
+    // Theme too, so the team page looks like the shop (it's public on the
+    // storefront anyway).
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
-      select: { name: true, logoUrl: true },
+      select: { name: true, logoUrl: true, themeTokens: true },
     });
     return { shop: tenant, items: await this.listItems(tenantId) };
   }
@@ -126,6 +133,61 @@ export class PhotoDropService {
       include: itemInclude,
     });
     return toView(item);
+  }
+
+  // Adds another angle to an existing item.
+  async addPhoto(
+    tenantId: string,
+    itemId: string,
+    file: Express.Multer.File | undefined,
+  ): Promise<DropItemView> {
+    const item = await this.findItem(tenantId, itemId);
+    if (item.photos.length >= MAX_PHOTOS_PER_ITEM) {
+      throw new BadRequestException(
+        `An item can have at most ${MAX_PHOTOS_PER_ITEM} photos.`,
+      );
+    }
+    const photoId = randomUUID();
+    const stored = await this.media.processAndStore(
+      `tenants/${tenantId}/drops/${photoId}`,
+      file,
+    );
+    const lastPosition = item.photos.at(-1)?.position ?? -1;
+    await this.prisma.dropPhoto.create({
+      data: { id: photoId, itemId, position: lastPosition + 1, ...stored },
+    });
+    return toView(await this.findItem(tenantId, itemId));
+  }
+
+  async removePhoto(
+    tenantId: string,
+    itemId: string,
+    photoId: string,
+  ): Promise<DropItemView> {
+    const item = await this.findItem(tenantId, itemId);
+    const photo = item.photos.find((p) => p.id === photoId);
+    if (!photo) throw new NotFoundException('That photo is no longer here.');
+    if (item.photos.length <= 1) {
+      throw new BadRequestException(
+        'An item needs at least one photo — remove the whole item instead.',
+      );
+    }
+    await this.prisma.dropPhoto.delete({ where: { id: photoId } });
+    await this.discardPhotos(tenantId, [photo]);
+    return toView(await this.findItem(tenantId, itemId));
+  }
+
+  private async findItem(
+    tenantId: string,
+    id: string,
+  ): Promise<DropItemWithPhotos> {
+    const item = await this.prisma.dropItem.findFirst({
+      where: { id, tenantId },
+      include: itemInclude,
+    });
+    if (!item)
+      throw new NotFoundException('That item is no longer in the drop.');
+    return item;
   }
 
   // ---- Shared by the team link and the admin ------------------------------
@@ -172,6 +234,9 @@ export class PhotoDropService {
     if (input.colors !== undefined) {
       data.colors = optionsOf(input.colors, 'colors');
     }
+    if (input.unavailable !== undefined) {
+      data.unavailable = parseUnavailable(input.unavailable);
+    }
 
     const item = await this.prisma.dropItem.update({
       where: { id },
@@ -179,6 +244,19 @@ export class PhotoDropService {
       include: itemInclude,
     });
     return toView(item);
+  }
+
+  // Marks several items unavailable (or available again) at once.
+  async setUnavailable(
+    tenantId: string,
+    rawIds: unknown,
+    unavailable: unknown,
+  ): Promise<{ updated: number }> {
+    const { count } = await this.prisma.dropItem.updateMany({
+      where: { id: { in: normalizeIds(rawIds) }, tenantId },
+      data: { unavailable: parseUnavailable(unavailable) },
+    });
+    return { updated: count };
   }
 
   // Merges items into the first id given: its photos come first (its cover
@@ -266,21 +344,35 @@ export class PhotoDropService {
       include: itemInclude,
     });
     if (items.length === 0) return { removed: 0 };
-    const photos = items.flatMap((i) => i.photos);
-    const inUse = await this.prisma.product.findMany({
-      where: { tenantId, images: { hasSome: photos.map((p) => p.url) } },
-      select: { images: true },
-    });
-    const usedUrls = new Set(inUse.flatMap((p) => p.images));
-    const keep = photos.filter((p) => usedUrls.has(p.url));
-    const discard = photos.filter((p) => !usedUrls.has(p.url));
-
-    await this.media.adopt(tenantId, keep.map(storedOf));
     await this.prisma.dropItem.deleteMany({
       where: { id: { in: items.map((i) => i.id) } },
     });
-    await this.media.deleteStored(discard);
+    await this.discardPhotos(
+      tenantId,
+      items.flatMap((i) => i.photos),
+    );
     return { removed: items.length };
+  }
+
+  // Cleans up storage for photos whose rows were just deleted. Photos sent
+  // from the gallery are left alone (the gallery owns them); a photo a
+  // product already uses is moved to the gallery rather than deleted.
+  private async discardPhotos(
+    tenantId: string,
+    photos: DropItemWithPhotos['photos'],
+  ): Promise<void> {
+    const own = photos.filter((p) => p.mediaAssetId === null);
+    if (own.length === 0) return;
+    const inUse = await this.prisma.product.findMany({
+      where: { tenantId, images: { hasSome: own.map((p) => p.url) } },
+      select: { images: true },
+    });
+    const usedUrls = new Set(inUse.flatMap((p) => p.images));
+    await this.media.adopt(
+      tenantId,
+      own.filter((p) => usedUrls.has(p.url)).map(storedOf),
+    );
+    await this.media.deleteStored(own.filter((p) => !usedUrls.has(p.url)));
   }
 
   // ---- Admin only ---------------------------------------------------------
@@ -339,14 +431,76 @@ export class PhotoDropService {
       where: { id: { in: ids }, tenantId },
       include: itemInclude,
     });
+    // Photos that came from the gallery are already there.
     const images = items.flatMap((i) =>
-      i.photos.map((p) => ({ ...storedOf(p), title: i.title })),
+      i.photos
+        .filter((p) => p.mediaAssetId === null)
+        .map((p) => ({ ...storedOf(p), title: i.title })),
     );
     await this.media.adopt(tenantId, images);
     await this.prisma.dropItem.deleteMany({
       where: { id: { in: items.map((i) => i.id) } },
     });
-    return { added: images.length };
+    return { added: items.reduce((n, i) => n + i.photos.length, 0) };
+  }
+
+  // The reverse direction: hands existing gallery photos to the team to fill
+  // in. Each photo becomes its own item, or all of them one item when
+  // `asOne`. Photos already in the drop are skipped.
+  async fromGallery(
+    tenantId: string,
+    rawIds: unknown,
+    asOne: unknown,
+  ): Promise<{ added: number; skipped: number }> {
+    const ids = normalizeIds(rawIds);
+    const found = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: ids }, tenantId },
+    });
+    const alreadyIn = await this.prisma.dropPhoto.findMany({
+      where: { mediaAssetId: { in: ids }, item: { tenantId } },
+      select: { mediaAssetId: true },
+    });
+    const skip = new Set(alreadyIn.map((p) => p.mediaAssetId));
+    const assets = ids
+      .map((id) => found.find((a) => a.id === id))
+      .filter((a): a is NonNullable<typeof a> => !!a && !skip.has(a.id));
+    const skipped = ids.length - assets.length;
+    if (assets.length === 0) return { added: 0, skipped };
+
+    const groups = asOne === true ? [assets] : assets.map((a) => [a]);
+    const count = await this.prisma.dropItem.count({ where: { tenantId } });
+    if (count + groups.length > MAX_DROP_ITEMS) {
+      throw new BadRequestException(
+        `The photo drop can hold ${MAX_DROP_ITEMS} items — review some first.`,
+      );
+    }
+    await this.prisma.$transaction(
+      groups.map((group) =>
+        this.prisma.dropItem.create({
+          data: {
+            tenantId,
+            title: (group.find((a) => a.title)?.title ?? '').slice(
+              0,
+              MAX_TITLE_LENGTH,
+            ),
+            photos: {
+              create: group.map((a, position) => ({
+                key: a.key,
+                url: a.url,
+                thumbKey: a.thumbKey,
+                thumbUrl: a.thumbUrl,
+                width: a.width,
+                height: a.height,
+                bytes: a.bytes,
+                position,
+                mediaAssetId: a.id,
+              })),
+            },
+          },
+        }),
+      ),
+    );
+    return { added: groups.length, skipped };
   }
 
   // Creates one product from one or more drop items (the admin may have
@@ -361,8 +515,18 @@ export class PhotoDropService {
     const ids = normalizeIds(rawIds);
     const created = await this.products.create({ ...product, tenantId });
     await this.toGallery(tenantId, ids);
+    // The photos only became gallery photos just now, so copy their
+    // suggested focus onto the product.
+    await syncProductImageFocus(this.prisma, tenantId, created.images);
     return created as unknown as Product;
   }
+}
+
+function parseUnavailable(value: unknown): boolean {
+  if (typeof value !== 'boolean') {
+    throw new BadRequestException('unavailable must be true or false.');
+  }
+  return value;
 }
 
 function storedOf(p: DropItemWithPhotos['photos'][number]) {
@@ -374,5 +538,7 @@ function storedOf(p: DropItemWithPhotos['photos'][number]) {
     width: p.width,
     height: p.height,
     bytes: p.bytes,
+    focusX: p.focusX,
+    focusY: p.focusY,
   };
 }

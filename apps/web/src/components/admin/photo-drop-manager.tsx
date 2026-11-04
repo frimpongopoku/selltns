@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { Check, Copy, ImagePlus, Layers, Link2, Loader2, RefreshCw, Trash2, X } from "lucide-react";
+import { Ban, Check, Copy, ImagePlus, Layers, Link2, Loader2, RefreshCw, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -33,9 +33,10 @@ import type { DropItem, PhotoDropLink } from "@/lib/types";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4310";
 const REFRESH_MS = 30_000;
 
-type Filter = "all" | "ready" | "needs";
+type Filter = "all" | "ready" | "needs" | "unavailable";
 
-const isReady = (item: DropItem) => item.price !== null;
+const isReady = (item: DropItem) => item.price !== null && !item.unavailable;
+const needsDetails = (item: DropItem) => item.price === null && !item.unavailable;
 
 // Admin side of Photo Drop: share/switch off the team link, review what the
 // team dropped, and send items on — into the gallery as-is, or into the Add
@@ -80,7 +81,16 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
   }, [load, selected.size, confirm, creating]);
 
   const readyCount = items.filter(isReady).length;
-  const visible = filter === "all" ? items : filter === "ready" ? items.filter(isReady) : items.filter((i) => !isReady(i));
+  const needsCount = items.filter(needsDetails).length;
+  const unavailableCount = items.filter((i) => i.unavailable).length;
+  const visible =
+    filter === "all"
+      ? items
+      : filter === "ready"
+        ? items.filter(isReady)
+        : filter === "needs"
+          ? items.filter(needsDetails)
+          : items.filter((i) => i.unavailable);
   const chosen = items.filter((i) => selected.has(i.id));
   const allVisibleSelected = visible.length > 0 && visible.every((i) => selected.has(i.id));
   const url = link?.token ? `${SITE_URL}/drop/${link.token}` : null;
@@ -241,7 +251,10 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
             [
               ["all", `All ${items.length}`],
               ["ready", `Ready ${readyCount}`],
-              ["needs", `Needs details ${items.length - readyCount}`],
+              ["needs", `Needs details ${needsCount}`],
+              ...(unavailableCount > 0 || filter === "unavailable"
+                ? ([["unavailable", `Unavailable ${unavailableCount}`]] as const)
+                : []),
             ] as const
           ).map(([value, label]) => (
             <button
@@ -323,7 +336,13 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
               >
                 <div className="relative aspect-[4/3] bg-muted">
                   {item.photos[0] && (
-                    <Image src={item.photos[0].thumbUrl} alt={item.title} fill sizes="240px" className="object-cover object-top" />
+                    <Image
+                      src={item.photos[0].thumbUrl}
+                      alt={item.title}
+                      fill
+                      sizes="240px"
+                      className={cn("object-cover object-top", item.unavailable && "opacity-45 grayscale")}
+                    />
                   )}
                   <span
                     className={cn(
@@ -341,7 +360,12 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
                 </div>
                 <div className="flex flex-1 flex-col gap-1 p-2.5">
                   <p className="truncate text-sm font-medium">{item.title || "Untitled"}</p>
-                  {isReady(item) ? (
+                  {item.unavailable ? (
+                    <span className="flex items-center gap-1 self-start rounded bg-zinc-800 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                      <Ban className="h-3 w-3" />
+                      Unavailable
+                    </span>
+                  ) : isReady(item) ? (
                     <p className="text-sm font-semibold">GHS {item.price}</p>
                   ) : (
                     <span className="self-start rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-900">

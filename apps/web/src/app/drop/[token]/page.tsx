@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getPhotoDrop } from "@/lib/api";
 import { PhotoDropApp } from "@/components/photo-drop/photo-drop-app";
+import { ShopThemeBody } from "@/components/photo-drop/shop-theme-body";
+import { ThemeScope } from "@/components/theme/theme-scope";
 
 export async function generateMetadata({
   params,
@@ -9,8 +11,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { token } = await params;
   const drop = await getPhotoDrop(token).catch(() => null);
+  const title = drop ? `${drop.shop.name} · Photo drop` : "Photo drop";
+  const description = drop
+    ? `Add product photos for ${drop.shop.name}.`
+    : "Ask the shop for their current photo drop link.";
+  const images = drop?.shop.logoUrl ? [{ url: drop.shop.logoUrl }] : undefined;
   return {
-    title: drop ? `${drop.shop.name} · Photo drop` : "Photo drop",
+    title,
+    description,
+    // Shop-branded preview when the link is sent on iMessage or WhatsApp.
+    openGraph: { title, description, images, siteName: drop?.shop.name },
+    twitter: { card: "summary", title, description, images: drop?.shop.logoUrl ? [drop.shop.logoUrl] : undefined },
     // A private team link — never indexed, never followed.
     robots: { index: false, follow: false },
   };
@@ -29,5 +40,10 @@ export default async function PhotoDropPage({ params }: { params: Promise<{ toke
       </main>
     );
   }
-  return <PhotoDropApp token={token} initial={drop} />;
+  return (
+    <ThemeScope tokens={drop.shop.themeTokens} className="store-ui">
+      <ShopThemeBody tokens={drop.shop.themeTokens} />
+      <PhotoDropApp token={token} initial={drop} />
+    </ThemeScope>
+  );
 }

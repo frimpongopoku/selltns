@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { slugify } from '../common/slugify';
 import { normalizeTags } from '../common/normalize-tags';
+import { imageFocusFor } from '../common/image-focus';
 import { decodeCursor, encodeCursor } from './products.utils';
 import {
   MAX_OPTION_LENGTH,
@@ -205,6 +206,7 @@ export class ProductsService {
       tags: p.tags,
       sizes: p.sizes,
       colors: p.colors,
+      imageFocus: p.imageFocus as Record<string, string>,
       displayOrder: p.displayOrder,
       createdAt: p.createdAt.toISOString(),
       preorder: p.preorder,
@@ -279,7 +281,7 @@ export class ProductsService {
              hidden_from_all_affiliates AS "hiddenFromAllAffiliates",
              sku, stock, track_stock AS "trackStock",
              is_active AS "isActive", images, video_urls AS "videoUrls", tags,
-             sizes, colors,
+             sizes, colors, image_focus AS "imageFocus",
              display_order AS "displayOrder",
              created_at AS "createdAt", updated_at AS "updatedAt"
       FROM products
@@ -365,6 +367,11 @@ export class ProductsService {
         // listed for affiliates (listings are reconciled lazily on read).
         hiddenFromAllAffiliates: input.hiddenFromAllAffiliates ?? false,
         images: input.images ?? [],
+        imageFocus: await imageFocusFor(
+          this.prisma,
+          input.tenantId,
+          input.images ?? [],
+        ),
         videoUrls: videoUrlsOf(input),
         tags: tagsOf(input),
         sizes: optionsOf(input.sizes, 'sizes'),
@@ -411,6 +418,9 @@ export class ProductsService {
         trackStock: input.trackStock ?? existing.trackStock,
         isActive: input.isActive ?? existing.isActive,
         images: input.images ?? existing.images,
+        ...(input.images && {
+          imageFocus: await imageFocusFor(this.prisma, tenantId, input.images),
+        }),
         videoUrls:
           input.videoUrls !== undefined
             ? videoUrlsOf(input)

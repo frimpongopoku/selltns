@@ -9,6 +9,7 @@ import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { useMediaLibrary } from "@/lib/use-media-library";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import type { MediaAsset } from "@/lib/types";
+import { assetPosition } from "@/lib/image-focus";
 
 // The searchable, infinitely-scrolling photo grid shared by every "pick from
 // gallery" surface. It fills whatever height its parent gives it — the parent
@@ -128,9 +129,10 @@ export function GalleryBrowser({
                     alt={asset.altText}
                     fill
                     sizes="(min-width: 1024px) 160px, (min-width: 640px) 25vw, 33vw"
-                    className={`object-cover object-top transition-transform duration-200 ${
+                    className={`object-cover transition-transform duration-200 ${
                       isSelected ? "scale-95 rounded-md" : "group-hover:scale-105"
                     }`}
+                    style={{ objectPosition: assetPosition(asset) }}
                   />
                   {asset.title && (
                     <span className="pointer-events-none absolute inset-x-0 bottom-0 hidden truncate bg-gradient-to-t from-black/70 to-transparent px-2 pt-4 pb-1.5 text-left text-[11px] text-white opacity-0 transition-opacity group-hover:opacity-100 sm:block">

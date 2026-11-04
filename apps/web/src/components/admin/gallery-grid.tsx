@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Check, Download, Loader2, Search, Trash2, X } from "lucide-react";
+import { Check, Crosshair, Download, Inbox, Loader2, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { MediaDropzone } from "@/components/admin/media-dropzone";
 import { MediaDetailDialog } from "@/components/admin/media-detail-dialog";
 import { BulkDeleteMediaDialog } from "@/components/admin/bulk-delete-media-dialog";
+import { SendToDropDialog } from "@/components/admin/send-to-drop-dialog";
+import { SetFocusDialog } from "@/components/admin/set-focus-dialog";
+import { assetPosition } from "@/lib/image-focus";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -41,6 +44,8 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [sendToDropOpen, setSendToDropOpen] = useState(false);
+  const [setFocusOpen, setSetFocusOpen] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(
     null,
   );
@@ -200,7 +205,14 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
                   style={{ animationDelay: `${Math.min(i, 20) * 25}ms` }}
                   className="group relative aspect-square animate-in fade-in-0 zoom-in-95 fill-mode-both cursor-pointer overflow-hidden rounded-lg border text-left duration-300"
                 >
-                  <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="200px" className="object-cover object-top" />
+                  <Image
+                    src={asset.thumbUrl}
+                    alt={asset.altText}
+                    fill
+                    sizes="200px"
+                    className="object-cover"
+                    style={{ objectPosition: assetPosition(asset) }}
+                  />
                   {selectMode && (
                     <div
                       className={cn(
@@ -275,7 +287,7 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
                 {selectedIds.size === 0 ? "Select photos" : `${selectedIds.size} selected`}
               </p>
             </div>
-            <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+            <div className="flex flex-1 flex-wrap items-center justify-end gap-2 sm:flex-none">
               <Button
                 type="button"
                 variant="outline"
@@ -284,6 +296,29 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
                 onClick={handleSelectAllToggle}
               >
                 {selectedIds.size === assets.length ? "Clear all" : "Select all"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={selectedIds.size === 0 || downloadProgress !== null}
+                onClick={() => setSendToDropOpen(true)}
+                className="gap-1.5"
+              >
+                <Inbox className="h-4 w-4" />
+                <span className="hidden sm:inline">Send to photo drop</span>
+                <span className="sm:hidden">Photo drop</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={selectedIds.size === 0 || downloadProgress !== null}
+                onClick={() => setSetFocusOpen(true)}
+                className="gap-1.5"
+              >
+                <Crosshair className="h-4 w-4" />
+                Set focus
               </Button>
               <Button
                 type="button"
@@ -313,6 +348,13 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
         </div>
       )}
 
+      <SetFocusDialog
+        open={setFocusOpen}
+        onOpenChange={setSetFocusOpen}
+        assets={assets.filter((a) => selectedIds.has(a.id))}
+        onUpdated={(updated) => updated.forEach(updateAsset)}
+      />
+
       <MediaDetailDialog
         asset={selected}
         tenantId={tenantId}
@@ -326,6 +368,14 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
           removeAsset(id);
           setSelected(null);
         }}
+      />
+
+      <SendToDropDialog
+        key={sendToDropOpen ? "open" : "closed"}
+        open={sendToDropOpen}
+        onOpenChange={setSendToDropOpen}
+        assetIds={assets.filter((a) => selectedIds.has(a.id)).map((a) => a.id)}
+        onSent={exitSelectMode}
       />
 
       <BulkDeleteMediaDialog

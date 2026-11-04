@@ -105,6 +105,7 @@ function mapProduct(
     tags: row.tags,
     sizes: row.sizes,
     colors: row.colors,
+    imageFocus: row.imageFocus as Record<string, string>,
     displayOrder: row.displayOrder,
     createdAt: row.createdAt.toISOString(),
     preorder,

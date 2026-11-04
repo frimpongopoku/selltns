@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { bulkDeleteMedia, getMediaUsage } from "@/lib/api";
 import type { MediaAsset, MediaUsage } from "@/lib/types";
+import { assetPosition } from "@/lib/image-focus";
 
 function usageLabel(usage: MediaUsage) {
   switch (usage.kind) {
@@ -27,6 +28,8 @@ function usageLabel(usage: MediaUsage) {
       return { text: "Story page", href: "/admin/configure" };
     case "logo":
       return { text: "Store logo", href: "/admin/configure" };
+    case "drop":
+      return { text: "Photo drop", href: "/admin/gallery/photo-drop" };
   }
 }
 
@@ -157,7 +160,14 @@ export function BulkDeleteMediaDialog({
               {inUse.map((asset) => (
                 <li key={asset.id} className="flex items-start gap-2.5">
                   <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded border">
-                    <Image src={asset.thumbUrl} alt={asset.altText} fill sizes="40px" className="object-cover object-top" />
+                    <Image
+                      src={asset.thumbUrl}
+                      alt={asset.altText}
+                      fill
+                      sizes="40px"
+                      className="object-cover"
+                      style={{ objectPosition: assetPosition(asset) }}
+                    />
                   </div>
                   <div className="min-w-0 text-xs">
                     <p className="truncate font-medium">{asset.title || "Untitled"}</p>

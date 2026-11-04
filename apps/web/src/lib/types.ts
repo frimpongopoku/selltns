@@ -112,6 +112,10 @@ export interface MediaAsset {
   title: string | null;
   tags: string[];
   altText: string;
+  // Optional focus point (% from left/top) — which part of the photo shows
+  // in cropped frames. Null = never set (top-anchored).
+  focusX: number | null;
+  focusY: number | null;
   createdAt: string;
 }
 
@@ -125,7 +129,8 @@ export type MediaUsage =
   | { kind: "product"; id: string; title: string }
   | { kind: "collection"; id: string; title: string }
   | { kind: "story" }
-  | { kind: "logo" };
+  | { kind: "logo" }
+  | { kind: "drop" };
 
 // Photo Drop — the team's no-login photo link. Items aren't in the gallery
 // until the admin sends them there or turns them into products.
@@ -141,6 +146,8 @@ export interface DropItem {
   price: number | null;
   sizes: string[];
   colors: string[];
+  // Marked by the team: the product isn't available, so no details needed.
+  unavailable: boolean;
   createdAt: string;
   photos: DropPhoto[];
 }
@@ -150,10 +157,11 @@ export interface DropItemInput {
   price?: number | null;
   sizes?: string[];
   colors?: string[];
+  unavailable?: boolean;
 }
 
 export interface PhotoDropPublic {
-  shop: { name: string; logoUrl: string | null };
+  shop: { name: string; logoUrl: string | null; themeTokens: ThemeTokens };
   items: DropItem[];
 }
 
@@ -210,6 +218,8 @@ export interface Product {
   // means no choice to make. Stock is shared across them.
   sizes: string[];
   colors: string[];
+  // image URL -> CSS object-position, for photos with a focus point set.
+  imageFocus?: Record<string, string>;
   displayOrder: number;
   createdAt: string;
   preorder?: PreorderInfo | null;
