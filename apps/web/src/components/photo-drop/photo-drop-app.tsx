@@ -275,7 +275,7 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
   const editingItem = editor ? items.find((i) => i.id === editor.queue[editor.index]) : undefined;
 
   return (
-    <main className="flex min-h-dvh flex-col bg-muted/30">
+    <main className="flex min-h-dvh flex-col overflow-x-clip bg-muted/30">
       <input
         ref={inputRef}
         type="file"
@@ -359,7 +359,7 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
       )}
 
       {!selectMode && items.length > 0 && (
-        <div className="mx-auto flex w-full max-w-6xl gap-2 overflow-x-auto px-4 pt-3 pb-1 sm:px-6 sm:pt-5">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap gap-2 px-4 pt-3 pb-1 sm:px-6 sm:pt-5">
           {(
             [
               ["all", `All ${items.length}`],
@@ -723,7 +723,7 @@ function ItemEditor({
           </div>
         )}
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 sm:px-6 md:grid md:grid-cols-2 md:gap-8">
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 pb-4 sm:px-6 md:grid md:grid-cols-2 md:gap-8">
           <input
             ref={addInputRef}
             type="file"
@@ -797,7 +797,7 @@ function ItemEditor({
                 Price
               </label>
               <div className="flex gap-2">
-                <div className="flex h-13 flex-1 items-center gap-2 rounded-xl border-[1.5px] border-foreground px-3.5 focus-within:ring-3 focus-within:ring-ring/40">
+                <div className="flex h-13 min-w-0 flex-1 items-center gap-2 rounded-xl border-[1.5px] border-foreground px-3.5 focus-within:ring-3 focus-within:ring-ring/40">
                   <span className="font-semibold text-muted-foreground">GHS</span>
                   <input
                     id="drop-price"
@@ -807,14 +807,14 @@ function ItemEditor({
                     value={price}
                     onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))}
                     placeholder="0"
-                    className="min-w-0 flex-1 bg-transparent text-2xl font-bold outline-none placeholder:text-muted-foreground/50"
+                    className="w-0 min-w-0 flex-1 bg-transparent text-2xl font-bold outline-none placeholder:text-muted-foreground/50"
                   />
                 </div>
                 {lastPrice !== null && String(lastPrice) !== price && (
                   <button
                     type="button"
                     onClick={() => setPrice(String(lastPrice))}
-                    className="flex h-13 flex-col items-start justify-center rounded-xl border bg-muted px-3 text-sm leading-tight font-semibold"
+                    className="flex h-13 shrink-0 flex-col items-start justify-center rounded-xl border bg-muted px-3 text-sm leading-tight font-semibold"
                   >
                     <span className="text-[11px] font-medium text-muted-foreground">Same as last</span>
                     GHS {lastPrice}

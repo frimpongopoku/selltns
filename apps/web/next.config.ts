@@ -44,6 +44,9 @@ const remotePatterns: RemotePattern[] = [
 ].filter((p): p is RemotePattern => p !== null);
 
 const nextConfig: NextConfig = {
+  // Lets a phone on the same Wi-Fi open the dev server by the Mac's LAN IP
+  // (e.g. ALLOWED_DEV_ORIGINS=192.168.1.20). Dev-only; ignored in builds.
+  allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean),
   env: {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
     NEXT_PUBLIC_BUILD_NUMBER: resolveBuildNumber(),
