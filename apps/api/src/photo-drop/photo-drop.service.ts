@@ -33,7 +33,13 @@ export interface DropItemView {
   colors: string[];
   unavailable: boolean;
   createdAt: Date;
-  photos: { id: string; url: string; thumbUrl: string }[];
+  photos: {
+    id: string;
+    url: string;
+    thumbUrl: string;
+    focusX: number | null;
+    focusY: number | null;
+  }[];
 }
 
 export interface DropItemInput {
@@ -57,6 +63,8 @@ function toView(item: DropItemWithPhotos): DropItemView {
       id: p.id,
       url: p.url,
       thumbUrl: p.thumbUrl,
+      focusX: p.focusX,
+      focusY: p.focusY,
     })),
   };
 }
@@ -492,6 +500,8 @@ export class PhotoDropService {
                 width: a.width,
                 height: a.height,
                 bytes: a.bytes,
+                focusX: a.focusX,
+                focusY: a.focusY,
                 position,
                 mediaAssetId: a.id,
               })),

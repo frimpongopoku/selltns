@@ -27,6 +27,7 @@ import { ACCEPTED_IMAGE_INPUT_ACCEPT, isHeicFile, prepareImageFile } from "@/lib
 import { COLOR_PRESETS, SIZE_PRESETS, swatchFor } from "@/lib/drop-options";
 import { cn } from "@/lib/utils";
 import { PhotoDropHelp } from "./photo-drop-help";
+import { assetPosition } from "@/lib/image-focus";
 import type { DropItem, DropItemInput, PhotoDropPublic } from "@/lib/types";
 
 type Filter = "all" | "needs" | "ready" | "unavailable";
@@ -438,6 +439,7 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
                       fill
                       sizes="(min-width: 1024px) 16vw, (min-width: 768px) 20vw, (min-width: 640px) 25vw, 33vw"
                       className={cn("object-cover", item.unavailable && "opacity-45 grayscale")}
+                      style={{ objectPosition: assetPosition(item.photos[0]) }}
                     />
                   )}
                   {item.photos.length > 1 && (
@@ -766,7 +768,14 @@ function ItemEditor({
                     i === photoIndex && "ring-2 ring-foreground ring-inset",
                   )}
                 >
-                  <Image src={p.thumbUrl} alt="" fill sizes="56px" className="object-cover" />
+                  <Image
+                    src={p.thumbUrl}
+                    alt=""
+                    fill
+                    sizes="56px"
+                    className="object-cover"
+                    style={{ objectPosition: assetPosition(p) }}
+                  />
                 </button>
               ))}
               <button

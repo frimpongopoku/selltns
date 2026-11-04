@@ -46,6 +46,8 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [sendToDropOpen, setSendToDropOpen] = useState(false);
   const [setFocusOpen, setSetFocusOpen] = useState(false);
+  // The last photo picked — where a shift-click range starts.
+  const [anchorId, setAnchorId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ done: number; total: number } | null>(
     null,
   );
@@ -62,23 +64,40 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
     setQuickDeleteOpen(true);
   }
 
-  function handleCardClick(asset: MediaAsset) {
-    if (selectMode) {
-      if (downloadProgress !== null) return;
+  // ⌘/Ctrl-click picks a photo straight away (entering select mode if
+  // needed), so there's no scrolling back up to "Select photos". Shift-click
+  // picks everything between the last pick and this one.
+  function handleCardClick(asset: MediaAsset, e?: React.MouseEvent | React.KeyboardEvent) {
+    if (downloadProgress !== null) return;
+    const toggleKey = !!e && (e.metaKey || e.ctrlKey);
+    const rangeKey = !!e && e.shiftKey;
+    if (!selectMode && !toggleKey && !rangeKey) {
+      setSelected(asset);
+      return;
+    }
+    if (!selectMode) setSelectMode(true);
+
+    const anchorIndex = anchorId ? assets.findIndex((a) => a.id === anchorId) : -1;
+    if (rangeKey && anchorIndex >= 0) {
+      const index = assets.findIndex((a) => a.id === asset.id);
+      const [from, to] = anchorIndex < index ? [anchorIndex, index] : [index, anchorIndex];
+      const range = assets.slice(from, to + 1).map((a) => a.id);
+      setSelectedIds((prev) => new Set([...prev, ...range]));
+    } else {
       setSelectedIds((prev) => {
         const next = new Set(prev);
         if (next.has(asset.id)) next.delete(asset.id);
         else next.add(asset.id);
         return next;
       });
-    } else {
-      setSelected(asset);
     }
+    setAnchorId(asset.id);
   }
 
   function exitSelectMode() {
     setSelectMode(false);
     setSelectedIds(new Set());
+    setAnchorId(null);
   }
 
   function handleSelectAllToggle() {
@@ -164,9 +183,12 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
           </button>
         )}
         {!loading && assets.length > 0 && !selectMode && (
-          <Button type="button" variant="outline" size="sm" onClick={() => setSelectMode(true)}>
-            Select photos
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-muted-foreground lg:inline">or ⌘/Ctrl-click any photo</span>
+            <Button type="button" variant="outline" size="sm" onClick={() => setSelectMode(true)}>
+              Select photos
+            </Button>
+          </div>
         )}
       </div>
 
@@ -200,10 +222,10 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
                   key={asset.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => handleCardClick(asset)}
-                  onKeyDown={(e) => e.key === "Enter" && handleCardClick(asset)}
+                  onClick={(e) => handleCardClick(asset, e)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCardClick(asset, e)}
                   style={{ animationDelay: `${Math.min(i, 20) * 25}ms` }}
-                  className="group relative aspect-square animate-in fade-in-0 zoom-in-95 fill-mode-both cursor-pointer overflow-hidden rounded-lg border text-left duration-300"
+                  className="group relative aspect-square select-none animate-in fade-in-0 zoom-in-95 fill-mode-both cursor-pointer overflow-hidden rounded-lg border text-left duration-300"
                 >
                   <Image
                     src={asset.thumbUrl}

@@ -138,6 +138,10 @@ export interface DropPhoto {
   id: string;
   url: string;
   thumbUrl: string;
+  // Focus point (% from left/top) — suggested on upload, or the gallery
+  // photo's own focus. Null = top-anchored.
+  focusX: number | null;
+  focusY: number | null;
 }
 
 export interface DropItem {

@@ -304,7 +304,7 @@ export class MediaService {
       data,
     });
     if (input.focus !== undefined) {
-      await syncProductImageFocus(this.prisma, tenantId, [asset.url]);
+      await this.syncFocusElsewhere(tenantId, [asset]);
     }
     return updated;
   }
@@ -325,12 +325,31 @@ export class MediaService {
       where: { id: { in: assets.map((a) => a.id) } },
       data: { focusX: focus?.x ?? null, focusY: focus?.y ?? null },
     });
+    await this.syncFocusElsewhere(tenantId, assets);
+    return { updated: assets.length };
+  }
+
+  // Carries a photo's focus to the products showing it and to its copies in
+  // the Photo Drop (gallery photos sent there for the team).
+  private async syncFocusElsewhere(
+    tenantId: string,
+    assets: { id: string; url: string }[],
+  ): Promise<void> {
+    const fresh = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: assets.map((a) => a.id) }, tenantId },
+      select: { id: true, focusX: true, focusY: true },
+    });
+    for (const a of fresh) {
+      await this.prisma.dropPhoto.updateMany({
+        where: { mediaAssetId: a.id },
+        data: { focusX: a.focusX, focusY: a.focusY },
+      });
+    }
     await syncProductImageFocus(
       this.prisma,
       tenantId,
       assets.map((a) => a.url),
     );
-    return { updated: assets.length };
   }
 
   // Runs the automatic suggestion on photos already in the gallery (whose
@@ -367,11 +386,7 @@ export class MediaService {
       });
       updated.push(row);
     }
-    await syncProductImageFocus(
-      this.prisma,
-      tenantId,
-      assets.map((a) => a.url),
-    );
+    await this.syncFocusElsewhere(tenantId, assets);
     return { updated };
   }
 

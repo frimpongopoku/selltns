@@ -28,6 +28,7 @@ import {
 import { swatchFor } from "@/lib/drop-options";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { assetPosition } from "@/lib/image-focus";
 import type { DropItem, PhotoDropLink } from "@/lib/types";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4310";
@@ -341,7 +342,8 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
                       alt={item.title}
                       fill
                       sizes="240px"
-                      className={cn("object-cover object-top", item.unavailable && "opacity-45 grayscale")}
+                      className={cn("object-cover", item.unavailable && "opacity-45 grayscale")}
+                      style={{ objectPosition: assetPosition(item.photos[0]) }}
                     />
                   )}
                   <span
