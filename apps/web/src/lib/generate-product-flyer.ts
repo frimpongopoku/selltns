@@ -62,6 +62,14 @@ function roundedRectPath(
   ctx.closePath();
 }
 
+// "50% 80%" → [0.5, 0.8]; anything unreadable → centered.
+function focusFractions(position?: string | null): [number, number] {
+  const match = position?.match(/^\s*([\d.]+)%\s+([\d.]+)%\s*$/);
+  if (!match) return [0.5, 0.5];
+  const clamp = (n: number) => Math.min(1, Math.max(0, n / 100));
+  return [clamp(Number(match[1])), clamp(Number(match[2]))];
+}
+
 function drawImageCover(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
@@ -69,7 +77,11 @@ function drawImageCover(
   y: number,
   w: number,
   h: number,
+  // CSS object-position ("50% 80%") — which part of the photo to keep when
+  // it has to be cropped. Centered when not given.
+  position?: string | null,
 ) {
+  const [fx, fy] = focusFractions(position);
   const imgRatio = img.width / img.height;
   const boxRatio = w / h;
   let sx = 0;
@@ -78,10 +90,10 @@ function drawImageCover(
   let sh = img.height;
   if (imgRatio > boxRatio) {
     sw = img.height * boxRatio;
-    sx = (img.width - sw) / 2;
+    sx = (img.width - sw) * fx;
   } else {
     sh = img.width / boxRatio;
-    sy = (img.height - sh) / 2;
+    sy = (img.height - sh) * fy;
   }
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
@@ -259,6 +271,8 @@ export interface FlyerProductInput {
   price: number;
   discountPrice: number | null;
   image: string | null;
+  /** The image's focus point as CSS object-position, if the vendor set one. */
+  imagePosition?: string | null;
   sku: string;
   stock: number;
   trackStock: boolean;
@@ -269,13 +283,15 @@ export interface FlyerProductInput {
 }
 
 export function flyerProductFromProduct(product: Product, image?: string | null): FlyerProductInput {
+  const chosen = image !== undefined ? image : (product.images[0] ?? null);
   return {
     title: product.title,
     slug: product.slug,
     description: product.description,
     price: product.price,
     discountPrice: product.discountPrice,
-    image: image !== undefined ? image : (product.images[0] ?? null),
+    image: chosen,
+    imagePosition: chosen ? (product.imageFocus?.[chosen] ?? null) : null,
     sku: product.sku,
     stock: product.stock,
     trackStock: product.trackStock,
@@ -600,7 +616,7 @@ async function renderBoldProductFlyer(input: RenderProductFlyerInput): Promise<H
   if (product.image) {
     try {
       const img = await loadImage(mediaProxyUrl(product.image));
-      drawImageCover(ctx, img, photoX, photoY, photoW, photoH);
+      drawImageCover(ctx, img, photoX, photoY, photoW, photoH, product.imagePosition);
     } catch {
       ctx.fillStyle = "#e5e7eb";
       ctx.fillRect(photoX, photoY, photoW, photoH);
