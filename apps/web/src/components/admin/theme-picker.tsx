@@ -11,6 +11,20 @@ import { updateTenantTheme } from "@/lib/api";
 import { PALETTE_SWATCHES, THEME_PRESETS, THEME_TEMPLATE_META } from "@/lib/theme-presets";
 import type { ThemeTemplate, ThemeTokens } from "@/lib/types";
 
+type Swatch = { primary: string; accent: string };
+
+const sameColor = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+// Which palette of `template` the saved theme uses — or -1 when the saved
+// colors aren't one of the current options (e.g. a palette since changed),
+// in which case they're offered as their own "current colors" swatch.
+function savedPaletteIndex(current: ThemeTokens, template: ThemeTemplate): number {
+  if (template !== current.template) return 0;
+  return PALETTE_SWATCHES[template].findIndex(
+    (p) => sameColor(p.primary, current.primary) && sameColor(p.accent, current.accent),
+  );
+}
+
 export function ThemePicker({
   tenantId,
   tenantName,
@@ -21,11 +35,24 @@ export function ThemePicker({
   current: ThemeTokens;
 }) {
   const router = useRouter();
+  // Opens on what the storefront actually uses: the saved template *and*
+  // its saved palette (it used to always reset to the first palette).
   const [template, setTemplate] = useState<ThemeTemplate>(current.template);
-  const [palette, setPalette] = useState(0);
+  const [palette, setPalette] = useState(() => savedPaletteIndex(current, current.template));
   const [saving, setSaving] = useState(false);
 
-  const swatch = PALETTE_SWATCHES[template][palette];
+  const savedColors: Swatch = { primary: current.primary, accent: current.accent };
+  // The saved colors get their own swatch only when they match no option.
+  const showSavedSwatch = template === current.template && savedPaletteIndex(current, template) === -1;
+  const swatches: { swatch: Swatch; index: number }[] = [
+    ...(showSavedSwatch ? [{ swatch: savedColors, index: -1 }] : []),
+    ...PALETTE_SWATCHES[template].map((p, i) => ({ swatch: p, index: i })),
+  ];
+  const swatch: Swatch = palette === -1 ? savedColors : PALETTE_SWATCHES[template][palette];
+  const isCurrent =
+    template === current.template &&
+    sameColor(swatch.primary, current.primary) &&
+    sameColor(swatch.accent, current.accent);
   const preview: ThemeTokens = {
     ...THEME_PRESETS[template],
     primary: swatch.primary,
@@ -55,7 +82,7 @@ export function ThemePicker({
                 type="button"
                 onClick={() => {
                   setTemplate(key);
-                  setPalette(0);
+                  setPalette(savedPaletteIndex(current, key));
                 }}
                 className={`relative rounded-lg border-2 p-5 text-left transition-all duration-150 active:scale-[0.98] ${
                   isSelected
@@ -80,12 +107,13 @@ export function ThemePicker({
         <div className="mt-7">
           <p className="text-sm font-medium">Palette</p>
           <div className="mt-3 flex flex-wrap gap-3">
-            {PALETTE_SWATCHES[template].map((p, i) => (
+            {swatches.map(({ swatch: p, index: i }) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setPalette(i)}
-                aria-label={`Palette option ${i + 1}`}
+                aria-label={i === -1 ? "Your current colors" : `Palette option ${i + 1}`}
+                title={i === -1 ? "Your current colors" : undefined}
                 className={`relative h-11 w-11 overflow-hidden rounded-full border-2 ring-1 ring-border transition-all duration-150 hover:scale-105 active:scale-95 ${
                   palette === i ? "border-foreground" : "border-transparent"
                 }`}
@@ -110,9 +138,12 @@ export function ThemePicker({
           </div>
         </div>
 
-        <Button onClick={handleSave} disabled={saving} className="mt-8">
-          {saving ? "Saving…" : "Publish theme"}
-        </Button>
+        <div className="mt-8 flex items-center gap-3">
+          <Button onClick={handleSave} disabled={saving || isCurrent}>
+            {saving ? "Saving…" : "Publish theme"}
+          </Button>
+          {isCurrent && <span className="text-sm text-muted-foreground">This is your live theme.</span>}
+        </div>
       </div>
 
       <Card className="overflow-hidden p-0">

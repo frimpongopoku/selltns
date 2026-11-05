@@ -8,3 +8,4 @@ export const MAX_OPTION_LENGTH = 30;
 // media's (40) since product cards carry more info and render larger.
 export const PRODUCTS_PAGE_SIZE = 24;
 export const PRODUCTS_PAGE_SIZE_MAX = 100;
+export const MAX_BULK_EDIT_PRODUCTS = 200;

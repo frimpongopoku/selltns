@@ -23,7 +23,7 @@ export default async function AdminProductsPage() {
             {products.length} products in your catalog.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <FeedLinkButton url={getCanonicalUrl(me.tenant, "/feed.xml")} />
           <ProductBulkCreateDialog tenantId={me.tenant.id} />
           <ProductQuickCreateDialog tenantId={me.tenant.id} />

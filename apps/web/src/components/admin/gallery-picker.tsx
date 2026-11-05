@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { GalleryBrowser } from "@/components/admin/gallery-browser";
+import { assetPosition, DEFAULT_POSITION } from "@/lib/image-focus";
+import type { MediaAsset } from "@/lib/types";
 
 export function GalleryPicker({
   tenantId,
@@ -19,6 +21,7 @@ export function GalleryPicker({
   onChange,
   max,
   showCover = false,
+  positions,
 }: {
   tenantId: string;
   selected: string[];
@@ -27,8 +30,13 @@ export function GalleryPicker({
   max?: number;
   /** Labels the first image "Cover" and lets any other be promoted to it. */
   showCover?: boolean;
+  /** Each photo's focus (URL → CSS object-position), e.g. a product's imageFocus. */
+  positions?: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
+  // Focus of photos picked in this session, which `positions` doesn't know yet.
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const positionOf = (url: string) => picked[url] ?? positions?.[url] ?? DEFAULT_POSITION;
   const single = max === 1;
 
   function makeCover(url: string) {
@@ -39,7 +47,14 @@ export function GalleryPicker({
     <div className="flex flex-wrap gap-3">
       {selected.map((url, i) => (
         <div key={`${url}-${i}`} className="group relative h-20 w-20 overflow-hidden rounded-lg border">
-          <Image src={url} alt="" fill sizes="80px" className="object-cover object-top" />
+          <Image
+            src={url}
+            alt=""
+            fill
+            sizes="80px"
+            className="object-cover"
+            style={{ objectPosition: positionOf(url) }}
+          />
           {showCover && i === 0 && selected.length > 1 && (
             <span className="absolute inset-x-0 bottom-0 bg-black/60 py-0.5 text-center text-[10px] font-medium text-white">
               Cover
@@ -82,6 +97,7 @@ export function GalleryPicker({
         selected={selected}
         onChange={onChange}
         max={max}
+        onPicked={(asset) => setPicked((prev) => ({ ...prev, [asset.url]: assetPosition(asset) }))}
       />
     </div>
   );
@@ -96,6 +112,7 @@ export function GalleryPickerDialog({
   onChange,
   max,
   title,
+  onPicked,
 }: {
   tenantId: string;
   open: boolean;
@@ -104,7 +121,14 @@ export function GalleryPickerDialog({
   onChange: (urls: string[]) => void;
   max?: number;
   title?: string;
+  /** Called with each photo picked or uploaded, e.g. to learn its focus. */
+  onPicked?: (asset: MediaAsset) => void;
 }) {
+  const [seen, setSeen] = useState<Record<string, string>>({});
+  function remember(asset: MediaAsset) {
+    setSeen((prev) => ({ ...prev, [asset.url]: assetPosition(asset) }));
+    onPicked?.(asset);
+  }
   // Picks are staged in a draft and only applied on "Done", so browsing a big
   // library and changing your mind never half-edits the form underneath.
   const [draft, setDraft] = useState<string[]>(selected);
@@ -145,13 +169,20 @@ export function GalleryPickerDialog({
         <GalleryBrowser
           tenantId={tenantId}
           selected={draft}
-          onToggle={(asset) => toggle(asset.url)}
-          onUploaded={(asset) => add(asset.url)}
+          onToggle={(asset) => {
+            remember(asset);
+            toggle(asset.url);
+          }}
+          onUploaded={(asset) => {
+            remember(asset);
+            add(asset.url);
+          }}
           enabled={open}
         />
 
         <SelectionFooter
           draft={draft}
+          positions={seen}
           max={max}
           onRemove={toggle}
           onClear={single ? undefined : () => setDraft([])}
@@ -178,8 +209,10 @@ export function SelectionFooter({
   doneLabel,
   doneDisabled = false,
   emptyHint = "Nothing selected yet",
+  positions,
 }: {
   draft: string[];
+  positions?: Record<string, string>;
   max?: number;
   onRemove: (url: string) => void;
   /** Omit to hide the "Clear" link. */
@@ -210,7 +243,14 @@ export function SelectionFooter({
                   aria-label={`Remove photo ${i + 1} from selection`}
                   className="group relative h-10 w-10 shrink-0 overflow-hidden rounded-md border"
                 >
-                  <Image src={url} alt="" fill sizes="40px" className="object-cover object-top" />
+                  <Image
+                    src={url}
+                    alt=""
+                    fill
+                    sizes="40px"
+                    className="object-cover"
+                    style={{ objectPosition: positions?.[url] ?? DEFAULT_POSITION }}
+                  />
                   <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
                     <X className="h-3.5 w-3.5 text-white" />
                   </span>

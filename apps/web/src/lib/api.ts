@@ -211,6 +211,23 @@ export const updateProduct = (
     method: "PATCH",
     body: JSON.stringify({ ...input, tenantId }),
   });
+// One product's changes in the bulk editor — fields left out stay as they are.
+export type BulkProductEdit = {
+  id: string;
+  stock?: number;
+  trackStock?: boolean;
+  price?: number;
+  discountPrice?: number | null;
+  affiliatePrice?: number | null;
+  sizes?: string[];
+  colors?: string[];
+  isActive?: boolean;
+};
+export const bulkUpdateProducts = (tenantId: string, updates: BulkProductEdit[]) =>
+  adminRequest<{ products: Product[] }>("/products/bulk-update", {
+    method: "POST",
+    body: JSON.stringify({ tenantId, updates }),
+  });
 export const deleteProduct = (id: string, tenantId: string) =>
   adminRequest<{ id: string }>(`/products/${id}?tenantId=${tenantId}`, {
     method: "DELETE",

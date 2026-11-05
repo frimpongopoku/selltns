@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LayoutGrid, List, Loader2, Search, X } from "lucide-react";
+import { LayoutGrid, List, Loader2, PencilLine, Search, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ProductsTableView } from "@/components/admin/products-table-view";
 import { ProductsGridView } from "@/components/admin/products-grid-view";
 import { ProductFlyerManager } from "@/components/admin/product-flyer-manager";
+import { BulkEditProductsDialog } from "@/components/admin/bulk-edit-products-dialog";
 import { getProductTags } from "@/lib/api";
 import { useProductLibrary, type ProductStatusFilter } from "@/lib/use-product-library";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
@@ -46,6 +47,10 @@ export function ProductsExplorer({ tenantId, tenant }: { tenantId: string; tenan
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [flyerProduct, setFlyerProduct] = useState<Product | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [anchorId, setAnchorId] = useState<string | null>(null);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
 
   useEffect(() => {
     getProductTags(tenantId).then(setAvailableTags);
@@ -86,6 +91,37 @@ export function ProductsExplorer({ tenantId, tenant }: { tenantId: string; tenan
     enabled: hasMore && !loading,
   });
 
+  // ⌘/Ctrl-click picks a product straight away (entering select mode), and
+  // Shift-click picks everything between the last pick and this one — same
+  // as the gallery.
+  function handleSelect(product: Product, e: React.MouseEvent) {
+    if (!selectMode) setSelectMode(true);
+    const anchorIndex = anchorId ? products.findIndex((p) => p.id === anchorId) : -1;
+    if (e.shiftKey && anchorIndex >= 0) {
+      const index = products.findIndex((p) => p.id === product.id);
+      const [from, to] = anchorIndex < index ? [anchorIndex, index] : [index, anchorIndex];
+      const range = products.slice(from, to + 1).map((p) => p.id);
+      setSelectedIds((prev) => new Set([...prev, ...range]));
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(product.id)) next.delete(product.id);
+        else next.add(product.id);
+        return next;
+      });
+    }
+    setAnchorId(product.id);
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setAnchorId(null);
+  }
+
+  const selectedProducts = products.filter((p) => selectedIds.has(p.id));
+  const allSelected = products.length > 0 && selectedProducts.length === products.length;
+
   function handleToggled(id: string, isActive: boolean) {
     const product = products.find((p) => p.id === id);
     if (product) updateProductInList({ ...product, isActive });
@@ -115,6 +151,15 @@ export function ProductsExplorer({ tenantId, tenant }: { tenantId: string; tenan
             ))}
           </TabsList>
         </Tabs>
+
+        {!loading && products.length > 0 && !selectMode && (
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-muted-foreground xl:inline">or ⌘/Ctrl-click any product</span>
+            <Button type="button" variant="outline" size="sm" onClick={() => setSelectMode(true)}>
+              Select products
+            </Button>
+          </div>
+        )}
 
         <div className="flex items-center gap-1 rounded-lg border p-0.5">
           <Button
@@ -199,6 +244,9 @@ export function ProductsExplorer({ tenantId, tenant }: { tenantId: string; tenan
               products={products}
               tenantId={tenantId}
               onToggled={handleToggled}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onSelect={handleSelect}
               canReorder={!isFiltered}
               hasMore={hasMore}
               onMove={moveProduct}
@@ -209,6 +257,9 @@ export function ProductsExplorer({ tenantId, tenant }: { tenantId: string; tenan
               products={products}
               tenantId={tenantId}
               onToggled={handleToggled}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onSelect={handleSelect}
               canReorder={!isFiltered}
               hasMore={hasMore}
               onMove={moveProduct}
@@ -216,7 +267,7 @@ export function ProductsExplorer({ tenantId, tenant }: { tenantId: string; tenan
             />
           )}
 
-          <div ref={sentinelRef} className="mt-6 flex justify-center">
+          <div ref={sentinelRef} className={`mt-6 flex justify-center ${selectMode ? "pb-24" : ""}`}>
             {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
             {!hasMore && (
               <p className="text-xs text-muted-foreground">
@@ -226,6 +277,60 @@ export function ProductsExplorer({ tenantId, tenant }: { tenantId: string; tenan
           </div>
         </>
       )}
+
+      {selectMode && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+          <div
+            className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6"
+            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          >
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <Button type="button" variant="ghost" size="icon-sm" onClick={exitSelectMode} aria-label="Exit select mode">
+                <X className="h-4 w-4" />
+              </Button>
+              <p className="truncate text-sm font-medium">
+                {selectedIds.size === 0 ? "Select products" : `${selectedIds.size} selected`}
+              </p>
+            </div>
+            <div className="flex flex-1 flex-wrap items-center justify-end gap-2 sm:flex-none">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setSelectedIds(allSelected ? new Set() : new Set(products.map((p) => p.id)))
+                }
+              >
+                {allSelected ? "Clear all" : "Select all"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={selectedIds.size === 0}
+                onClick={() => setBulkEditOpen(true)}
+                className="gap-1.5"
+              >
+                <PencilLine className="h-4 w-4" />
+                Edit {selectedIds.size > 0 ? selectedIds.size : ""} product{selectedIds.size === 1 ? "" : "s"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <BulkEditProductsDialog
+        open={bulkEditOpen}
+        onOpenChange={setBulkEditOpen}
+        products={selectedProducts}
+        tenantId={tenantId}
+        onSaved={(saved) => {
+          saved.forEach((p) => {
+            const current = products.find((c) => c.id === p.id);
+            updateProductInList(current ? { ...current, ...p } : p);
+          });
+          exitSelectMode();
+        }}
+      />
 
       <Dialog open={flyerProduct !== null} onOpenChange={(open) => !open && setFlyerProduct(null)}>
         <DialogContent className="max-h-[90vh] sm:max-w-3xl overflow-y-auto">

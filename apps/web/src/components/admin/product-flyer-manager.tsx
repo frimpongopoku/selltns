@@ -13,6 +13,7 @@ import {
   type RenderProductFlyerInput,
 } from "@/lib/generate-product-flyer";
 import { getCanonicalUrl } from "@/lib/canonical";
+import { productImagePosition } from "@/lib/image-focus";
 import type { Product, Tenant } from "@/lib/types";
 
 // The "bold" template is temporarily disabled (see generate-product-flyer.ts)
@@ -150,7 +151,10 @@ export function ProductFlyerManager({ tenant, product }: { tenant: Tenant; produ
                 className={`aspect-square overflow-hidden rounded-lg border-2 bg-cover bg-top transition-all ${
                   selectedImage === image ? "border-primary" : "border-transparent hover:opacity-80"
                 }`}
-                style={{ backgroundImage: `url(${image})` }}
+                style={{
+                  backgroundImage: `url(${image})`,
+                  backgroundPosition: productImagePosition(product, image),
+                }}
               />
             ))}
           </div>

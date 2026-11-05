@@ -3,10 +3,12 @@ import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle";
 import { formatMoney } from "@/lib/format";
 import { discountedPrice, isOnSale } from "@/lib/pricing";
 import { productOptionsLine } from "@/lib/item-options";
+import { productImagePosition } from "@/lib/image-focus";
 import type { Product } from "@/lib/types";
 
 export function ProductsGridView({
@@ -17,6 +19,9 @@ export function ProductsGridView({
   hasMore,
   onMove,
   onFlyer,
+  selectMode,
+  selectedIds,
+  onSelect,
 }: {
   products: Product[];
   tenantId: string;
@@ -25,21 +30,53 @@ export function ProductsGridView({
   hasMore?: boolean;
   onMove?: (id: string, direction: "up" | "down") => void;
   onFlyer?: (product: Product) => void;
+  selectMode?: boolean;
+  selectedIds?: Set<string>;
+  onSelect?: (product: Product, e: React.MouseEvent) => void;
 }) {
+  // In select mode — or with ⌘/Ctrl/Shift held — clicking a product picks it
+  // instead of opening it.
+  function handleOpenClick(e: React.MouseEvent, product: Product) {
+    if (!onSelect) return;
+    if (selectMode || e.metaKey || e.ctrlKey || e.shiftKey) {
+      e.preventDefault();
+      onSelect(product, e);
+    }
+  }
+
   return (
     <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {products.map((product, i) => (
         <Card
           key={product.id}
           style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
-          className="animate-in fade-in-0 slide-in-from-bottom-1 fill-mode-both overflow-hidden p-0 transition-shadow duration-400 hover:shadow-md"
+          className={`animate-in fade-in-0 slide-in-from-bottom-1 fill-mode-both overflow-hidden p-0 transition-shadow duration-400 hover:shadow-md ${
+            selectedIds?.has(product.id) ? "ring-2 ring-primary" : ""
+          } ${selectMode ? "select-none" : ""}`}
         >
-          <Link href={`/admin/products/${product.id}`} className="relative block">
+          <Link
+            href={`/admin/products/${product.id}`}
+            onClick={(e) => handleOpenClick(e, product)}
+            className="relative block"
+          >
+            {selectMode && (
+              <span className="absolute left-1.5 top-1.5 z-10 rounded-[5px] bg-background/90 p-1 shadow-sm">
+                <Checkbox
+                  checked={selectedIds?.has(product.id) ?? false}
+                  tabIndex={-1}
+                  className="pointer-events-none"
+                  aria-label={`Select ${product.title}`}
+                />
+              </span>
+            )}
             <div
               className="aspect-square bg-cover bg-top"
               style={
                 product.images[0]
-                  ? { backgroundImage: `url(${product.images[0]})` }
+                  ? {
+                            backgroundImage: `url(${product.images[0]})`,
+                            backgroundPosition: productImagePosition(product, product.images[0]),
+                          }
                   : { backgroundColor: "var(--muted)" }
               }
             />
@@ -50,7 +87,11 @@ export function ProductsGridView({
             )}
           </Link>
           <div className="flex flex-col gap-1.5 p-3">
-            <Link href={`/admin/products/${product.id}`} className="hover:underline">
+            <Link
+              href={`/admin/products/${product.id}`}
+              onClick={(e) => handleOpenClick(e, product)}
+              className="hover:underline"
+            >
               <p className="truncate text-sm font-medium">{product.title}</p>
             </Link>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -107,6 +148,7 @@ export function ProductsGridView({
                   <Sparkles className="h-4 w-4" />
                 </Button>
                 <ProductActiveToggle
+                  key={`${product.id}-${product.isActive}`}
                   productId={product.id}
                   tenantId={tenantId}
                   initialActive={product.isActive}
@@ -114,7 +156,7 @@ export function ProductsGridView({
                 />
               </div>
             </div>
-            {canReorder && (
+            {canReorder && !selectMode && (
               <div className="-mb-1 -mt-0.5 flex items-center justify-center gap-1 border-t pt-1.5">
                 <Button
                   type="button"

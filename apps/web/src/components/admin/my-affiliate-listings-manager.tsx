@@ -27,6 +27,7 @@ import { capLabel, formatMoney } from "@/lib/format";
 import { setAffiliateListingPrice, toggleAffiliateListing } from "@/lib/api";
 import { useMyAffiliateListings } from "@/lib/use-my-affiliate-listings";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
+import { productImagePosition } from "@/lib/image-focus";
 import type { AffiliateListing, AffiliateRelationship } from "@/lib/types";
 
 export function MyAffiliateListingsManager({
@@ -184,7 +185,10 @@ function ListingRow({
             className="h-10 w-10 shrink-0 rounded-md bg-cover bg-top"
             style={
               listing.product?.images[0]
-                ? { backgroundImage: `url(${listing.product.images[0]})` }
+                ? {
+                            backgroundImage: `url(${listing.product.images[0]})`,
+                            backgroundPosition: productImagePosition(listing.product, listing.product.images[0]),
+                          }
                 : { backgroundColor: "var(--muted)" }
             }
           />

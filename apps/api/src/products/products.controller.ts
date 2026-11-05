@@ -85,6 +85,18 @@ export class ProductsController {
     });
   }
 
+  // Stock, prices, sizes/colors and live status for many products in one go —
+  // the products page's bulk editor.
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('OWNER', 'MANAGER', 'STAFF')
+  @Post('bulk-update')
+  bulkUpdate(
+    @CurrentUser() user: SessionPayload,
+    @Body() body: { updates?: unknown },
+  ) {
+    return this.productsService.bulkUpdate(user.tenantId, body.updates);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Patch(':id')

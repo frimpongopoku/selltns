@@ -18,6 +18,7 @@ import {
 import { updateCollection } from "@/lib/api";
 import { uploadMedia } from "@/lib/upload";
 import { getCanonicalUrl } from "@/lib/canonical";
+import { productImagePosition } from "@/lib/image-focus";
 import type { CollectionWithProducts, Tenant } from "@/lib/types";
 
 const MAX_PRODUCTS = 6;
@@ -243,7 +244,10 @@ export function CollectionFlyerManager({
                   className="h-8 w-8 shrink-0 rounded bg-cover bg-top"
                   style={
                     product.images[0]
-                      ? { backgroundImage: `url(${product.images[0]})` }
+                      ? {
+                            backgroundImage: `url(${product.images[0]})`,
+                            backgroundPosition: productImagePosition(product, product.images[0]),
+                          }
                       : { backgroundColor: "var(--muted)" }
                   }
                 />

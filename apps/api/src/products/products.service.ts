@@ -14,6 +14,7 @@ import {
   MAX_OPTION_LENGTH,
   MAX_OPTIONS_PER_PRODUCT,
   MAX_TAG_LENGTH,
+  MAX_BULK_EDIT_PRODUCTS,
   MAX_TAGS_PER_PRODUCT,
   MAX_VIDEOS_PER_PRODUCT,
   PRODUCTS_PAGE_SIZE,
@@ -35,6 +36,20 @@ export interface FindAllPaginatedParams {
 export type ProductWithPreorder = PrismaProduct & {
   preorder: PreorderInfo | null;
 };
+
+// One row of a bulk edit — only the fields the bulk editor can change.
+// Anything left out of a row stays as it is.
+export interface BulkProductEdit {
+  id: string;
+  stock?: number;
+  trackStock?: boolean;
+  price?: number;
+  discountPrice?: number | null;
+  affiliatePrice?: number | null;
+  sizes?: string[];
+  colors?: string[];
+  isActive?: boolean;
+}
 
 export interface FindAllPaginatedResult {
   items: ProductWithPreorder[];
@@ -98,6 +113,60 @@ const SUPPORTED_VIDEO_HOSTS = [
 // product at). An untouched discount that a price change has left stale
 // (no longer lower than the new price) is silently cleared — the sale is
 // over the moment there's nothing left to discount from.
+function wholeNumber(value: unknown, label: string): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw new BadRequestException(
+      `${label} must be a whole number, 0 or more.`,
+    );
+  }
+  return value;
+}
+
+function flag(value: unknown, label: string): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== 'boolean') {
+    throw new BadRequestException(`${label} must be true or false.`);
+  }
+  return value;
+}
+
+// A price that can be cleared with null (sale/affiliate price), otherwise a
+// whole number above 0.
+function optionalPrice(
+  value: unknown,
+  label: string,
+): number | null | undefined {
+  if (value === null) return null;
+  const n = wholeNumber(value, label);
+  if (n === 0) throw new BadRequestException(`${label} must be more than 0.`);
+  return n;
+}
+
+function bulkEditOf(row: unknown): BulkProductEdit {
+  if (typeof row !== 'object' || row === null) {
+    throw new BadRequestException('Each edit must be an object.');
+  }
+  const r = row as Record<string, unknown>;
+  if (typeof r.id !== 'string' || r.id === '') {
+    throw new BadRequestException('Each edit needs a product id.');
+  }
+  const discountPrice = optionalPrice(r.discountPrice, 'Sale price');
+  const affiliatePrice = optionalPrice(r.affiliatePrice, 'Affiliate price');
+  return {
+    id: r.id,
+    stock: wholeNumber(r.stock, 'Stock'),
+    trackStock: flag(r.trackStock, 'Track stock'),
+    price: wholeNumber(r.price, 'Price'),
+    discountPrice,
+    affiliatePrice,
+    // Checked in full (count, length, duplicates) by update().
+    sizes: r.sizes === undefined ? undefined : optionsOf(r.sizes, 'sizes'),
+    colors: r.colors === undefined ? undefined : optionsOf(r.colors, 'colors'),
+    isActive: flag(r.isActive, 'Live'),
+  };
+}
+
 function resolveDiscountPrice(
   requested: number | null | undefined,
   finalPrice: number,
@@ -454,6 +523,67 @@ export class ProductsService {
     }
 
     return row;
+  }
+
+  // Saves many products' stock, prices, sizes/colors and live status at once. Every row is
+  // checked before anything is written, so a bad value in row 20 doesn't
+  // leave rows 1-19 saved and the rest not.
+  async bulkUpdate(
+    tenantId: string,
+    raw: unknown,
+  ): Promise<{ products: PrismaProduct[] }> {
+    if (!Array.isArray(raw) || raw.length === 0) {
+      throw new BadRequestException('Choose at least one product to edit.');
+    }
+    if (raw.length > MAX_BULK_EDIT_PRODUCTS) {
+      throw new BadRequestException(
+        `You can edit up to ${MAX_BULK_EDIT_PRODUCTS} products at once.`,
+      );
+    }
+    const edits = raw.map((row) => bulkEditOf(row));
+    const ids = [...new Set(edits.map((e) => e.id))];
+    if (ids.length !== edits.length) {
+      throw new BadRequestException('Each product can only appear once.');
+    }
+    const existing = await this.prisma.product.findMany({
+      where: { tenantId, id: { in: ids } },
+    });
+    const byId = new Map(existing.map((p) => [p.id, p]));
+    for (const edit of edits) {
+      const product = byId.get(edit.id);
+      if (!product) {
+        throw new NotFoundException('One of these products no longer exists.');
+      }
+      const price = edit.price ?? product.price;
+      const discount =
+        edit.discountPrice !== undefined
+          ? edit.discountPrice
+          : product.discountPrice;
+      const affiliate =
+        edit.affiliatePrice !== undefined
+          ? edit.affiliatePrice
+          : product.affiliatePrice;
+      if (
+        edit.affiliatePrice != null &&
+        affiliate != null &&
+        affiliate >= price
+      ) {
+        throw new BadRequestException(
+          `"${product.title}": the affiliate price must be lower than the price.`,
+        );
+      }
+      if (edit.discountPrice != null && discount != null && discount >= price) {
+        throw new BadRequestException(
+          `"${product.title}": the sale price must be lower than the price.`,
+        );
+      }
+    }
+
+    const products: PrismaProduct[] = [];
+    for (const { id, ...input } of edits) {
+      products.push(await this.update(id, tenantId, input));
+    }
+    return { products };
   }
 
   async remove(id: string, tenantId: string): Promise<{ id: string }> {

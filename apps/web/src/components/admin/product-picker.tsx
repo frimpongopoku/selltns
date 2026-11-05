@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useProductLibrary } from "@/lib/use-product-library";
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
+import { productImagePosition } from "@/lib/image-focus";
 import type { Product } from "@/lib/types";
 
 // Search-and-paginate product picker for building a collection — a plain
@@ -105,7 +106,10 @@ export function ProductThumb({ product }: { product: Product }) {
       className="h-10 w-10 shrink-0 rounded-md bg-cover bg-top"
       style={
         product.images[0]
-          ? { backgroundImage: `url(${product.images[0]})` }
+          ? {
+                            backgroundImage: `url(${product.images[0]})`,
+                            backgroundPosition: productImagePosition(product, product.images[0]),
+                          }
           : { backgroundColor: "var(--muted)" }
       }
     />

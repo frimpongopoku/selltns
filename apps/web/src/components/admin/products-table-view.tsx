@@ -10,10 +10,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ProductActiveToggle } from "@/components/admin/product-active-toggle";
 import { formatMoney } from "@/lib/format";
 import { discountedPrice, isOnSale } from "@/lib/pricing";
 import { productOptionsLine } from "@/lib/item-options";
+import { productImagePosition } from "@/lib/image-focus";
 import type { Product } from "@/lib/types";
 
 export function ProductsTableView({
@@ -24,6 +26,9 @@ export function ProductsTableView({
   hasMore,
   onMove,
   onFlyer,
+  selectMode,
+  selectedIds,
+  onSelect,
 }: {
   products: Product[];
   tenantId: string;
@@ -32,14 +37,28 @@ export function ProductsTableView({
   hasMore?: boolean;
   onMove?: (id: string, direction: "up" | "down") => void;
   onFlyer?: (product: Product) => void;
+  selectMode?: boolean;
+  selectedIds?: Set<string>;
+  onSelect?: (product: Product, e: React.MouseEvent) => void;
 }) {
+  // In select mode — or with ⌘/Ctrl/Shift held — clicking a product picks it
+  // instead of opening it.
+  function handleOpenClick(e: React.MouseEvent, product: Product) {
+    if (!onSelect) return;
+    if (selectMode || e.metaKey || e.ctrlKey || e.shiftKey) {
+      e.preventDefault();
+      onSelect(product, e);
+    }
+  }
+
   return (
     <Card className="mt-6 p-0">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              {canReorder && <TableHead className="w-16">Order</TableHead>}
+              {selectMode && <TableHead className="w-10" />}
+              {canReorder && !selectMode && <TableHead className="w-16">Order</TableHead>}
               <TableHead>Product</TableHead>
               <TableHead>Actions</TableHead>
               <TableHead>SKU</TableHead>
@@ -53,9 +72,27 @@ export function ProductsTableView({
               <TableRow
                 key={product.id}
                 style={{ animationDelay: `${Math.min(i, 15) * 30}ms` }}
-                className="animate-in fade-in-0 fill-mode-both duration-300"
+                className={`animate-in fade-in-0 fill-mode-both duration-300 ${
+                  selectMode ? "cursor-pointer select-none" : ""
+                } ${selectedIds?.has(product.id) ? "bg-primary/5" : ""}`}
+                onClick={selectMode ? (e) => {
+                  if ((e.target as HTMLElement).closest("button, a, [role=switch]")) return;
+                  onSelect?.(product, e);
+                } : undefined}
               >
-                {canReorder && (
+                {selectMode && (
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds?.has(product.id) ?? false}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect?.(product, e);
+                      }}
+                      aria-label={`Select ${product.title}`}
+                    />
+                  </TableCell>
+                )}
+                {canReorder && !selectMode && (
                   <TableCell>
                     <div className="flex gap-0.5">
                       <Button
@@ -84,13 +121,17 @@ export function ProductsTableView({
                 <TableCell className="whitespace-normal">
                   <Link
                     href={`/admin/products/${product.id}`}
+                    onClick={(e) => handleOpenClick(e, product)}
                     className="flex max-w-[200px] items-center gap-3 hover:underline"
                   >
                     <div
                       className="h-10 w-10 shrink-0 rounded-md bg-cover bg-top"
                       style={
                         product.images[0]
-                          ? { backgroundImage: `url(${product.images[0]})` }
+                          ? {
+                            backgroundImage: `url(${product.images[0]})`,
+                            backgroundPosition: productImagePosition(product, product.images[0]),
+                          }
                           : { backgroundColor: "var(--muted)" }
                       }
                     />
@@ -113,6 +154,7 @@ export function ProductsTableView({
                       Flyer
                     </Button>
                     <ProductActiveToggle
+                      key={`${product.id}-${product.isActive}`}
                       productId={product.id}
                       tenantId={tenantId}
                       initialActive={product.isActive}

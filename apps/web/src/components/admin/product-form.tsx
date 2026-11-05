@@ -116,7 +116,13 @@ export function ProductForm({
       <div>
         <Label>Images</Label>
         <div className="mt-1.5">
-          <GalleryPicker tenantId={tenantId} selected={images} onChange={setImages} showCover />
+          <GalleryPicker
+            tenantId={tenantId}
+            selected={images}
+            onChange={setImages}
+            showCover
+            positions={product?.imageFocus}
+          />
         </div>
       </div>
 
