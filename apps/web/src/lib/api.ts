@@ -214,6 +214,7 @@ export const updateProduct = (
 // One product's changes in the bulk editor — fields left out stay as they are.
 export type BulkProductEdit = {
   id: string;
+  title?: string;
   stock?: number;
   trackStock?: boolean;
   price?: number;

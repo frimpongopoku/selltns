@@ -15,6 +15,7 @@ import {
   MAX_OPTIONS_PER_PRODUCT,
   MAX_TAG_LENGTH,
   MAX_BULK_EDIT_PRODUCTS,
+  MAX_BULK_TITLE_LENGTH,
   MAX_TAGS_PER_PRODUCT,
   MAX_VIDEOS_PER_PRODUCT,
   PRODUCTS_PAGE_SIZE,
@@ -41,6 +42,7 @@ export type ProductWithPreorder = PrismaProduct & {
 // Anything left out of a row stays as it is.
 export interface BulkProductEdit {
   id: string;
+  title?: string;
   stock?: number;
   trackStock?: boolean;
   price?: number;
@@ -153,8 +155,22 @@ function bulkEditOf(row: unknown): BulkProductEdit {
   }
   const discountPrice = optionalPrice(r.discountPrice, 'Sale price');
   const affiliatePrice = optionalPrice(r.affiliatePrice, 'Affiliate price');
+  let title: string | undefined;
+  if (r.title !== undefined) {
+    if (typeof r.title !== 'string' || r.title.trim() === '') {
+      throw new BadRequestException('Every product needs a name.');
+    }
+    title = r.title.trim();
+    if (title.length > MAX_BULK_TITLE_LENGTH) {
+      throw new BadRequestException(
+        `Names must be ${MAX_BULK_TITLE_LENGTH} characters or fewer.`,
+      );
+    }
+  }
   return {
     id: r.id,
+    // Renaming keeps the product's link (slug) — see update().
+    title,
     stock: wholeNumber(r.stock, 'Stock'),
     trackStock: flag(r.trackStock, 'Track stock'),
     price: wholeNumber(r.price, 'Price'),
@@ -525,7 +541,7 @@ export class ProductsService {
     return row;
   }
 
-  // Saves many products' stock, prices, sizes/colors and live status at once. Every row is
+  // Saves many products' names, stock, prices, sizes/colors and live status at once. Every row is
   // checked before anything is written, so a bad value in row 20 doesn't
   // leave rows 1-19 saved and the rest not.
   async bulkUpdate(

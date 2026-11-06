@@ -85,7 +85,7 @@ export class ProductsController {
     });
   }
 
-  // Stock, prices, sizes/colors and live status for many products in one go —
+  // Names, stock, prices, sizes/colors and live status for many products in one go —
   // the products page's bulk editor.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER', 'STAFF')

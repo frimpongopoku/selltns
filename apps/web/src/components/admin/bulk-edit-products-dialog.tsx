@@ -20,9 +20,10 @@ import { MAX_OPTIONS } from "@/lib/item-options";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 
-type Field = "stock" | "price" | "sale" | "affiliate" | "sizes" | "colors" | "live";
+type Field = "name" | "stock" | "price" | "sale" | "affiliate" | "sizes" | "colors" | "live";
 
 const FIELDS: { key: Field; label: string }[] = [
+  { key: "name", label: "Name" },
   { key: "stock", label: "Stock" },
   { key: "price", label: "Price" },
   { key: "sale", label: "Sale price" },
@@ -31,6 +32,9 @@ const FIELDS: { key: Field; label: string }[] = [
   { key: "colors", label: "Colors" },
   { key: "live", label: "Live" },
 ];
+
+// Mirrors MAX_BULK_TITLE_LENGTH on the API.
+const MAX_TITLE_LENGTH = 200;
 
 // Mirrors MAX_OPTION_LENGTH on the API.
 const MAX_OPTION_LENGTH = 30;
@@ -63,6 +67,7 @@ function optionsError(options: string[], noun: "sizes" | "colors"): string | nul
 // What the vendor has typed for one product. Numbers stay strings while
 // typing so a cleared box doesn't snap to 0.
 type Draft = {
+  title: string;
   stock: string;
   trackStock: boolean;
   price: string;
@@ -75,6 +80,7 @@ type Draft = {
 
 function draftOf(p: Product): Draft {
   return {
+    title: p.title,
     stock: String(p.stock),
     trackStock: p.trackStock,
     price: String(p.price),
@@ -93,6 +99,11 @@ const wholeNumber = (s: string) => /^\d+$/.test(s.trim());
 function editOf(p: Product, d: Draft): { edit: BulkProductEdit | null; error: string | null } {
   const edit: BulkProductEdit = { id: p.id };
   let error: string | null = null;
+
+  const title = d.title.trim();
+  if (title === "") error = "Name can't be empty";
+  else if (title.length > MAX_TITLE_LENGTH) error = `Name must be ${MAX_TITLE_LENGTH} characters or fewer`;
+  else if (title !== p.title) edit.title = title;
 
   if (d.trackStock !== p.trackStock) edit.trackStock = d.trackStock;
   if (d.trackStock) {
@@ -136,7 +147,7 @@ function editOf(p: Product, d: Draft): { edit: BulkProductEdit | null; error: st
   return { edit: Object.keys(edit).length > 1 ? edit : null, error };
 }
 
-// Edits stock, prices, sizes, colors and live status for many products at once:
+// Edits names, stock, prices, sizes, colors and live status for many products at once:
 // one row per product to type each value, plus a "set all" row on top.
 export function BulkEditProductsDialog({
   open,
@@ -183,6 +194,8 @@ function Editor({
     Object.fromEntries(products.map((p) => [p.id, draftOf(p)])),
   );
   const [allStock, setAllStock] = useState("");
+  const [find, setFind] = useState("");
+  const [replaceWith, setReplaceWith] = useState("");
   const [allPrice, setAllPrice] = useState("");
   const [allSale, setAllSale] = useState("");
   const [allAffiliate, setAllAffiliate] = useState("");
@@ -258,7 +271,8 @@ function Editor({
         </DialogTitle>
         <DialogDescription>
           Type a value for each product, or use the top row to set them all at once. Press Enter to
-          move down the column. Separate sizes and colors with commas.
+          move down the column. Separate sizes and colors with commas. Renaming a product keeps its
+          link the same.
         </DialogDescription>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="mr-1 text-xs text-muted-foreground">Edit:</span>
@@ -295,7 +309,39 @@ function Editor({
               {show("live") && <th className="px-1.5 py-2 sm:px-2 pr-4 font-medium">Live</th>}
             </tr>
             <tr className="bg-muted/50 align-top">
-              <td className="px-3 py-2 text-xs font-medium sm:px-4">Set all</td>
+              <td className="px-3 py-2 text-xs font-medium sm:px-4">
+                {show("name") ? (
+                  // Names are all different, so "set all" for them is a
+                  // find-and-replace, e.g. fixing a misspelling everywhere.
+                  <div className="flex min-w-[150px] flex-col gap-1">
+                    <span>Set all</span>
+                    <Input
+                      value={find}
+                      onChange={(e) => setFind(e.target.value)}
+                      placeholder="Find in names"
+                      className="h-8 font-normal"
+                    />
+                    <Input
+                      value={replaceWith}
+                      onChange={(e) => setReplaceWith(e.target.value)}
+                      placeholder="Replace with"
+                      className="h-8 font-normal"
+                    />
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="outline"
+                      className="self-start"
+                      disabled={find === ""}
+                      onClick={() => patchAll((d) => ({ title: d.title.split(find).join(replaceWith) }))}
+                    >
+                      Replace in all names
+                    </Button>
+                  </div>
+                ) : (
+                  "Set all"
+                )}
+              </td>
               {show("stock") && (
                 <td className="px-1.5 py-2 sm:px-2">
                   <div className="flex flex-col gap-1">
@@ -477,7 +523,12 @@ function Editor({
                 className={cn("border-b align-middle last:border-0", edit && "bg-primary/[0.04]")}
               >
                 <td className="px-3 py-2 sm:px-4">
-                  <div className="flex min-w-[110px] items-center gap-2 sm:min-w-[150px] sm:gap-2.5">
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 sm:gap-2.5",
+                      show("name") ? "min-w-[180px] sm:min-w-[240px]" : "min-w-[110px] sm:min-w-[150px]",
+                    )}
+                  >
                     <div
                       className="size-8 shrink-0 sm:size-9 rounded-md bg-muted bg-cover"
                       style={
@@ -489,8 +540,20 @@ function Editor({
                           : undefined
                       }
                     />
-                    <div className="min-w-0">
-                      <p className="line-clamp-2 text-[13px] leading-snug sm:text-sm">{p.title}</p>
+                    <div className="min-w-0 flex-1">
+                      {show("name") ? (
+                        <Input
+                          data-bulk-cell={`name-${i}`}
+                          value={d.title}
+                          onChange={(e) => patch(p.id, { title: e.target.value })}
+                          onKeyDown={(e) => handleEnter(e, "name", i)}
+                          aria-label={`Name for ${p.title}`}
+                          aria-invalid={d.title.trim() === "" || undefined}
+                          className={cn("h-8", d.title.trim() !== p.title && "border-primary")}
+                        />
+                      ) : (
+                        <p className="line-clamp-2 text-[13px] leading-snug sm:text-sm">{p.title}</p>
+                      )}
                       {error ? (
                         <p className="text-[11px] text-destructive">{error}</p>
                       ) : (

@@ -9,3 +9,4 @@ export const MAX_OPTION_LENGTH = 30;
 export const PRODUCTS_PAGE_SIZE = 24;
 export const PRODUCTS_PAGE_SIZE_MAX = 100;
 export const MAX_BULK_EDIT_PRODUCTS = 200;
+export const MAX_BULK_TITLE_LENGTH = 200;
