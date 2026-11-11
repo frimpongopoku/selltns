@@ -170,7 +170,7 @@ export function BulkDeleteMediaDialog({
                     />
                   </div>
                   <div className="min-w-0 text-xs">
-                    <p className="truncate font-medium">{asset.title || "Untitled"}</p>
+                    {asset.title && <p className="truncate font-medium">{asset.title}</p>}
                     <MediaUsageList usages={usages?.[asset.id] ?? []} />
                   </div>
                 </li>

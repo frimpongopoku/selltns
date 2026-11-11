@@ -16,6 +16,7 @@ import { getCanonicalUrl } from "@/lib/canonical";
 import { productImagePosition } from "@/lib/image-focus";
 import type { Product, Tenant } from "@/lib/types";
 
+import { productName } from "@/lib/product-name";
 // The "bold" template is temporarily disabled (see generate-product-flyer.ts)
 // pending a design revisit, so there's only one template to pick from right
 // now — the picker UI is commented out below rather than deleted.
@@ -104,8 +105,8 @@ export function ProductFlyerManager({ tenant, product }: { tenant: Tenant; produ
     setBusy("share");
     try {
       await navigator.share({
-        title: `${product.title} — ${tenant.name}`,
-        text: `Check out ${product.title} from ${tenant.name}`,
+        title: `${productName(product)} — ${tenant.name}`,
+        text: `Check out ${productName(product)} from ${tenant.name}`,
         url: productUrl,
       });
     } catch (err) {
@@ -168,7 +169,7 @@ export function ProductFlyerManager({ tenant, product }: { tenant: Tenant; produ
           <div className="flex w-full max-w-[320px] min-h-[280px] items-center justify-center overflow-hidden rounded-xl border bg-white">
             {previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt={`${product.title} flyer preview`} className="w-full h-auto" />
+              <img src={previewUrl} alt={`${productName(product)} flyer preview`} className="w-full h-auto" />
             ) : (
               <p className="text-sm text-muted-foreground">Generating…</p>
             )}

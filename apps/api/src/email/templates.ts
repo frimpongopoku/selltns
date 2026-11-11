@@ -1,3 +1,4 @@
+import { productLabel } from '../common/product-label';
 import type {
   AffiliateCapType,
   AffiliateRelationship,
@@ -524,13 +525,13 @@ export function affiliatePriceClampedEmail(
   capType: AffiliateCapType,
   capValue: number,
 ) {
-  const subject = `Your price for "${product.title}" was adjusted`;
+  const subject = `Your price for "${productLabel(product)}" was adjusted`;
   const html = layout(
     ownerTenant.name,
     `
     <h1 style="font-size: 20px; margin: 0 0 8px;">A price was automatically adjusted</h1>
     <p style="font-size: 14px; line-height: 1.6; color: #444; margin: 0 0 16px;">
-      ${ownerTenant.name} changed the price of <strong>${product.title}</strong>. Your price was
+      ${ownerTenant.name} changed the price of <strong>${productLabel(product)}</strong>. Your price was
       capped at ${capDescription(capType, capValue)} above theirs, so it's been reduced from
       ${formatGHS(oldPrice)} to <strong>${formatGHS(newPrice)}</strong> to stay within that agreement.
     </p>
@@ -538,7 +539,7 @@ export function affiliatePriceClampedEmail(
       You can set a new price for this product any time from your dashboard, up to the new cap.
     </p>`,
   );
-  const text = `${ownerTenant.name} changed the price of "${product.title}". Your price was reduced from ${formatGHS(oldPrice)} to ${formatGHS(newPrice)} to stay within your agreed cap.`;
+  const text = `${ownerTenant.name} changed the price of "${productLabel(product)}". Your price was reduced from ${formatGHS(oldPrice)} to ${formatGHS(newPrice)} to stay within your agreed cap.`;
   return { subject, html, text };
 }
 

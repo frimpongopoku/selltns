@@ -5,6 +5,7 @@ import { ProductForm } from "@/components/admin/product-form";
 import { ProductFlyerManager } from "@/components/admin/product-flyer-manager";
 import { AffiliateVisibilityManager } from "@/components/admin/affiliate-visibility-manager";
 
+import { productName } from "@/lib/product-name";
 export default async function EditProductPage({
   params,
 }: {
@@ -18,7 +19,7 @@ export default async function EditProductPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">{product.title}</h1>
+      <h1 className="text-2xl font-semibold">{productName(product)}</h1>
       <p className="text-sm text-muted-foreground">Edit product details.</p>
       <div className="mt-7">
         <ProductForm tenantId={me.tenant.id} product={product} />

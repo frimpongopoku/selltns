@@ -95,11 +95,18 @@ async function main() {
       create: {
         id: product.id,
         tenantId: seededTenant.id,
+        number: product.number,
         ...data,
         createdAt: new Date(product.createdAt),
       },
     });
   }
+  await prisma.tenant.update({
+    where: { id: seededTenant.id },
+    data: {
+      productNumberSeq: Math.max(0, ...products.map((p) => p.number)),
+    },
+  });
 
   for (const collection of collections) {
     const collectionData = {

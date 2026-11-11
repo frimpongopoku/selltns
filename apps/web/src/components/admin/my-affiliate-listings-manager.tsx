@@ -30,6 +30,7 @@ import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import { productImagePosition } from "@/lib/image-focus";
 import type { AffiliateListing, AffiliateRelationship } from "@/lib/types";
 
+import { productName } from "@/lib/product-name";
 export function MyAffiliateListingsManager({
   tenantId,
   relationships,
@@ -192,7 +193,7 @@ function ListingRow({
                 : { backgroundColor: "var(--muted)" }
             }
           />
-          <span className="truncate">{listing.product?.title ?? "Untitled product"}</span>
+          <span className="truncate">{listing.product ? productName(listing.product) : "No longer available"}</span>
         </div>
       </TableCell>
       <TableCell className="text-muted-foreground">{listing.ownerTenant.name}</TableCell>

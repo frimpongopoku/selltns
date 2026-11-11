@@ -127,8 +127,18 @@ export function ProductForm({
       </div>
 
       <div>
-        <Label htmlFor="title">Title</Label>
-        <Input id="title" required value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1.5" />
+        <Label htmlFor="title">Name</Label>
+        <Input
+          id="title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={product ? `Item #${product.number}` : "Optional"}
+          className="mt-1.5"
+        />
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Optional. Without a name, customers see the price and item number
+          {product ? ` (#${product.number})` : ""} instead.
+        </p>
       </div>
 
       <div>

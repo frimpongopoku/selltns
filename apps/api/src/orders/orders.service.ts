@@ -40,12 +40,13 @@ import type {
   Product,
   Tenant,
 } from '../common/types';
+import { productLabel } from '../common/product-label';
 
 // A product with sizes/colors needs one of each picked, and it has to be one
 // the product still offers (the vendor may have edited the list while this
 // sat in someone's cart). A product without them ignores whatever was sent.
 function resolveOptions(
-  product: Pick<Product, 'title' | 'sizes' | 'colors'>,
+  product: Pick<Product, 'title' | 'number' | 'sizes' | 'colors'>,
   item: { size?: string | null; color?: string | null },
 ): { size: string | null; color: string | null } {
   const pick = (
@@ -56,7 +57,7 @@ function resolveOptions(
     if (offered.length === 0) return null;
     if (!requested || !offered.includes(requested)) {
       throw new BadRequestException(
-        `Please choose a ${noun} for "${product.title}".`,
+        `Please choose a ${noun} for "${productLabel(product)}".`,
       );
     }
     return requested;
@@ -152,8 +153,8 @@ async function applyStockChanges(
       if (product?.trackStock) {
         throw new BadRequestException(
           product.stock > 0
-            ? `Only ${product.stock} of "${product.title}" left in stock. Update the stock or the order quantities first.`
-            : `"${product.title}" is out of stock. Update the stock or the order quantities first.`,
+            ? `Only ${product.stock} of "${productLabel(product)}" left in stock. Update the stock or the order quantities first.`
+            : `"${productLabel(product)}" is out of stock. Update the stock or the order quantities first.`,
         );
       }
     } else if (quantity < 0) {
@@ -324,12 +325,12 @@ export class OrdersService {
         if (native) {
           if (!native.isActive) {
             throw new BadRequestException(
-              `"${native.title}" is no longer available.`,
+              `"${productLabel(native)}" is no longer available.`,
             );
           }
           return {
             productId: native.id,
-            title: native.title,
+            title: productLabel(native),
             quantity: item.quantity,
             ...resolveOptions(native, item),
             priceAtOrder: discountedPrice(native),
@@ -348,12 +349,12 @@ export class OrdersService {
         }
         if (!resolved.product.isActive) {
           throw new BadRequestException(
-            `"${resolved.product.title}" is no longer available.`,
+            `"${productLabel(resolved.product)}" is no longer available.`,
           );
         }
         return {
           productId: resolved.product.id,
-          title: resolved.product.title,
+          title: productLabel(resolved.product),
           quantity: item.quantity,
           ...resolveOptions(resolved.product, item),
           priceAtOrder: resolved.effectivePrice,
@@ -604,18 +605,18 @@ export class OrdersService {
       const product = products[i];
       if (!Number.isInteger(item.quantity) || item.quantity < 1) {
         throw new BadRequestException(
-          `"${product.title}" needs a quantity of at least 1.`,
+          `"${productLabel(product)}" needs a quantity of at least 1.`,
         );
       }
       const price = item.price ?? discountedPrice(product);
       if (!Number.isInteger(price) || price < 0) {
         throw new BadRequestException(
-          `"${product.title}" needs a price of 0 or more, in whole GHS.`,
+          `"${productLabel(product)}" needs a price of 0 or more, in whole GHS.`,
         );
       }
       return {
         productId: product.id,
-        title: product.title,
+        title: productLabel(product),
         quantity: item.quantity,
         priceAtOrder: price,
         ...resolveOptions(product, item),

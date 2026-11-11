@@ -25,6 +25,7 @@ import type { Product, PreorderInfo } from '../common/types';
 import { attachPreorderInfo } from '../common/preorder-info';
 import type { Product as PrismaProduct } from '@prisma/client';
 import { AffiliatesService } from '../affiliates/affiliates.service';
+import { productLabel } from '../common/product-label';
 
 export interface FindAllPaginatedParams {
   cursor?: string;
@@ -157,8 +158,9 @@ function bulkEditOf(row: unknown): BulkProductEdit {
   const affiliatePrice = optionalPrice(r.affiliatePrice, 'Affiliate price');
   let title: string | undefined;
   if (r.title !== undefined) {
-    if (typeof r.title !== 'string' || r.title.trim() === '') {
-      throw new BadRequestException('Every product needs a name.');
+    // Blank is fine — the product is then called by its number.
+    if (typeof r.title !== 'string') {
+      throw new BadRequestException('Names must be text.');
     }
     title = r.title.trim();
     if (title.length > MAX_BULK_TITLE_LENGTH) {
@@ -274,6 +276,7 @@ export class ProductsService {
       id: p.id,
       tenantId: p.tenantId,
       title: p.title,
+      number: p.number,
       slug: p.slug,
       description: p.description,
       price: p.price,
@@ -344,8 +347,14 @@ export class ProductsService {
     const cursor = decodeCursor(params.cursor);
     const q = params.q?.trim();
 
+    // "42" or "#42" also finds product number 42.
+    const asNumber = /^#?\d{1,9}$/.test(q ?? '')
+      ? Number(q!.replace('#', ''))
+      : null;
+    const numberClause =
+      asNumber !== null ? Prisma.sql`OR number = ${asNumber}` : Prisma.empty;
     const searchClause = q
-      ? Prisma.sql`AND (title ILIKE ${'%' + q + '%'} OR EXISTS (SELECT 1 FROM unnest(tags) AS tag WHERE tag ILIKE ${'%' + q + '%'}))`
+      ? Prisma.sql`AND (title ILIKE ${'%' + q + '%'} OR EXISTS (SELECT 1 FROM unnest(tags) AS tag WHERE tag ILIKE ${'%' + q + '%'}) ${numberClause})`
       : Prisma.empty;
     const statusClause =
       params.status === 'active'
@@ -361,7 +370,7 @@ export class ProductsService {
       : Prisma.empty;
 
     const rows = await this.prisma.$queryRaw<PrismaProduct[]>`
-      SELECT id, tenant_id AS "tenantId", title, slug, description, price,
+      SELECT id, tenant_id AS "tenantId", title, number, slug, description, price,
              discount_price AS "discountPrice", affiliate_price AS "affiliatePrice",
              hidden_from_all_affiliates AS "hiddenFromAllAffiliates",
              sku, stock, track_stock AS "trackStock",
@@ -418,10 +427,7 @@ export class ProductsService {
   async create(
     input: Partial<Product> & { tenantId: string },
   ): Promise<PrismaProduct> {
-    const slug = await this.uniqueSlug(
-      input.tenantId,
-      input.slug || input.title || 'product',
-    );
+    const title = (input.title ?? '').trim();
     // New products go to the top of the display order (below the current
     // minimum, which may go negative) so the most recent items come first in
     // both the admin list and the storefront.
@@ -430,40 +436,46 @@ export class ProductsService {
       _min: { displayOrder: true },
     });
     const price = input.price ?? 0;
+    // Everything that can reject the input runs before a number is taken,
+    // so a failed create doesn't burn one.
+    const fields = {
+      title,
+      description: input.description ?? '',
+      price,
+      discountPrice: resolveDiscountPrice(input.discountPrice, price, null),
+      affiliatePrice: resolveAffiliatePrice(input.affiliatePrice, price, null),
+      sku: input.sku ?? '',
+      stock: input.stock ?? 0,
+      trackStock: input.trackStock ?? true,
+      isActive: input.isActive ?? true,
+      // Set at creation so a product meant to be hidden is never briefly
+      // listed for affiliates (listings are reconciled lazily on read).
+      hiddenFromAllAffiliates: input.hiddenFromAllAffiliates ?? false,
+      images: input.images ?? [],
+      imageFocus: await imageFocusFor(
+        this.prisma,
+        input.tenantId,
+        input.images ?? [],
+      ),
+      videoUrls: videoUrlsOf(input),
+      tags: tagsOf(input),
+      sizes: optionsOf(input.sizes, 'sizes'),
+      colors: optionsOf(input.colors, 'colors'),
+      displayOrder: input.displayOrder ?? (minOrder._min.displayOrder ?? 1) - 1,
+    };
+
+    const { productNumberSeq: number } = await this.prisma.tenant.update({
+      where: { id: input.tenantId },
+      data: { productNumberSeq: { increment: 1 } },
+      select: { productNumberSeq: true },
+    });
+    const slug = await this.uniqueSlug(
+      input.tenantId,
+      input.slug || title || `item-${number}`,
+    );
 
     return this.prisma.product.create({
-      data: {
-        tenantId: input.tenantId,
-        title: input.title ?? 'Untitled product',
-        slug,
-        description: input.description ?? '',
-        price,
-        discountPrice: resolveDiscountPrice(input.discountPrice, price, null),
-        affiliatePrice: resolveAffiliatePrice(
-          input.affiliatePrice,
-          price,
-          null,
-        ),
-        sku: input.sku ?? '',
-        stock: input.stock ?? 0,
-        trackStock: input.trackStock ?? true,
-        isActive: input.isActive ?? true,
-        // Set at creation so a product meant to be hidden is never briefly
-        // listed for affiliates (listings are reconciled lazily on read).
-        hiddenFromAllAffiliates: input.hiddenFromAllAffiliates ?? false,
-        images: input.images ?? [],
-        imageFocus: await imageFocusFor(
-          this.prisma,
-          input.tenantId,
-          input.images ?? [],
-        ),
-        videoUrls: videoUrlsOf(input),
-        tags: tagsOf(input),
-        sizes: optionsOf(input.sizes, 'sizes'),
-        colors: optionsOf(input.colors, 'colors'),
-        displayOrder:
-          input.displayOrder ?? (minOrder._min.displayOrder ?? 1) - 1,
-      },
+      data: { tenantId: input.tenantId, number, slug, ...fields },
     });
   }
 
@@ -484,7 +496,7 @@ export class ProductsService {
     const row = await this.prisma.product.update({
       where: { id: existing.id },
       data: {
-        title: input.title ?? existing.title,
+        title: input.title !== undefined ? input.title.trim() : existing.title,
         slug,
         description: input.description ?? existing.description,
         price,
@@ -585,12 +597,12 @@ export class ProductsService {
         affiliate >= price
       ) {
         throw new BadRequestException(
-          `"${product.title}": the affiliate price must be lower than the price.`,
+          `"${productLabel(product)}": the affiliate price must be lower than the price.`,
         );
       }
       if (edit.discountPrice != null && discount != null && discount >= price) {
         throw new BadRequestException(
-          `"${product.title}": the sale price must be lower than the price.`,
+          `"${productLabel(product)}": the sale price must be lower than the price.`,
         );
       }
     }

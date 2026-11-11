@@ -4,6 +4,7 @@ import { discountedPrice, isOnSale } from "./pricing";
 import type { Product, Tenant } from "./types";
 import { productPath } from "./product-path";
 
+import { productName } from "@/lib/product-name";
 // A plain RSS 2.0 feed — deliberately NOT the Google Merchant/Pinterest
 // Catalog XML format (the xmlns:g one meant for Pinterest's Shopping/
 // Catalogs feature, which is gated to a shortlist of countries Ghana
@@ -96,7 +97,7 @@ export function feedItemFromProduct(tenant: Tenant, product: Product): FeedItemI
     : `${formatMoney(product.price)} — `;
   return {
     id: product.id,
-    title: product.title,
+    title: productName(product),
     description: `${priceLine}${product.description}`,
     link: getCanonicalUrl(tenant, productPath(product)),
     imageUrl: product.images[0] ?? null,

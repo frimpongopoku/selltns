@@ -18,6 +18,7 @@ import { productOptionsLine } from "@/lib/item-options";
 import { productImagePosition } from "@/lib/image-focus";
 import type { Product } from "@/lib/types";
 
+import { hasName, productName, productNumber } from "@/lib/product-name";
 export function ProductsTableView({
   products,
   tenantId,
@@ -88,7 +89,7 @@ export function ProductsTableView({
                         e.stopPropagation();
                         onSelect?.(product, e);
                       }}
-                      aria-label={`Select ${product.title}`}
+                      aria-label={`Select ${productName(product)}`}
                     />
                   </TableCell>
                 )}
@@ -99,7 +100,7 @@ export function ProductsTableView({
                         type="button"
                         size="icon-sm"
                         variant="ghost"
-                        aria-label={`Move ${product.title} up`}
+                        aria-label={`Move ${productName(product)} up`}
                         disabled={i === 0}
                         onClick={() => onMove?.(product.id, "up")}
                       >
@@ -109,7 +110,7 @@ export function ProductsTableView({
                         type="button"
                         size="icon-sm"
                         variant="ghost"
-                        aria-label={`Move ${product.title} down`}
+                        aria-label={`Move ${productName(product)} down`}
                         disabled={i === products.length - 1 && Boolean(hasMore)}
                         onClick={() => onMove?.(product.id, "down")}
                       >
@@ -135,7 +136,14 @@ export function ProductsTableView({
                           : { backgroundColor: "var(--muted)" }
                       }
                     />
-                    {product.title}
+                    {hasName(product) ? (
+                      <>
+                        {product.title}
+                        <span className="text-xs text-muted-foreground tabular-nums">{productNumber(product)}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">{productName(product)}</span>
+                    )}
                   </Link>
                 </TableCell>
                 {/* Kept right after Product (not at the far right, past SKU/Price/Stock)

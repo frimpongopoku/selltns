@@ -54,6 +54,7 @@ import type {
   Tenant,
 } from "@/lib/types";
 
+import { productName } from "@/lib/product-name";
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800",
   ACTIVE: "bg-green-100 text-green-800",
@@ -406,7 +407,7 @@ function ExemptionsPanel({
     if (!items) return null;
     const q = query.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((i) => i.product.title.toLowerCase().includes(q));
+    return items.filter((i) => productName(i.product).toLowerCase().includes(q));
   }, [items, query]);
 
   async function toggle(item: AffiliateEligibleProduct) {
@@ -459,7 +460,7 @@ function ExemptionsPanel({
             <div key={item.product.id} className="flex items-center justify-between gap-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">
-                  {item.product.title}
+                  {productName(item.product)}
                   {item.product.preorder && (
                     <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
                       Pre-order
@@ -511,7 +512,7 @@ function ListingsPanel({
     if (!items) return null;
     const q = query.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((i) => (i.product?.title ?? "").toLowerCase().includes(q));
+    return items.filter((i) => (i.product ? productName(i.product) : "").toLowerCase().includes(q));
   }, [items, query]);
 
   return (
@@ -599,7 +600,7 @@ function ListingRow({
     <div className="flex flex-col gap-2 py-3">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">
-          {listing.product?.title}
+          {listing.product && productName(listing.product)}
           {listing.product?.preorder && (
             <span className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
               Pre-order

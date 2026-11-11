@@ -3,6 +3,7 @@ import { getCanonicalUrl } from "./canonical";
 import { discountedPrice } from "./pricing";
 import { productPath } from "./product-path";
 
+import { productName } from "@/lib/product-name";
 // Plain JSON-LD builders — rendered via a <script type="application/ld+json">
 // tag on the relevant page. No library needed; schema.org JSON-LD is just
 // a plain object with an @context/@type.
@@ -30,7 +31,7 @@ export function productJsonLd(tenant: Tenant, product: Product) {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: product.title,
+    name: productName(product),
     description: product.description,
     sku: product.sku || undefined,
     image: product.images.length ? product.images : undefined,
@@ -61,7 +62,7 @@ export function collectionJsonLd(tenant: Tenant, collection: CollectionWithProdu
           "@type": "ListItem",
           position: index + 1,
           url: getCanonicalUrl(tenant, productPath(product)),
-          name: product.title,
+          name: productName(product),
         })),
     },
   };

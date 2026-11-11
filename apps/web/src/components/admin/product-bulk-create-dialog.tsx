@@ -99,7 +99,6 @@ function newRow(patch: Partial<DraftRow> = {}): DraftRow {
 }
 
 function rowProblem(row: DraftRow): string | null {
-  if (!row.title.trim()) return "Needs a title";
   if (row.price.trim() === "" || Number(row.price) < 0 || Number.isNaN(Number(row.price))) {
     return "Needs a price";
   }
@@ -348,7 +347,7 @@ export function ProductBulkCreateDialog({
           <DialogDescription>
             {step === "photos"
               ? "Pick photos for the products you're adding — each photo starts as its own product. Got several angles of one product? Pick them all, then tick and combine them on the next step."
-              : "Fill in a title and price for each one, and open “More details” for descriptions, affiliates, sizes, colors and more. Tick photos of the same product to combine them."}
+              : "Fill in a price for each one (a name is optional), and open “More details” for descriptions, affiliates, sizes, colors and more. Tick photos of the same product to combine them."}
           </DialogDescription>
         </DialogHeader>
 
@@ -459,11 +458,10 @@ export function ProductBulkCreateDialog({
               )}
 
               <ul className="mt-3 flex flex-col gap-2 sm:mt-0">
-                {rows.map((row, i) => (
+                {rows.map((row) => (
                   <BulkRow
                     key={row.key}
                     row={row}
-                    index={i}
                     problem={showErrors ? rowProblem(row) : null}
                     disabled={saving}
                     checked={checkedKeys.has(row.key)}
@@ -794,7 +792,6 @@ function ApplyField({
 
 function BulkRow({
   row,
-  index,
   problem,
   disabled,
   checked,
@@ -806,7 +803,6 @@ function BulkRow({
   onEditPhotos,
 }: {
   row: DraftRow;
-  index: number;
   problem: string | null;
   disabled: boolean;
   checked: boolean;
@@ -818,7 +814,6 @@ function BulkRow({
   onEditPhotos: () => void;
 }) {
   const locked = disabled || row.status === "saved" || row.status === "saving";
-  const titleMissing = problem === "Needs a title";
   const priceMissing = problem === "Needs a price";
   const discountInvalid = problem?.startsWith("Discount") ?? false;
   const affiliateInvalid = problem?.startsWith("Affiliate") ?? false;
@@ -887,9 +882,8 @@ function BulkRow({
           <Input
             value={row.title}
             onChange={(e) => onPatch({ title: e.target.value })}
-            placeholder={`Product ${index + 1} title`}
-            aria-label="Title"
-            aria-invalid={titleMissing || undefined}
+            placeholder="Name (optional)"
+            aria-label="Name (optional)"
             disabled={locked}
             className="min-w-0 flex-1"
           />

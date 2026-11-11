@@ -21,6 +21,7 @@ import { getCanonicalUrl } from "@/lib/canonical";
 import { productImagePosition } from "@/lib/image-focus";
 import type { CollectionWithProducts, Tenant } from "@/lib/types";
 
+import { productName } from "@/lib/product-name";
 const MAX_PRODUCTS = 6;
 
 export function CollectionFlyerManager({
@@ -251,7 +252,7 @@ export function CollectionFlyerManager({
                       : { backgroundColor: "var(--muted)" }
                   }
                 />
-                <span className="flex-1 truncate">{product.title}</span>
+                <span className="flex-1 truncate">{productName(product)}</span>
               </label>
             );
           })}

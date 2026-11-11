@@ -245,7 +245,7 @@ export function GalleryGrid({ tenantId, tenantName }: { tenantId: string; tenant
                   )}
                   {!selectMode && (
                     <div className="absolute inset-x-0 bottom-0 translate-y-full bg-black/60 px-2 py-1 text-[10px] text-white transition-transform group-hover:translate-y-0">
-                      <p className="truncate">{asset.title || "Untitled"}</p>
+                      {asset.title && <p className="truncate">{asset.title}</p>}
                       <p className="text-white/80">
                         {asset.width}×{asset.height} · {formatBytes(asset.bytes)}
                       </p>

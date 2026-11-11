@@ -17,6 +17,7 @@ import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import { onProductCreated } from "@/lib/product-events";
 import type { Product, Tenant } from "@/lib/types";
 
+import { productName } from "@/lib/product-name";
 const VIEW_MODE_KEY = "selltns:admin:products:view";
 type ViewMode = "table" | "grid";
 
@@ -335,7 +336,7 @@ export function ProductsExplorer({ tenantId, tenant }: { tenantId: string; tenan
       <Dialog open={flyerProduct !== null} onOpenChange={(open) => !open && setFlyerProduct(null)}>
         <DialogContent className="max-h-[90vh] sm:max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{flyerProduct ? `${flyerProduct.title} — flyer` : "Flyer"}</DialogTitle>
+            <DialogTitle>{flyerProduct ? `${productName(flyerProduct)} — flyer` : "Flyer"}</DialogTitle>
           </DialogHeader>
           {flyerProduct && <ProductFlyerManager tenant={tenant} product={flyerProduct} />}
         </DialogContent>

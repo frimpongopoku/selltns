@@ -1,13 +1,14 @@
 {
   "name": "web",
-  "version": "0.33.2",
+  "version": "0.34.0",
   "private": true,
   "scripts": {
     "dev": "next dev -p 4310",
     "prebuild": "git fetch --unshallow --quiet 2>/dev/null || true",
     "build": "next build",
     "start": "next start -p 4310",
-    "lint": "eslint"
+    "lint": "eslint",
+    "clean": "rm -rf .next"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

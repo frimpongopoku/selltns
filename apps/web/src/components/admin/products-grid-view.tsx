@@ -11,6 +11,7 @@ import { productOptionsLine } from "@/lib/item-options";
 import { productImagePosition } from "@/lib/image-focus";
 import type { Product } from "@/lib/types";
 
+import { hasName, productName, productNumber } from "@/lib/product-name";
 export function ProductsGridView({
   products,
   tenantId,
@@ -65,7 +66,7 @@ export function ProductsGridView({
                   checked={selectedIds?.has(product.id) ?? false}
                   tabIndex={-1}
                   className="pointer-events-none"
-                  aria-label={`Select ${product.title}`}
+                  aria-label={`Select ${productName(product)}`}
                 />
               </span>
             )}
@@ -92,7 +93,16 @@ export function ProductsGridView({
               onClick={(e) => handleOpenClick(e, product)}
               className="hover:underline"
             >
-              <p className="truncate text-sm font-medium">{product.title}</p>
+              {hasName(product) ? (
+                <p className="flex items-baseline gap-1.5 text-sm font-medium">
+                  <span className="truncate">{product.title}</span>
+                  <span className="ml-auto shrink-0 text-xs font-normal text-muted-foreground tabular-nums">
+                    {productNumber(product)}
+                  </span>
+                </p>
+              ) : (
+                <p className="truncate text-sm font-medium text-muted-foreground">{productName(product)}</p>
+              )}
             </Link>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               {isOnSale(product) ? (
@@ -142,7 +152,7 @@ export function ProductsGridView({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={`Flyer for ${product.title}`}
+                  aria-label={`Flyer for ${productName(product)}`}
                   onClick={() => onFlyer?.(product)}
                 >
                   <Sparkles className="h-4 w-4" />
@@ -162,7 +172,7 @@ export function ProductsGridView({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={`Move ${product.title} up`}
+                  aria-label={`Move ${productName(product)} up`}
                   disabled={i === 0}
                   onClick={() => onMove?.(product.id, "up")}
                 >
@@ -172,7 +182,7 @@ export function ProductsGridView({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={`Move ${product.title} down`}
+                  aria-label={`Move ${productName(product)} down`}
                   disabled={i === products.length - 1 && Boolean(hasMore)}
                   onClick={() => onMove?.(product.id, "down")}
                 >

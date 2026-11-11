@@ -20,6 +20,7 @@ import { MAX_OPTIONS } from "@/lib/item-options";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 
+import { hasName, productName } from "@/lib/product-name";
 type Field = "name" | "stock" | "price" | "sale" | "affiliate" | "sizes" | "colors" | "live";
 
 const FIELDS: { key: Field; label: string }[] = [
@@ -101,8 +102,7 @@ function editOf(p: Product, d: Draft): { edit: BulkProductEdit | null; error: st
   let error: string | null = null;
 
   const title = d.title.trim();
-  if (title === "") error = "Name can't be empty";
-  else if (title.length > MAX_TITLE_LENGTH) error = `Name must be ${MAX_TITLE_LENGTH} characters or fewer`;
+  if (title.length > MAX_TITLE_LENGTH) error = `Name must be ${MAX_TITLE_LENGTH} characters or fewer`;
   else if (title !== p.title) edit.title = title;
 
   if (d.trackStock !== p.trackStock) edit.trackStock = d.trackStock;
@@ -241,7 +241,7 @@ function Editor({
 
   async function save() {
     if (errors.length > 0) {
-      toast.error(errors[0].error, { description: errors[0].product.title });
+      toast.error(errors[0].error, { description: productName(errors[0].product) });
       return;
     }
     if (changed.length === 0) return;
@@ -547,12 +547,14 @@ function Editor({
                           value={d.title}
                           onChange={(e) => patch(p.id, { title: e.target.value })}
                           onKeyDown={(e) => handleEnter(e, "name", i)}
-                          aria-label={`Name for ${p.title}`}
-                          aria-invalid={d.title.trim() === "" || undefined}
+                          placeholder={`Item #${p.number}`}
+                          aria-label={`Name for ${productName(p)}`}
                           className={cn("h-8", d.title.trim() !== p.title && "border-primary")}
                         />
                       ) : (
-                        <p className="line-clamp-2 text-[13px] leading-snug sm:text-sm">{p.title}</p>
+                        <p className={cn("line-clamp-2 text-[13px] leading-snug sm:text-sm", !hasName(p) && "text-muted-foreground")}>
+                          {productName(p)}
+                        </p>
                       )}
                       {error ? (
                         <p className="text-[11px] text-destructive">{error}</p>
@@ -573,7 +575,7 @@ function Editor({
                           onChange={(e) => patch(p.id, { stock: e.target.value })}
                           onKeyDown={(e) => handleEnter(e, "stock", i)}
                           onFocus={(e) => e.target.select()}
-                          aria-label={`Stock for ${p.title}`}
+                          aria-label={`Stock for ${productName(p)}`}
                           aria-invalid={!wholeNumber(d.stock) || undefined}
                           className={cn("h-8 w-16 sm:w-20", Number(d.stock) !== p.stock && "border-primary")}
                         />
@@ -608,7 +610,7 @@ function Editor({
                       onChange={(e) => patch(p.id, { price: e.target.value })}
                       onKeyDown={(e) => handleEnter(e, "price", i)}
                       onFocus={(e) => e.target.select()}
-                      aria-label={`Price for ${p.title}`}
+                      aria-label={`Price for ${productName(p)}`}
                       aria-invalid={!wholeNumber(d.price) || undefined}
                       className={cn("h-8 w-[4.5rem] sm:w-24", d.price.trim() !== String(p.price) && "border-primary")}
                     />
@@ -624,7 +626,7 @@ function Editor({
                       onKeyDown={(e) => handleEnter(e, "sale", i)}
                       onFocus={(e) => e.target.select()}
                       placeholder="No sale"
-                      aria-label={`Sale price for ${p.title}`}
+                      aria-label={`Sale price for ${productName(p)}`}
                       className={cn(
                         "h-8 w-[4.5rem] sm:w-24",
                         d.sale.trim() !== (p.discountPrice == null ? "" : String(p.discountPrice)) &&
@@ -644,7 +646,7 @@ function Editor({
                       onFocus={(e) => e.target.select()}
                       placeholder="Regular"
                       title="Empty = affiliates pay the regular price"
-                      aria-label={`Affiliate price for ${p.title}`}
+                      aria-label={`Affiliate price for ${productName(p)}`}
                       className={cn(
                         "h-8 w-[4.5rem] sm:w-24",
                         d.affiliate.trim() !== (p.affiliatePrice == null ? "" : String(p.affiliatePrice)) &&
@@ -661,7 +663,7 @@ function Editor({
                       onChange={(e) => patch(p.id, { sizes: e.target.value })}
                       onKeyDown={(e) => handleEnter(e, "sizes", i)}
                       placeholder="None"
-                      aria-label={`Sizes for ${p.title}, separated by commas`}
+                      aria-label={`Sizes for ${productName(p)}, separated by commas`}
                       className={cn(
                         "h-8 w-32 sm:w-40",
                         !sameOptions(optionsOf(d.sizes), p.sizes) && "border-primary",
@@ -677,7 +679,7 @@ function Editor({
                       onChange={(e) => patch(p.id, { colors: e.target.value })}
                       onKeyDown={(e) => handleEnter(e, "colors", i)}
                       placeholder="None"
-                      aria-label={`Colors for ${p.title}, separated by commas`}
+                      aria-label={`Colors for ${productName(p)}, separated by commas`}
                       className={cn(
                         "h-8 w-32 sm:w-40",
                         !sameOptions(optionsOf(d.colors), p.colors) && "border-primary",
@@ -690,7 +692,7 @@ function Editor({
                     <Switch
                       checked={d.isActive}
                       onCheckedChange={(checked) => patch(p.id, { isActive: checked })}
-                      aria-label={`${p.title} is live`}
+                      aria-label={`${productName(p)} is live`}
                     />
                   </td>
                 )}

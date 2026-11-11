@@ -37,6 +37,16 @@ import {
   getPreorderInfoMap,
 } from '../common/preorder-info';
 import { decodeCursor, encodeCursor } from '../products/products.utils';
+import { productLabel } from '../common/product-label';
+
+// Name contains `q`, or — for "42" / "#42" — product number 42.
+function productSearch(q: string): Prisma.ProductWhereInput {
+  const byName: Prisma.ProductWhereInput = {
+    title: { contains: q, mode: 'insensitive' },
+  };
+  if (!/^#?\d{1,9}$/.test(q)) return byName;
+  return { OR: [byName, { number: Number(q.replace('#', '')) }] };
+}
 
 const RELATIONSHIP_INCLUDE = {
   ownerTenant: { select: { id: true, name: true, slug: true } },
@@ -83,6 +93,7 @@ function mapProduct(
     id: row.id,
     tenantId: row.tenantId,
     title: row.title,
+    number: row.number,
     slug: row.slug,
     description: row.description,
     price: row.price,
@@ -565,7 +576,7 @@ export class AffiliatesService {
         ...(existing.history as unknown as HistoryEntry[]),
         historyEntry(
           'product_exempted',
-          `${product.title} hidden from ${existing.affiliateTenant.name}`,
+          `${productLabel(product)} hidden from ${existing.affiliateTenant.name}`,
         ),
       ];
       await this.prisma.affiliateRelationship.update({
@@ -614,7 +625,7 @@ export class AffiliatesService {
         ...(existing.history as unknown as HistoryEntry[]),
         historyEntry(
           'product_unexempted',
-          `${product.title} shown to ${existing.affiliateTenant.name} again`,
+          `${productLabel(product)} shown to ${existing.affiliateTenant.name} again`,
         ),
       ];
       await this.prisma.affiliateRelationship.update({
@@ -867,7 +878,7 @@ export class AffiliatesService {
       where: {
         relationshipId: id,
         ...(q
-          ? { product: { title: { contains: q, mode: 'insensitive' } } }
+          ? { product: productSearch(q) }
           : {}),
         ...(cursor
           ? {
@@ -955,7 +966,7 @@ export class AffiliatesService {
       where: {
         relationshipId: { in: [...relationshipById.keys()] },
         ...(q
-          ? { product: { title: { contains: q, mode: 'insensitive' } } }
+          ? { product: productSearch(q) }
           : {}),
         ...(cursor
           ? {

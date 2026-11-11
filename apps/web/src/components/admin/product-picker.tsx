@@ -10,6 +10,7 @@ import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import { productImagePosition } from "@/lib/image-focus";
 import type { Product } from "@/lib/types";
 
+import { productName } from "@/lib/product-name";
 // Search-and-paginate product picker for building a collection — a plain
 // checkbox list doesn't scale once a shop has hundreds or thousands of
 // products, so this reuses the same search/pagination infrastructure as the
@@ -81,7 +82,7 @@ export function ProductPicker({
                     onCheckedChange={() => onToggle(product)}
                   />
                   <ProductThumb product={product} />
-                  <span className="flex-1 truncate">{product.title}</span>
+                  <span className="flex-1 truncate">{productName(product)}</span>
                   {!product.isActive && (
                     <Badge variant="outline" className="shrink-0 text-[10px]">
                       Not live

@@ -9,7 +9,8 @@
     "dev": "npm run dev --workspace=apps/api & npm run dev --workspace=apps/web & wait",
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:api": "npm run dev --workspace=apps/api",
-    "build": "npm run build --workspaces --if-present"
+    "build": "npm run build --workspaces --if-present",
+    "clean": "npm run clean --workspace=apps/web"
   },
   "engines": {
     "node": ">=18"

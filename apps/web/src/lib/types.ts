@@ -194,7 +194,10 @@ export interface PreorderInfo {
 export interface Product {
   id: string;
   tenantId: string;
+  // May be empty — show it through productName() (lib/product-name.ts).
   title: string;
+  // Per-shop product number (#1, #2, …), always set.
+  number: number;
   slug: string;
   description: string;
   price: number;

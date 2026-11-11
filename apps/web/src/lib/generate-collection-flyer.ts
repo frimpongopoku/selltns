@@ -5,6 +5,7 @@ import { formatMoney } from "./format";
 import { discountedPrice, isOnSale } from "./pricing";
 import type { Tenant, Product } from "./types";
 
+import { productName } from "@/lib/product-name";
 // A shareable "collection flyer": shop branding + a QR code back to the
 // collection up top, a numbered product grid (photo, name, price) below.
 // Rendered entirely on a <canvas> — same approach as generate-shop-qr.ts
@@ -41,7 +42,7 @@ export interface FlyerProductInput {
 export function flyerProductFromProduct(product: Product): FlyerProductInput {
   return {
     id: product.id,
-    title: product.title,
+    title: productName(product),
     price: product.price,
     discountPrice: product.discountPrice,
     image: product.images[0] ?? null,

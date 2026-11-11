@@ -123,6 +123,9 @@ model Tenant {
   // the old link.
   photoDropToken             String?  @unique @map("photo_drop_token")
   photoDropEnabled           Boolean  @default(false) @map("photo_drop_enabled")
+  // The last product number handed out (see Product.number). Only goes up,
+  // so a deleted product's number is never given to another one.
+  productNumberSeq           Int      @default(0) @map("product_number_seq")
   themeTokens                Json     @map("theme_tokens")
   createdAt                  DateTime @default(now()) @map("created_at")
 
@@ -272,7 +275,12 @@ model DropPhoto {
 model Product {
   id                      String   @id @default(cuid())
   tenantId                String   @map("tenant_id")
-  title                   String
+  // May be empty — not every seller names their products. Show it through
+  // productLabel() (common/product-label.ts), which falls back to the number.
+  title                   String   @default("")
+  // Short per-shop number (#1, #2, …) — always set, never reused. What a
+  // nameless product is called ("Item #42"), and searchable for all of them.
+  number                  Int
   slug                    String
   description             String   @default("")
   price                   Int      @default(0)
@@ -319,6 +327,7 @@ model Product {
   affiliateListings   AffiliateProductListing[]   @relation("AffiliateListedProduct")
 
   @@unique([tenantId, slug])
+  @@unique([tenantId, number])
   @@index([tenantId])
   @@map("products")
 }

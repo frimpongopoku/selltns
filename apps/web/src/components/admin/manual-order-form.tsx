@@ -14,6 +14,7 @@ import { formatMoney } from "@/lib/format";
 import { discountedPrice } from "@/lib/pricing";
 import type { Product } from "@/lib/types";
 
+import { productName } from "@/lib/product-name";
 interface DraftLine {
   key: string;
   product: Product;
@@ -167,7 +168,7 @@ export function ManualOrderForm({ tenantId }: { tenantId: string }) {
                   <div className="flex items-center gap-3">
                     <ProductThumb product={product} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{product.title}</p>
+                      <p className="truncate text-sm font-medium">{productName(product)}</p>
                       <p className="text-xs text-muted-foreground">
                         {product.trackStock ? `${product.stock} in stock` : "Always in stock"}
                       </p>

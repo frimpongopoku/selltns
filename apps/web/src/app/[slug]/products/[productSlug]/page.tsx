@@ -13,6 +13,7 @@ import { jsonLdScriptProps, productJsonLd } from "@/lib/structured-data";
 import { isCustomDomainRequest } from "@/lib/request-host";
 import { storeHref } from "@/lib/store-href";
 import { productPath } from "@/lib/product-path";
+import { hasName, productName, productNumber } from "@/lib/product-name";
 
 export async function generateMetadata({
   params,
@@ -24,6 +25,7 @@ export async function generateMetadata({
   if (!tenant) return { title: "Store not found" };
   const product = await getProduct(productSlug, tenant.id).catch(() => null);
   if (!product) return { title: "Product not found" };
+  const name = productName(product);
   const description = product.description.slice(0, 160);
   const canonical = getCanonicalUrl(tenant, productPath(product));
 
@@ -35,15 +37,15 @@ export async function generateMetadata({
     : `${formatMoney(product.price)} — `;
   const socialDescription = `${priceLine}${description}`.slice(0, 200);
   const images = product.images[0]
-    ? [{ url: product.images[0], alt: product.title }]
+    ? [{ url: product.images[0], alt: name }]
     : undefined;
 
   return {
-    title: product.title,
+    title: name,
     description,
     alternates: { canonical },
     openGraph: {
-      title: product.title,
+      title: name,
       description: socialDescription,
       url: canonical,
       type: "website",
@@ -51,7 +53,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: product.title,
+      title: name,
       description: socialDescription,
       images,
     },
@@ -85,6 +87,7 @@ export default async function ProductPage({
     : product.stock > 0
       ? `${product.stock} in stock`
       : "Out of stock";
+  const named = hasName(product);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
@@ -96,7 +99,7 @@ export default async function ProductPage({
         <ProductGallery
           images={product.images}
           videoUrls={product.videoUrls}
-          alt={product.title}
+          alt={productName(product)}
           imageFocus={product.imageFocus}
         />
         <div>
@@ -106,14 +109,28 @@ export default async function ProductPage({
               Pre-order — made after you request it
             </p>
           )}
-          <h1 className="store-heading text-3xl font-semibold">{product.title}</h1>
-          <p className="mt-3 flex flex-wrap items-baseline gap-2">
+          {named ? (
+            <h1 className="store-heading text-3xl font-semibold">{product.title}</h1>
+          ) : (
+            // No name: the price is the headline, under the product number.
+            <>
+              <p className="store-muted text-sm font-medium tracking-wide tabular-nums">
+                {productNumber(product)}
+              </p>
+              <h1 className="sr-only">{productName(product)}</h1>
+            </>
+          )}
+          <p className={named ? "mt-3 flex flex-wrap items-baseline gap-2" : "mt-1 flex flex-wrap items-baseline gap-2"}>
             {isOnSale(product) && (
               <span className="store-muted text-base line-through">
                 {formatMoney(product.price)}
               </span>
             )}
-            <span className="store-accent-text text-xl font-medium">
+            <span
+              className={
+                named ? "store-accent-text text-xl font-medium" : "store-heading text-3xl font-semibold"
+              }
+            >
               {formatMoney(discountedPrice(product))}
             </span>
             {isOnSale(product) && (
@@ -126,6 +143,8 @@ export default async function ProductPage({
             {product.description}
           </p>
           <dl className="store-muted mt-7 grid max-w-xs grid-cols-2 gap-y-3 text-sm">
+            <dt>Item no.</dt>
+            <dd className="text-[var(--store-fg)] tabular-nums">{productNumber(product)}</dd>
             {product.sku && (
               <>
                 <dt>SKU</dt>

@@ -12,6 +12,7 @@ import type { Product } from "@/lib/types";
 import { discountedPrice } from "@/lib/pricing";
 import { useStoreSlug } from "./store-context";
 
+import { productName } from "@/lib/product-name";
 export interface CartLine {
   productId: string;
   title: string;
@@ -168,7 +169,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         {
           productId: product.id,
-          title: product.title,
+          title: productName(product),
           price: discountedPrice(product),
           image: product.images[0] ?? null,
           quantity,

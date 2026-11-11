@@ -11,6 +11,7 @@ import { useAffiliateListingLibrary } from "@/lib/use-affiliate-listing-library"
 import { useInfiniteScroll } from "@/lib/use-infinite-scroll";
 import type { AffiliateListing, AffiliateRelationship } from "@/lib/types";
 
+import { productName } from "@/lib/product-name";
 // A native Collection's `productIds` can only ever point at this tenant's
 // own products (see CollectionsService) — placing a product you resell
 // from another shop into one of your own collections instead goes through
@@ -133,7 +134,7 @@ function OwnerResellableList({
                 >
                   <Checkbox checked={checked} onCheckedChange={() => onToggle(listing)} />
                   {listing.product && <ProductThumb product={listing.product} />}
-                  <span className="flex-1 truncate">{listing.product?.title}</span>
+                  <span className="flex-1 truncate">{listing.product && productName(listing.product)}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {formatMoney(listing.effectivePrice)}
                   </span>

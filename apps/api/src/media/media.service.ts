@@ -1,3 +1,4 @@
+import { productLabel } from '../common/product-label';
 import {
   BadRequestException,
   ConflictException,
@@ -457,7 +458,7 @@ export class MediaService {
     const [products, collections, tenant, dropPhotos] = await Promise.all([
       this.prisma.product.findMany({
         where: { tenantId, images: { hasSome: urls } },
-        select: { id: true, title: true, images: true },
+        select: { id: true, title: true, number: true, images: true },
       }),
       this.prisma.collection.findMany({
         where: {
@@ -489,7 +490,7 @@ export class MediaService {
       const usages: MediaUsage[] = [];
       for (const p of products) {
         if (p.images.some(matches)) {
-          usages.push({ kind: 'product', id: p.id, title: p.title });
+          usages.push({ kind: 'product', id: p.id, title: productLabel(p) });
         }
       }
       for (const c of collections) {

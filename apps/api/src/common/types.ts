@@ -76,7 +76,10 @@ export interface PreorderInfo {
 export interface Product {
   id: string;
   tenantId: string;
+  // May be empty — see productLabel() for what to show instead.
   title: string;
+  // Per-shop product number (#1, #2, …).
+  number: number;
   slug: string;
   description: string;
   price: number;

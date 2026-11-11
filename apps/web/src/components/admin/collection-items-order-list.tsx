@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ProductThumb } from "@/components/admin/product-picker";
 import type { Product } from "@/lib/types";
 
+import { productName } from "@/lib/product-name";
 // Stable key for one collection item — a resold product is keyed by its
 // listing (what AffiliateCollectionItem keys on), the tenant's own by id.
 export function collectionItemKey(product: Product) {
@@ -48,7 +49,7 @@ export function CollectionItemsOrderList({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={`Move ${product.title} up`}
+                  aria-label={`Move ${productName(product)} up`}
                   disabled={i === 0}
                   onClick={() => onMove(key, "up")}
                   className="h-5"
@@ -59,7 +60,7 @@ export function CollectionItemsOrderList({
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  aria-label={`Move ${product.title} down`}
+                  aria-label={`Move ${productName(product)} down`}
                   disabled={i === items.length - 1}
                   onClick={() => onMove(key, "down")}
                   className="h-5"
@@ -68,7 +69,7 @@ export function CollectionItemsOrderList({
                 </Button>
               </div>
               <ProductThumb product={product} />
-              <span className="flex-1 truncate">{product.title}</span>
+              <span className="flex-1 truncate">{productName(product)}</span>
               {product.affiliateSource && (
                 <Badge variant="outline" className="max-w-[140px] shrink-0 truncate text-[10px]">
                   Resold · {product.affiliateSource.ownerTenantName}
@@ -77,7 +78,7 @@ export function CollectionItemsOrderList({
               <button
                 type="button"
                 onClick={() => onRemove(product)}
-                aria-label={`Remove ${product.title}`}
+                aria-label={`Remove ${productName(product)}`}
                 className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <X className="h-4 w-4" />

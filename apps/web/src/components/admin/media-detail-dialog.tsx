@@ -175,7 +175,7 @@ function MediaDetailBody({
               id="media-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Untitled photo"
+              placeholder="Optional"
               className="mt-1.5"
             />
           </div>

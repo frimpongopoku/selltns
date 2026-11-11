@@ -361,7 +361,7 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
                   )}
                 </div>
                 <div className="flex flex-1 flex-col gap-1 p-2.5">
-                  <p className="truncate text-sm font-medium">{item.title || "Untitled"}</p>
+                  {item.title && <p className="truncate text-sm font-medium">{item.title}</p>}
                   {item.unavailable ? (
                     <span className="flex items-center gap-1 self-start rounded bg-zinc-800 px-1.5 py-0.5 text-[11px] font-semibold text-white">
                       <Ban className="h-3 w-3" />

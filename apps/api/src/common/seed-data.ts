@@ -111,6 +111,7 @@ export const products: Product[] = [
   {
     id: 'prod_1',
     tenantId: DEMO_TENANT_ID,
+    number: 1,
     title: 'Adjoa Wax-Print Wrap Dress',
     slug: 'adjoa-wrap-dress',
     description:
@@ -134,6 +135,7 @@ export const products: Product[] = [
   {
     id: 'prod_2',
     tenantId: DEMO_TENANT_ID,
+    number: 2,
     title: 'Nkuruma Woven Basket Bag',
     slug: 'nkuruma-basket-bag',
     description:
@@ -157,6 +159,7 @@ export const products: Product[] = [
   {
     id: 'prod_3',
     tenantId: DEMO_TENANT_ID,
+    number: 3,
     title: 'Ama Beaded Statement Necklace',
     slug: 'ama-beaded-necklace',
     description:
@@ -180,6 +183,7 @@ export const products: Product[] = [
   {
     id: 'prod_4',
     tenantId: DEMO_TENANT_ID,
+    number: 4,
     title: 'Kofi Leather Slide Sandals',
     slug: 'kofi-leather-sandals',
     description:
@@ -203,6 +207,7 @@ export const products: Product[] = [
   {
     id: 'prod_5',
     tenantId: DEMO_TENANT_ID,
+    number: 5,
     title: 'Abena Kente-Trim Blazer',
     slug: 'abena-kente-blazer',
     description:
@@ -226,6 +231,7 @@ export const products: Product[] = [
   {
     id: 'prod_6',
     tenantId: DEMO_TENANT_ID,
+    number: 6,
     title: 'Yaa Draped Midi Skirt',
     slug: 'yaa-draped-midi-skirt',
     description:
