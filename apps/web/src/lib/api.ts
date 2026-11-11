@@ -22,6 +22,13 @@ import type {
   PhotoDropAdmin,
   PhotoDropLink,
   PhotoDropPublic,
+  ProductSheetAdmin,
+  ProductSheetLink,
+  ProductSheetPublic,
+  SheetChanges,
+  SheetGalleryPhoto,
+  SheetProductRow,
+  SheetSuggestion,
   Order,
   OrderItem,
   OrderStatus,
@@ -334,6 +341,65 @@ export const suggestMediaFocus = (ids: string[]) =>
 
 export const bulkDeleteMedia = (ids: string[]) =>
   adminRequest<BulkDeleteMediaResult>("/media/bulk-delete", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+
+// Product sheet — public (team link, by token)
+const sheetPath = (token: string) => `/product-sheet/public/${encodeURIComponent(token)}`;
+export const getProductSheet = (token: string) => request<ProductSheetPublic>(sheetPath(token));
+export const getSheetProducts = (token: string, params: { cursor?: string | null; q?: string }) => {
+  const qs = new URLSearchParams();
+  if (params.cursor) qs.set("cursor", params.cursor);
+  if (params.q) qs.set("q", params.q);
+  return request<{ items: SheetProductRow[]; nextCursor: string | null }>(`${sheetPath(token)}/products?${qs}`);
+};
+export const getSheetGallery = (token: string, params: { cursor?: string | null; q?: string }) => {
+  const qs = new URLSearchParams();
+  if (params.cursor) qs.set("cursor", params.cursor);
+  if (params.q) qs.set("q", params.q);
+  return request<{ items: SheetGalleryPhoto[]; nextCursor: string | null }>(`${sheetPath(token)}/gallery?${qs}`);
+};
+// Returns null when the form matches the live product again (nothing to suggest).
+export const saveSheetEdit = (token: string, productId: string, changes: SheetChanges, author: string) =>
+  request<SheetSuggestion | null>(`${sheetPath(token)}/products/${productId}`, {
+    method: "PUT",
+    body: JSON.stringify({ changes, author }),
+  });
+export const undoSheetEdit = (token: string, productId: string) =>
+  request<{ ok: true }>(`${sheetPath(token)}/products/${productId}/undo`, { method: "POST" });
+export const saveSheetNew = (token: string, id: string | null, changes: SheetChanges, author: string) =>
+  request<SheetSuggestion>(id ? `${sheetPath(token)}/new/${id}` : `${sheetPath(token)}/new`, {
+    method: id ? "PUT" : "POST",
+    body: JSON.stringify({ changes, author }),
+  });
+export const removeSheetNew = (token: string, id: string) =>
+  request<{ ok: true }>(`${sheetPath(token)}/new/${id}/delete`, { method: "POST" });
+
+// Product sheet — admin
+export const getProductSheetAdmin = () => adminRequest<ProductSheetAdmin>("/product-sheet");
+export const getProductSheetScopeProducts = () => adminRequest<Product[]>("/product-sheet/scope-products");
+export const getProductSheetPendingCount = () =>
+  adminRequest<{ count: number }>("/product-sheet/pending-count");
+export const setProductSheetEnabled = (enabled: boolean) =>
+  adminRequest<ProductSheetLink>("/product-sheet/link", {
+    method: "PATCH",
+    body: JSON.stringify({ enabled }),
+  });
+export const regenerateProductSheetLink = () =>
+  adminRequest<ProductSheetLink>("/product-sheet/link/regenerate", { method: "POST" });
+export const setProductSheetScope = (allProducts: boolean, productIds: string[]) =>
+  adminRequest<{ allProducts: boolean; productIds: string[] }>("/product-sheet/scope", {
+    method: "PUT",
+    body: JSON.stringify({ allProducts, productIds }),
+  });
+export const publishSheetSuggestions = (ids: string[]) =>
+  adminRequest<{ published: number; failed: { id: string; error: string }[] }>("/product-sheet/publish", {
+    method: "POST",
+    body: JSON.stringify({ ids }),
+  });
+export const discardSheetSuggestions = (ids: string[]) =>
+  adminRequest<{ discarded: number }>("/product-sheet/discard", {
     method: "POST",
     body: JSON.stringify({ ids }),
   });

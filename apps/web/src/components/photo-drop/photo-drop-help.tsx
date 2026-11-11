@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-function Section({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+export function HelpSection({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
     <section className="space-y-2">
       <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -23,7 +23,7 @@ function Section({ icon, title, children }: { icon: ReactNode; title: string; ch
   );
 }
 
-function Steps({ steps }: { steps: ReactNode[] }) {
+export function HelpSteps({ steps }: { steps: ReactNode[] }) {
   return (
     <ol className="space-y-1.5">
       {steps.map((step, i) => (
@@ -46,8 +46,8 @@ function AdminHelp() {
         Nothing in it shows in your shop until you send it on.
       </p>
 
-      <Section icon={<Users className="size-4" />} title="Team → you: the team uploads photos">
-        <Steps
+      <HelpSection icon={<Users className="size-4" />} title="Team → you: the team uploads photos">
+        <HelpSteps
           steps={[
             "Copy the team link on this page and send it to whoever takes the photos.",
             "They take or upload photos from any phone or computer, and group the angles of the same product.",
@@ -59,10 +59,10 @@ function AdminHelp() {
             </>,
           ]}
         />
-      </Section>
+      </HelpSection>
 
-      <Section icon={<Images className="size-4" />} title="You → team: send gallery photos for details">
-        <Steps
+      <HelpSection icon={<Images className="size-4" />} title="You → team: send gallery photos for details">
+        <HelpSteps
           steps={[
             <>
               In the Gallery, tap <b className="text-foreground">Select photos</b>, pick photos, then{" "}
@@ -72,9 +72,9 @@ function AdminHelp() {
             "You review them here and create products, the same as above.",
           ]}
         />
-      </Section>
+      </HelpSection>
 
-      <Section icon={<ShieldCheck className="size-4" />} title="What happens to the photos">
+      <HelpSection icon={<ShieldCheck className="size-4" />} title="What happens to the photos">
         <ul className="list-disc space-y-1.5 pl-4">
           <li>Photos you sent from the gallery stay in your gallery. Removing them from the drop never deletes them.</li>
           <li>While a gallery photo is in the drop, the gallery won&apos;t let it be deleted.</li>
@@ -84,9 +84,9 @@ function AdminHelp() {
           </li>
           <li>Team photos join your gallery when you create products or add them to the gallery. Not before.</li>
         </ul>
-      </Section>
+      </HelpSection>
 
-      <Section icon={<Inbox className="size-4" />} title="Keeping the link safe">
+      <HelpSection icon={<Inbox className="size-4" />} title="Keeping the link safe">
         <ul className="list-disc space-y-1.5 pl-4">
           <li>Anyone with the link can add photos and edit items in the drop, but can&apos;t touch your shop.</li>
           <li>Switch the link off when you&apos;re not using it, and back on any time.</li>
@@ -95,7 +95,7 @@ function AdminHelp() {
             shared too widely.
           </li>
         </ul>
-      </Section>
+      </HelpSection>
     </div>
   );
 }
@@ -106,8 +106,8 @@ function TeamHelp({ shopName }: { shopName: string }) {
       <p className="text-sm text-muted-foreground">
         This is {shopName}&apos;s photo drop. Add product photos here and the shop will review them. No account needed.
       </p>
-      <Section icon={<ArrowRight className="size-4" />} title="How to use it">
-        <Steps
+      <HelpSection icon={<ArrowRight className="size-4" />} title="How to use it">
+        <HelpSteps
           steps={[
             <>
               Tap <b className="text-foreground">Take or choose photos</b> and add as many as you like.
@@ -127,14 +127,14 @@ function TeamHelp({ shopName }: { shopName: string }) {
             </>,
           ]}
         />
-      </Section>
-      <Section icon={<Images className="size-4" />} title="Good to know">
+      </HelpSection>
+      <HelpSection icon={<Images className="size-4" />} title="Good to know">
         <ul className="list-disc space-y-1.5 pl-4">
           <li>Some items may already have photos from the shop. Just fill in their details.</li>
           <li>Keep this page open until your uploads finish.</li>
           <li>Nothing here appears in the shop until the shop reviews it.</li>
         </ul>
-      </Section>
+      </HelpSection>
     </div>
   );
 }

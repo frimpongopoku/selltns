@@ -31,20 +31,28 @@ export function ProductPickerDialog({
   onOpenChange,
   selected,
   onDone,
+  title = "Add products",
+  pickedLabel = "In collection",
+  allowInactive = false,
 }: {
   tenantId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** The shop's own products currently in the collection. */
+  /** The products currently picked (e.g. the shop's own ones in the collection). */
   selected: Product[];
   /** The full new selection, in the order picked (existing ones first). */
   onDone: (products: Product[]) => void;
+  title?: string;
+  /** Names the "picked" tab and footer count, e.g. "In collection". */
+  pickedLabel?: string;
+  /** Lets products that aren't live be picked too. */
+  allowInactive?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[92dvh] flex-col gap-3 sm:h-[88vh] sm:max-w-5xl">
         <DialogHeader>
-          <DialogTitle>Add products</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             Tap products to add or remove them. Shift-click to pick a whole run at once.
           </DialogDescription>
@@ -54,6 +62,8 @@ export function ProductPickerDialog({
           <PickerBody
             tenantId={tenantId}
             initial={selected}
+            pickedLabel={pickedLabel}
+            allowInactive={allowInactive}
             onCancel={() => onOpenChange(false)}
             onDone={(products) => {
               onDone(products);
@@ -69,11 +79,15 @@ export function ProductPickerDialog({
 function PickerBody({
   tenantId,
   initial,
+  pickedLabel,
+  allowInactive,
   onCancel,
   onDone,
 }: {
   tenantId: string;
   initial: Product[];
+  pickedLabel: string;
+  allowInactive: boolean;
   onCancel: () => void;
   onDone: (products: Product[]) => void;
 }) {
@@ -95,7 +109,7 @@ function PickerBody({
   const removed = initial.filter((p) => !pickedIds.has(p.id)).length;
   // Products that aren't live can't be newly added — but ones already in
   // the collection can still be taken out.
-  const canPick = (p: Product) => p.isActive || pickedIds.has(p.id);
+  const canPick = (p: Product) => allowInactive || p.isActive || pickedIds.has(p.id);
   const shown = showPicked ? draft : products;
 
   function toggle(product: Product, e: MouseEvent) {
@@ -104,7 +118,7 @@ function PickerBody({
     if (e.shiftKey && anchorIndex >= 0 && !showPicked) {
       // Range: tick everything between the last tap and this one.
       const [from, to] = anchorIndex < index ? [anchorIndex, index] : [index, anchorIndex];
-      const run = shown.slice(from, to + 1).filter((p) => p.isActive && !pickedIds.has(p.id));
+      const run = shown.slice(from, to + 1).filter((p) => (allowInactive || p.isActive) && !pickedIds.has(p.id));
       setDraft((prev) => [...prev, ...run]);
     } else if (pickedIds.has(product.id)) {
       setDraft((prev) => prev.filter((p) => p.id !== product.id));
@@ -137,7 +151,7 @@ function PickerBody({
         <div className="flex shrink-0 rounded-lg border p-0.5 text-sm">
           {[
             { label: "All products", value: false },
-            { label: `In collection (${draft.length})`, value: true },
+            { label: `${pickedLabel} (${draft.length})`, value: true },
           ].map((tab) => (
             <button
               key={String(tab.value)}
@@ -164,7 +178,7 @@ function PickerBody({
         ) : shown.length === 0 ? (
           <p className="p-10 text-center text-sm text-muted-foreground">
             {showPicked
-              ? "Nothing in this collection yet."
+              ? `Nothing picked yet.`
               : query
                 ? "No products match your search."
                 : "No products yet."}
@@ -193,7 +207,9 @@ function PickerBody({
 
       <div className="-mx-4 -mb-4 flex flex-col gap-3 rounded-b-xl border-t bg-muted/50 p-3 sm:flex-row sm:items-center sm:px-4">
         <p className="min-w-0 flex-1 text-sm">
-          <span className="font-medium">{draft.length} in this collection</span>
+          <span className="font-medium">
+            {draft.length} {pickedLabel.toLowerCase()}
+          </span>
           {changes && <span className="text-muted-foreground"> · {changes}</span>}
         </p>
         <div className="flex shrink-0 gap-2">

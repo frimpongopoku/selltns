@@ -22,6 +22,7 @@ import { BillingModule } from './billing/billing.module';
 import { HealthModule } from './health/health.module';
 import { AffiliatesModule } from './affiliates/affiliates.module';
 import { PhotoDropModule } from './photo-drop/photo-drop.module';
+import { ProductSheetModule } from './product-sheet/product-sheet.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { PhotoDropModule } from './photo-drop/photo-drop.module';
     HealthModule,
     AffiliatesModule,
     PhotoDropModule,
+    ProductSheetModule,
   ],
   controllers: [AppController],
   providers: [

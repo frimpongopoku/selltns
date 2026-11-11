@@ -33,6 +33,8 @@ export interface FindAllPaginatedParams {
   q?: string;
   status?: 'active' | 'inactive' | 'all';
   tag?: string;
+  // Only these products (the product sheet's chosen set).
+  ids?: string[];
 }
 
 export type ProductWithPreorder = PrismaProduct & {
@@ -193,9 +195,7 @@ function resolveDiscountPrice(
   if (requested !== undefined) {
     if (requested === null) return null;
     if (!Number.isInteger(requested) || requested <= 0) {
-      throw new BadRequestException(
-        'Discount price must be more than 0.',
-      );
+      throw new BadRequestException('Discount price must be more than 0.');
     }
     if (requested >= finalPrice) {
       throw new BadRequestException(
@@ -218,9 +218,7 @@ function resolveAffiliatePrice(
   if (requested !== undefined) {
     if (requested === null) return null;
     if (!Number.isInteger(requested) || requested <= 0) {
-      throw new BadRequestException(
-        'Affiliate price must be more than 0.',
-      );
+      throw new BadRequestException('Affiliate price must be more than 0.');
     }
     if (requested >= finalPrice) {
       throw new BadRequestException(
@@ -368,6 +366,9 @@ export class ProductsService {
     const cursorClause = cursor
       ? Prisma.sql`AND (display_order, id) > (${cursor.displayOrder}, ${cursor.id})`
       : Prisma.empty;
+    const idsClause = params.ids
+      ? Prisma.sql`AND id = ANY(${params.ids})`
+      : Prisma.empty;
 
     const rows = await this.prisma.$queryRaw<PrismaProduct[]>`
       SELECT id, tenant_id AS "tenantId", title, number, slug, description, price,
@@ -383,6 +384,7 @@ export class ProductsService {
       ${searchClause}
       ${statusClause}
       ${tagClause}
+      ${idsClause}
       ${cursorClause}
       ORDER BY display_order ASC, id ASC
       LIMIT ${limit + 1}

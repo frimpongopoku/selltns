@@ -126,6 +126,14 @@ model Tenant {
   // The last product number handed out (see Product.number). Only goes up,
   // so a deleted product's number is never given to another one.
   productNumberSeq           Int      @default(0) @map("product_number_seq")
+  // Product sheet: a no-login link the team uses to suggest product edits
+  // and new products (see product-sheet/). Nothing they do goes live until
+  // the admin publishes it. Null token = never set up.
+  productSheetToken          String?  @unique @map("product_sheet_token")
+  productSheetEnabled        Boolean  @default(false) @map("product_sheet_enabled")
+  // Which products the sheet shows: all of them, or only these ids.
+  productSheetAll            Boolean  @default(true) @map("product_sheet_all")
+  productSheetProductIds     String[] @default([]) @map("product_sheet_product_ids")
   themeTokens                Json     @map("theme_tokens")
   createdAt                  DateTime @default(now()) @map("created_at")
 
@@ -145,6 +153,7 @@ model Tenant {
   memberships         TenantMembership[]
   mediaAssets         MediaAsset[]
   dropItems           DropItem[]
+  productSuggestions  ProductSuggestion[]
   products            Product[]
   collections         Collection[]
   paymentMethods      PaymentMethod[]
@@ -325,6 +334,7 @@ model Product {
 
   affiliateExemptions AffiliateProductExemption[]
   affiliateListings   AffiliateProductListing[]   @relation("AffiliateListedProduct")
+  suggestion          ProductSuggestion?
 
   @@unique([tenantId, slug])
   @@unique([tenantId, number])
@@ -650,4 +660,30 @@ model SupportMessage {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("support_messages")
+}
+
+// A change the team suggested through the product sheet, waiting for the
+// admin to publish or discard it. productId set = edits to that product (at
+// most one pending suggestion each — later edits update it); null = a new
+// product.
+model ProductSuggestion {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  productId String?  @unique @map("product_id")
+  // Field -> suggested value, only for fields that differ (edits), or every
+  // field (new products). Money in pesewas.
+  changes   Json
+  // Field -> the product's value when the team first changed it, so review
+  // can flag fields that changed again in the meantime.
+  base      Json     @default("{}")
+  // Optional name the team member typed, shown in review.
+  author    String   @default("")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("product_suggestions")
 }

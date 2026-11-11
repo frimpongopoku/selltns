@@ -178,6 +178,77 @@ export interface PhotoDropAdmin extends PhotoDropLink {
   items: DropItem[];
 }
 
+// Product sheet — the no-login team link for suggesting product edits and
+// new products. Money is in pesewas.
+export interface SheetChanges {
+  title?: string;
+  description?: string;
+  price?: number;
+  discountPrice?: number | null;
+  stock?: number;
+  trackStock?: boolean;
+  sizes?: string[];
+  colors?: string[];
+  isActive?: boolean;
+  /** New products only: gallery photo URLs. */
+  images?: string[];
+}
+
+export interface SheetSuggestion {
+  id: string;
+  productId: string | null;
+  changes: SheetChanges;
+  /** The product's values when the team first changed each field. */
+  base: SheetChanges;
+  author: string;
+  updatedAt: string;
+}
+
+export interface SheetProduct {
+  id: string;
+  number: number;
+  title: string;
+  description: string;
+  price: number;
+  discountPrice: number | null;
+  stock: number;
+  trackStock: boolean;
+  sizes: string[];
+  colors: string[];
+  isActive: boolean;
+  images: string[];
+  imageFocus: Record<string, string>;
+}
+
+export interface SheetProductRow extends SheetProduct {
+  suggestion: SheetSuggestion | null;
+}
+
+export interface ProductSheetPublic {
+  shop: { name: string; logoUrl: string | null; themeTokens: ThemeTokens };
+  allProducts: boolean;
+  newProducts: SheetSuggestion[];
+}
+
+export interface SheetGalleryPhoto {
+  id: string;
+  url: string;
+  thumbUrl: string;
+  title: string | null;
+  focusX: number | null;
+  focusY: number | null;
+}
+
+export interface ProductSheetLink {
+  token: string | null;
+  enabled: boolean;
+}
+
+export interface ProductSheetAdmin {
+  link: ProductSheetLink & { allProducts: boolean; productIds: string[] };
+  suggestions: (SheetSuggestion & { product: SheetProduct | null })[];
+}
+
 export interface BulkDeleteMediaResult {
   deleted: string[];
   skipped: { id: string; usages: MediaUsage[] }[];
