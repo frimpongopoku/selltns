@@ -263,4 +263,7 @@ export interface ContentBlock {
   videoUrl?: string;
   caption?: string;
   imageUrls?: string[];
+  // Read-only: image URL -> CSS object-position for photos with a gallery
+  // focus point, added by StoryService.findAll and never stored.
+  imageFocus?: Record<string, string>;
 }

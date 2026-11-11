@@ -264,6 +264,9 @@ export function CollectionForm({
             selected={coverImage}
             onChange={(urls) => setCoverImage(urls.slice(-1))}
             max={1}
+            positions={
+              collection?.coverPosition ? { [collection.coverImage]: collection.coverPosition } : undefined
+            }
           />
         </div>
       </div>

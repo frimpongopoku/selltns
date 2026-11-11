@@ -15,9 +15,11 @@ import type {
   Collection,
   CollectionInput,
   CollectionItemRef,
+  PreorderInfo,
   ThemeTokens,
 } from '../common/types';
 import { getPreorderInfoMap } from '../common/preorder-info';
+import { imageFocusFor } from '../common/image-focus';
 import { AffiliatesService } from '../affiliates/affiliates.service';
 
 // Ordered by the per-collection position column — the vendor arranges it
@@ -222,20 +224,32 @@ export class CollectionsService {
   // this, a product listed inside a pre-order collection would render with
   // the regular add-to-cart/stock UI instead of the reserve/deposit one.
   private async withProductPreorderInfo<
-    T extends { tenantId: string; products: PrismaProduct[] },
-  >(collections: T[]): Promise<T[]> {
+    T extends {
+      tenantId: string;
+      coverImage: string;
+      products: PrismaProduct[];
+    },
+  >(collections: T[]): Promise<(T & { coverPosition: string | null })[]> {
+    if (collections.length === 0) return [];
+    const tenantId = collections[0].tenantId;
     const productIds = [
       ...new Set(collections.flatMap((c) => c.products.map((p) => p.id))),
     ];
-    if (productIds.length === 0) return collections;
-    const tenantId = collections[0].tenantId;
-    const byProductId = await getPreorderInfoMap(
-      this.prisma,
-      tenantId,
-      productIds,
-    );
+    const [byProductId, coverFocus] = await Promise.all([
+      productIds.length
+        ? getPreorderInfoMap(this.prisma, tenantId, productIds)
+        : new Map<string, PreorderInfo>(),
+      // Looked up on every read rather than copied onto the collection, so
+      // a focus change in the gallery shows up right away.
+      imageFocusFor(
+        this.prisma,
+        tenantId,
+        collections.map((c) => c.coverImage).filter(Boolean),
+      ),
+    ]);
     return collections.map((c) => ({
       ...c,
+      coverPosition: coverFocus[c.coverImage] ?? null,
       products: c.products.map((p) => ({
         ...p,
         preorder: byProductId.get(p.id) ?? null,

@@ -18,6 +18,9 @@ export interface CartLine {
   title: string;
   price: number;
   image: string | null;
+  // The image's focus as a CSS object-position. Missing on lines added
+  // before this existed — those show the default crop.
+  imagePosition?: string | null;
   quantity: number;
   // Picked option, when the product offers sizes/colors. Missing on lines
   // saved before options existed — treated the same as null.
@@ -172,6 +175,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           title: productName(product),
           price: discountedPrice(product),
           image: product.images[0] ?? null,
+          imagePosition: product.images[0] ? (product.imageFocus?.[product.images[0]] ?? null) : null,
           quantity,
           size,
           color,

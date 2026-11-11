@@ -40,6 +40,7 @@ import { emitProductCreated } from "@/lib/product-events";
 import { MAX_OPTIONS } from "@/lib/item-options";
 import type { MediaAsset, Product } from "@/lib/types";
 
+import { DEFAULT_POSITION, assetPosition } from "@/lib/image-focus";
 interface DraftRow {
   key: string;
   images: string[];
@@ -70,7 +71,10 @@ interface DraftRow {
 type Step = "photos" | "details";
 
 // Starting values for a row, e.g. from Photo Drop items.
-export type BulkRowSeed = Partial<Omit<DraftRow, "key" | "status" | "error">>;
+export type BulkRowSeed = Partial<Omit<DraftRow, "key" | "status" | "error">> & {
+  /** Focus of the seed's photos (URL → CSS object-position), for thumbnails. */
+  imagePositions?: Record<string, string>;
+};
 
 let rowSeq = 0;
 function newRow(patch: Partial<DraftRow> = {}): DraftRow {
@@ -151,6 +155,10 @@ export function ProductBulkCreateDialog({
   const [step, setStep] = useState<Step>(initialRows?.length ? "details" : "photos");
   const [picked, setPicked] = useState<string[]>([]);
   const [titles, setTitles] = useState<Record<string, string>>({});
+  // Each photo's focus (URL → CSS object-position), learned as photos are picked.
+  const [positions, setPositions] = useState<Record<string, string>>(() =>
+    Object.assign({}, ...(initialRows ?? []).map((r) => r.imagePositions ?? {})),
+  );
   const [rows, setRows] = useState<DraftRow[]>(() => (initialRows ?? []).map((seed) => newRow(seed)));
   const [saving, setSaving] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -173,7 +181,12 @@ export function ProductBulkCreateDialog({
   const allExpanded = pending.length > 0 && pending.every((r) => expandedKeys.has(r.key));
 
   function rememberTitle(asset: MediaAsset) {
+    rememberPosition(asset);
     if (asset.title) setTitles((prev) => ({ ...prev, [asset.url]: asset.title! }));
+  }
+
+  function rememberPosition(asset: MediaAsset) {
+    setPositions((prev) => ({ ...prev, [asset.url]: assetPosition(asset) }));
   }
 
   function togglePicked(asset: MediaAsset) {
@@ -462,6 +475,7 @@ export function ProductBulkCreateDialog({
                   <BulkRow
                     key={row.key}
                     row={row}
+                    imagePosition={(row.images[0] && positions[row.images[0]]) || DEFAULT_POSITION}
                     problem={showErrors ? rowProblem(row) : null}
                     disabled={saving}
                     checked={checkedKeys.has(row.key)}
@@ -560,6 +574,7 @@ export function ProductBulkCreateDialog({
           selected={photoRow?.images ?? []}
           onChange={(urls) => photoRow && patchRow(photoRow.key, { images: urls })}
           title={photoRow?.title ? `Photos for “${photoRow.title}”` : "Photos for this product"}
+          onPicked={rememberPosition}
         />
       </DialogContent>
     </Dialog>
@@ -792,6 +807,7 @@ function ApplyField({
 
 function BulkRow({
   row,
+  imagePosition,
   problem,
   disabled,
   checked,
@@ -803,6 +819,7 @@ function BulkRow({
   onEditPhotos,
 }: {
   row: DraftRow;
+  imagePosition: string;
   problem: string | null;
   disabled: boolean;
   checked: boolean;
@@ -861,7 +878,14 @@ function BulkRow({
           >
             {row.images[0] ? (
               <>
-                <Image src={row.images[0]} alt="" fill sizes="56px" className="object-cover object-top" />
+                <Image
+                  src={row.images[0]}
+                  alt=""
+                  fill
+                  sizes="56px"
+                  className="object-cover"
+                  style={{ objectPosition: imagePosition }}
+                />
                 {row.images.length > 1 && (
                   <span className="absolute right-0.5 bottom-0.5 rounded bg-black/70 px-1 text-[10px] font-medium text-white">
                     +{row.images.length - 1}

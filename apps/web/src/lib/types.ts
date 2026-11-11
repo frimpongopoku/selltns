@@ -258,6 +258,9 @@ export interface Collection {
   productIds: string[];
   tags: string[];
   coverImage: string;
+  // The cover photo's gallery focus as a CSS object-position, null when it
+  // has none — see coverPosition() in lib/image-focus.ts.
+  coverPosition?: string | null;
   // Overrides coverImage as the link-preview photo when set — an explicit
   // opt-in from the flyer generator, never automatic. Null means "use the
   // cover photo," always the default.
@@ -434,4 +437,7 @@ export interface ContentBlock {
   videoUrl?: string;
   caption?: string;
   imageUrls?: string[];
+  // Read-only, from the API: image URL -> CSS object-position for photos
+  // with a gallery focus point.
+  imageFocus?: Record<string, string>;
 }

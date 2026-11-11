@@ -9,6 +9,7 @@ import { jsonLdScriptProps, storeJsonLd } from "@/lib/structured-data";
 import { isCustomDomainRequest } from "@/lib/request-host";
 import { storeHref } from "@/lib/store-href";
 
+import { coverPosition } from "@/lib/image-focus";
 export async function generateMetadata({
   params,
 }: {
@@ -100,7 +101,10 @@ export default async function StoreHomePage({
               >
                 <div
                   className="absolute inset-0 bg-cover bg-top transition-transform duration-300 group-hover:scale-105"
-                  style={{ backgroundImage: `url(${collection.coverImage})` }}
+                  style={{
+                    backgroundImage: `url(${collection.coverImage})`,
+                    backgroundPosition: coverPosition(collection),
+                  }}
                 />
                 <div className="absolute inset-0 bg-black/35 transition-colors group-hover:bg-black/50" />
                 <div className="absolute bottom-0 left-0 p-5">

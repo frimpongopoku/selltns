@@ -1,4 +1,4 @@
-import type { MediaAsset, Product } from "./types";
+import type { Collection, MediaAsset, Product } from "./types";
 
 // Where a cropped photo frame (product card, thumbnail, gallery tile) sits
 // over the full photo, as a CSS object-position. The photo itself is never
@@ -33,3 +33,7 @@ export const FOCUS_PRESETS: { label: string; focus: Focus }[] = [
   { label: "Center", focus: { x: 50, y: 50 } },
   { label: "Bottom", focus: { x: 50, y: 100 } },
 ];
+
+export function coverPosition(collection: Pick<Collection, "coverPosition">): string {
+  return collection.coverPosition ?? DEFAULT_POSITION;
+}

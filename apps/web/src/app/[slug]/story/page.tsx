@@ -9,6 +9,7 @@ import { OwnershipCredit } from "@/components/storefront/ownership-credit";
 import { VerifiedBadge } from "@/components/storefront/verified-badge";
 import { getCanonicalUrl } from "@/lib/canonical";
 
+import { DEFAULT_POSITION } from "@/lib/image-focus";
 export async function generateMetadata({
   params,
 }: {
@@ -137,7 +138,8 @@ export default async function StoryPage({
                     alt=""
                     fill
                     sizes="(max-width: 768px) 33vw, 20vw"
-                    className="object-cover object-top"
+                    className="object-cover"
+                    style={{ objectPosition: block.imageFocus?.[url] ?? DEFAULT_POSITION }}
                   />
                 </div>
               ))}

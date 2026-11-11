@@ -182,6 +182,7 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
       key: Date.now(),
       rows: chosen.map((item) => ({
         images: item.photos.map((p) => p.url),
+        imagePositions: Object.fromEntries(item.photos.map((p) => [p.url, assetPosition(p)])),
         title: item.title,
         price: item.price === null ? "" : String(item.price),
         sizes: item.sizes,

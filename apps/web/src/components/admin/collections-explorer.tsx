@@ -17,6 +17,7 @@ import { FeedLinkButton } from "@/components/admin/feed-link-button";
 import { getCanonicalUrl } from "@/lib/canonical";
 import type { CollectionWithProducts, Tenant } from "@/lib/types";
 
+import { coverPosition } from "@/lib/image-focus";
 export function CollectionsExplorer({ tenantId, tenant }: { tenantId: string; tenant: Tenant }) {
   const {
     collections,
@@ -124,7 +125,10 @@ export function CollectionsExplorer({ tenantId, tenant }: { tenantId: string; te
                     <div className="relative aspect-video overflow-hidden">
                       <div
                         className="h-full w-full bg-cover bg-top transition-transform duration-300 hover:scale-105"
-                        style={{ backgroundImage: `url(${collection.coverImage})` }}
+                        style={{
+                    backgroundImage: `url(${collection.coverImage})`,
+                    backgroundPosition: coverPosition(collection),
+                  }}
                       />
                       {collection.type === "PREORDER" && (
                         <span className="absolute left-2.5 top-2.5 rounded-full bg-amber-500/90 px-2 py-0.5 text-[11px] font-medium text-white">

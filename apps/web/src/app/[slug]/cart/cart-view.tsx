@@ -9,6 +9,7 @@ import { formatMoney } from "@/lib/format";
 import { itemOptionsLabel } from "@/lib/item-options";
 import { pruneStaleCartLines, notifyRemovedCartLines } from "@/lib/cart-validation";
 
+import { DEFAULT_POSITION } from "@/lib/image-focus";
 // Matches the fade/slide-out below — the actual removal is deferred until
 // the transition finishes so the item visibly leaves instead of vanishing.
 const REMOVE_TRANSITION_MS = 180;
@@ -88,7 +89,14 @@ export function CartView({ tenantId }: { tenantId: string }) {
           >
             <div
               className="store-card h-20 w-20 shrink-0 bg-cover bg-top"
-              style={line.image ? { backgroundImage: `url(${line.image})` } : undefined}
+              style={
+                line.image
+                  ? {
+                      backgroundImage: `url(${line.image})`,
+                      backgroundPosition: line.imagePosition ?? DEFAULT_POSITION,
+                    }
+                  : undefined
+              }
             />
 
             {/* Mobile: image on the left, everything else stacked in its own lines. */}
