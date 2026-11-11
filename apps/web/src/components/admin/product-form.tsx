@@ -15,6 +15,7 @@ import { createProduct, deleteProduct, updateProduct } from "@/lib/api";
 import type { Product } from "@/lib/types";
 import { MAX_OPTIONS } from "@/lib/item-options";
 
+import { priceInput, toPesewas } from "@/lib/money";
 export function ProductForm({
   tenantId,
   product,
@@ -28,17 +29,13 @@ export function ProductForm({
   const router = useRouter();
   const [title, setTitle] = useState(product?.title ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
-  const [price, setPrice] = useState(String(product?.price ?? ""));
+  const [price, setPrice] = useState(priceInput(product?.price));
   const [onSale, setOnSale] = useState(product?.discountPrice != null);
-  const [discountPrice, setDiscountPrice] = useState(
-    String(product?.discountPrice ?? ""),
-  );
+  const [discountPrice, setDiscountPrice] = useState(priceInput(product?.discountPrice));
   const [customAffiliatePrice, setCustomAffiliatePrice] = useState(
     product?.affiliatePrice != null,
   );
-  const [affiliatePrice, setAffiliatePrice] = useState(
-    String(product?.affiliatePrice ?? ""),
-  );
+  const [affiliatePrice, setAffiliatePrice] = useState(priceInput(product?.affiliatePrice));
   const [sku, setSku] = useState(product?.sku ?? "");
   const [stock, setStock] = useState(String(product?.stock ?? ""));
   const [alwaysInStock, setAlwaysInStock] = useState(!(product?.trackStock ?? true));
@@ -52,23 +49,24 @@ export function ProductForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const numericPrice = Number(price) || 0;
-    if (onSale) {
-      const numericDiscountPrice = Number(discountPrice) || 0;
-      if (numericDiscountPrice <= 0 || numericDiscountPrice >= numericPrice) {
-        toast.error("Discount price must be a positive number lower than the price");
-        return;
-      }
+    const numericPrice = toPesewas(price);
+    if (numericPrice === null) {
+      toast.error("Enter a price, like 50 or 4.99");
+      return;
     }
-    const numericDiscountPrice = onSale ? Number(discountPrice) || 0 : null;
-    if (customAffiliatePrice) {
-      const numericAffiliatePrice = Number(affiliatePrice) || 0;
-      if (numericAffiliatePrice <= 0 || numericAffiliatePrice >= numericPrice) {
-        toast.error("Affiliate price must be a positive number lower than the price");
-        return;
-      }
+    const numericDiscountPrice = onSale ? toPesewas(discountPrice) : null;
+    if (onSale && (numericDiscountPrice === null || numericDiscountPrice <= 0 || numericDiscountPrice >= numericPrice)) {
+      toast.error("Discount price must be more than 0 and lower than the price");
+      return;
     }
-    const numericAffiliatePrice = customAffiliatePrice ? Number(affiliatePrice) || 0 : null;
+    const numericAffiliatePrice = customAffiliatePrice ? toPesewas(affiliatePrice) : null;
+    if (
+      customAffiliatePrice &&
+      (numericAffiliatePrice === null || numericAffiliatePrice <= 0 || numericAffiliatePrice >= numericPrice)
+    ) {
+      toast.error("Affiliate price must be more than 0 and lower than the price");
+      return;
+    }
     setSaving(true);
     const payload = {
       title,
@@ -200,7 +198,7 @@ export function ProductForm({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div>
           <Label htmlFor="price">Price (GHS)</Label>
-          <Input id="price" type="number" required value={price} onChange={(e) => setPrice(e.target.value)} className="mt-1.5" />
+          <Input id="price" inputMode="decimal" placeholder="0.00" required value={price} onChange={(e) => setPrice(e.target.value)} className="mt-1.5" />
         </div>
         <div>
           <Label htmlFor="sku">SKU</Label>
@@ -248,7 +246,7 @@ export function ProductForm({
             <Label htmlFor="discountPrice">Discount price (GHS)</Label>
             <Input
               id="discountPrice"
-              type="number"
+              inputMode="decimal"
               required
               value={discountPrice}
               onChange={(e) => setDiscountPrice(e.target.value)}
@@ -281,7 +279,7 @@ export function ProductForm({
             <Label htmlFor="affiliatePrice">Affiliate price (GHS)</Label>
             <Input
               id="affiliatePrice"
-              type="number"
+              inputMode="decimal"
               required
               value={affiliatePrice}
               onChange={(e) => setAffiliatePrice(e.target.value)}

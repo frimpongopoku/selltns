@@ -31,6 +31,7 @@ import { productImagePosition } from "@/lib/image-focus";
 import type { AffiliateListing, AffiliateRelationship } from "@/lib/types";
 
 import { productName } from "@/lib/product-name";
+import { priceInput, toPesewas } from "@/lib/money";
 export function MyAffiliateListingsManager({
   tenantId,
   relationships,
@@ -138,14 +139,14 @@ function ListingRow({
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [priceInput, setPriceInput] = useState(String(listing.effectivePrice));
+  const [priceText, setPriceText] = useState(priceInput(listing.effectivePrice));
   const [savingPrice, setSavingPrice] = useState(false);
   const [togglePending, setTogglePending] = useState(false);
 
   async function savePrice() {
-    const price = Number(priceInput);
-    if (!Number.isInteger(price) || price < 0) {
-      toast.error("Enter a whole number.");
+    const price = toPesewas(priceText);
+    if (price === null) {
+      toast.error("Enter a price, like 50 or 4.99");
       return;
     }
     setSavingPrice(true);
@@ -202,11 +203,9 @@ function ListingRow({
         {editing ? (
           <div className="flex items-center gap-1.5">
             <Input
-              type="number"
-              min={listing.ownerPrice}
-              max={listing.capCeiling}
-              value={priceInput}
-              onChange={(e) => setPriceInput(e.target.value)}
+              inputMode="decimal"
+              value={priceText}
+              onChange={(e) => setPriceText(e.target.value)}
               className="h-8 w-24"
               autoFocus
             />
@@ -227,7 +226,7 @@ function ListingRow({
               disabled={savingPrice}
               onClick={() => {
                 setEditing(false);
-                setPriceInput(String(listing.effectivePrice));
+                setPriceText(priceInput(listing.effectivePrice));
               }}
               aria-label="Cancel"
             >
@@ -240,7 +239,7 @@ function ListingRow({
             variant="outline"
             size="sm"
             onClick={() => {
-              setPriceInput(String(listing.effectivePrice));
+              setPriceText(priceInput(listing.effectivePrice));
               setEditing(true);
             }}
             className="gap-1.5 font-semibold"

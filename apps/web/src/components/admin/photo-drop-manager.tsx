@@ -31,6 +31,8 @@ import { cn } from "@/lib/utils";
 import { assetPosition } from "@/lib/image-focus";
 import type { DropItem, PhotoDropLink } from "@/lib/types";
 
+import { formatMoney } from "@/lib/format";
+import { priceInput } from "@/lib/money";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4310";
 const REFRESH_MS = 30_000;
 
@@ -184,7 +186,7 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
         images: item.photos.map((p) => p.url),
         imagePositions: Object.fromEntries(item.photos.map((p) => [p.url, assetPosition(p)])),
         title: item.title,
-        price: item.price === null ? "" : String(item.price),
+        price: priceInput(item.price),
         sizes: item.sizes,
         colors: item.colors,
         dropItemIds: [item.id],
@@ -369,7 +371,7 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
                       Unavailable
                     </span>
                   ) : isReady(item) ? (
-                    <p className="text-sm font-semibold">GHS {item.price}</p>
+                    <p className="text-sm font-semibold">{formatMoney(item.price ?? 0)}</p>
                   ) : (
                     <span className="self-start rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-900">
                       No price yet

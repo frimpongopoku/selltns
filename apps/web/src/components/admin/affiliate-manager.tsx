@@ -55,6 +55,7 @@ import type {
 } from "@/lib/types";
 
 import { productName } from "@/lib/product-name";
+import { priceInput, toPesewas } from "@/lib/money";
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800",
   ACTIVE: "bg-green-100 text-green-800",
@@ -104,12 +105,17 @@ export function AffiliateManager({
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
+    const cap = capType === "FIXED" ? toPesewas(capValue) : /^\d+$/.test(capValue.trim()) ? Number(capValue) : null;
+    if (cap === null) {
+      toast.error(capType === "FIXED" ? "Enter an amount, like 20 or 4.50" : "Enter a whole percentage, like 50");
+      return;
+    }
     setSaving(true);
     try {
       const rel = await inviteAffiliate(tenant.id, {
         affiliateSlug: slug.trim(),
         capType,
-        capValue: Number(capValue),
+        capValue: cap,
       });
       setOutgoing((prev) => [rel, ...prev.filter((r) => r.id !== rel.id)]);
       toast.success(`Invite sent to ${slug}`);
@@ -223,8 +229,7 @@ export function AffiliateManager({
                         </SelectContent>
                       </Select>
                       <Input
-                        type="number"
-                        min={1}
+                        inputMode={capType === "FIXED" ? "decimal" : "numeric"}
                         required
                         placeholder={capType === "FIXED" ? "e.g. 100" : "e.g. 50"}
                         value={capValue}
@@ -568,12 +573,15 @@ function ListingRow({
   listing: AffiliateListing;
   onChange: (listing: AffiliateListing) => void;
 }) {
-  const [price, setPrice] = useState(String(listing.effectivePrice));
+  const [price, setPrice] = useState(priceInput(listing.effectivePrice));
   const [saving, setSaving] = useState(false);
 
   async function save() {
-    const value = Number(price);
-    if (!Number.isFinite(value)) return;
+    const value = toPesewas(price);
+    if (value === null) {
+      toast.error("Enter a price, like 50 or 4.99");
+      return;
+    }
     setSaving(true);
     try {
       const updated = await setAffiliateListingPrice(relationshipId, tenantId, listing.productId, value);
@@ -581,7 +589,7 @@ function ListingRow({
       toast.success("Price updated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't update this price.");
-      setPrice(String(listing.effectivePrice));
+      setPrice(priceInput(listing.effectivePrice));
     } finally {
       setSaving(false);
     }
@@ -614,7 +622,7 @@ function ListingRow({
       <div className="flex items-center gap-2">
         <Switch checked={listing.isActive} onCheckedChange={toggleActive} />
         <Input
-          type="number"
+          inputMode="decimal"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           className="w-24"

@@ -227,7 +227,7 @@ model DropItem {
   id        String   @id @default(cuid())
   tenantId  String   @map("tenant_id")
   title     String   @default("")
-  // Whole GHS; null = not priced yet.
+  // Pesewas (GHS 4.99 = 499); null = not priced yet.
   price     Int?
   sizes     String[] @default([])
   colors    String[] @default([])

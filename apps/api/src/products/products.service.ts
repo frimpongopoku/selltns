@@ -194,7 +194,7 @@ function resolveDiscountPrice(
     if (requested === null) return null;
     if (!Number.isInteger(requested) || requested <= 0) {
       throw new BadRequestException(
-        'Discount price must be a positive whole number of GHS.',
+        'Discount price must be more than 0.',
       );
     }
     if (requested >= finalPrice) {
@@ -219,7 +219,7 @@ function resolveAffiliatePrice(
     if (requested === null) return null;
     if (!Number.isInteger(requested) || requested <= 0) {
       throw new BadRequestException(
-        'Affiliate price must be a positive whole number of GHS.',
+        'Affiliate price must be more than 0.',
       );
     }
     if (requested >= finalPrice) {

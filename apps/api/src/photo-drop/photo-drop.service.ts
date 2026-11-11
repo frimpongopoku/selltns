@@ -233,7 +233,7 @@ export class PhotoDropService {
       } else {
         const price = Number(input.price);
         if (!Number.isInteger(price) || price < 0) {
-          throw new BadRequestException('Price must be a whole number of GHS.');
+          throw new BadRequestException('Price must be 0 or more.');
         }
         data.price = price;
       }

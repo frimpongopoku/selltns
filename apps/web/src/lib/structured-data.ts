@@ -4,6 +4,7 @@ import { discountedPrice } from "./pricing";
 import { productPath } from "./product-path";
 
 import { productName } from "@/lib/product-name";
+import { toCedis } from "@/lib/money";
 // Plain JSON-LD builders — rendered via a <script type="application/ld+json">
 // tag on the relevant page. No library needed; schema.org JSON-LD is just
 // a plain object with an @context/@type.
@@ -38,7 +39,8 @@ export function productJsonLd(tenant: Tenant, product: Product) {
     url: getCanonicalUrl(tenant, productPath(product)),
     offers: {
       "@type": "Offer",
-      price: discountedPrice(product),
+      // schema.org wants cedis (4.99), not pesewas.
+      price: toCedis(discountedPrice(product)),
       priceCurrency: "GHS",
       availability,
       url: getCanonicalUrl(tenant, productPath(product)),

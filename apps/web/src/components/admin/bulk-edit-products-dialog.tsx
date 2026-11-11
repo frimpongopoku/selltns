@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 
 import { hasName, productName } from "@/lib/product-name";
+import { isPrice, priceInput, toPesewas } from "@/lib/money";
 type Field = "name" | "stock" | "price" | "sale" | "affiliate" | "sizes" | "colors" | "live";
 
 const FIELDS: { key: Field; label: string }[] = [
@@ -84,9 +85,9 @@ function draftOf(p: Product): Draft {
     title: p.title,
     stock: String(p.stock),
     trackStock: p.trackStock,
-    price: String(p.price),
-    sale: p.discountPrice == null ? "" : String(p.discountPrice),
-    affiliate: p.affiliatePrice == null ? "" : String(p.affiliatePrice),
+    price: priceInput(p.price),
+    sale: priceInput(p.discountPrice),
+    affiliate: priceInput(p.affiliatePrice),
     sizes: optionsText(p.sizes),
     colors: optionsText(p.colors),
     isActive: p.isActive,
@@ -111,28 +112,31 @@ function editOf(p: Product, d: Draft): { edit: BulkProductEdit | null; error: st
     else if (Number(d.stock) !== p.stock) edit.stock = Number(d.stock);
   }
 
-  if (!wholeNumber(d.price)) error ??= "Price must be a whole number";
-  else if (Number(d.price) !== p.price) edit.price = Number(d.price);
+  const newPrice = toPesewas(d.price);
+  if (newPrice === null) error ??= "Enter a price, like 50 or 4.99";
+  else if (newPrice !== p.price) edit.price = newPrice;
 
-  const price = wholeNumber(d.price) ? Number(d.price) : p.price;
+  const price = newPrice ?? p.price;
+  const sale = toPesewas(d.sale);
   if (d.sale.trim() === "") {
     if (p.discountPrice != null) edit.discountPrice = null;
-  } else if (!wholeNumber(d.sale) || Number(d.sale) <= 0) {
-    error ??= "Sale price must be a whole number";
-  } else if (Number(d.sale) >= price) {
+  } else if (sale === null || sale <= 0) {
+    error ??= "Enter a sale price, like 40 or 3.99";
+  } else if (sale >= price) {
     error ??= "Sale price must be lower than the price";
-  } else if (Number(d.sale) !== p.discountPrice) {
-    edit.discountPrice = Number(d.sale);
+  } else if (sale !== p.discountPrice) {
+    edit.discountPrice = sale;
   }
 
+  const affiliate = toPesewas(d.affiliate);
   if (d.affiliate.trim() === "") {
     if (p.affiliatePrice != null) edit.affiliatePrice = null;
-  } else if (!wholeNumber(d.affiliate) || Number(d.affiliate) <= 0) {
-    error ??= "Affiliate price must be a whole number";
-  } else if (Number(d.affiliate) >= price) {
+  } else if (affiliate === null || affiliate <= 0) {
+    error ??= "Enter an affiliate price, like 40 or 3.99";
+  } else if (affiliate >= price) {
     error ??= "Affiliate price must be lower than the price";
-  } else if (Number(d.affiliate) !== p.affiliatePrice) {
-    edit.affiliatePrice = Number(d.affiliate);
+  } else if (affiliate !== p.affiliatePrice) {
+    edit.affiliatePrice = affiliate;
   }
 
   const sizes = optionsOf(d.sizes);
@@ -386,7 +390,7 @@ function Editor({
                 <td className="px-1.5 py-2 sm:px-2">
                   <div className="flex flex-col gap-1">
                     <Input
-                      inputMode="numeric"
+                      inputMode="decimal"
                       value={allPrice}
                       onChange={(e) => setAllPrice(e.target.value)}
                       placeholder="150"
@@ -397,7 +401,7 @@ function Editor({
                       size="xs"
                       variant="outline"
                       className="self-start"
-                      disabled={!wholeNumber(allPrice)}
+                      disabled={!isPrice(allPrice)}
                       onClick={() => patchAll(() => ({ price: allPrice.trim() }))}
                     >
                       Set
@@ -409,7 +413,7 @@ function Editor({
                 <td className="px-1.5 py-2 sm:px-2">
                   <div className="flex flex-col gap-1">
                     <Input
-                      inputMode="numeric"
+                      inputMode="decimal"
                       value={allSale}
                       onChange={(e) => setAllSale(e.target.value)}
                       placeholder="120"
@@ -420,7 +424,7 @@ function Editor({
                         type="button"
                         size="xs"
                         variant="outline"
-                        disabled={!wholeNumber(allSale)}
+                        disabled={!isPrice(allSale)}
                         onClick={() => patchAll(() => ({ sale: allSale.trim() }))}
                       >
                         Set
@@ -441,7 +445,7 @@ function Editor({
                 <td className="px-1.5 py-2 sm:px-2">
                   <div className="flex flex-col gap-1">
                     <Input
-                      inputMode="numeric"
+                      inputMode="decimal"
                       value={allAffiliate}
                       onChange={(e) => setAllAffiliate(e.target.value)}
                       placeholder="130"
@@ -452,7 +456,7 @@ function Editor({
                         type="button"
                         size="xs"
                         variant="outline"
-                        disabled={!wholeNumber(allAffiliate)}
+                        disabled={!isPrice(allAffiliate)}
                         onClick={() => patchAll(() => ({ affiliate: allAffiliate.trim() }))}
                       >
                         Set
@@ -605,14 +609,14 @@ function Editor({
                   <td className="px-1.5 py-2 sm:px-2">
                     <Input
                       data-bulk-cell={`price-${i}`}
-                      inputMode="numeric"
+                      inputMode="decimal"
                       value={d.price}
                       onChange={(e) => patch(p.id, { price: e.target.value })}
                       onKeyDown={(e) => handleEnter(e, "price", i)}
                       onFocus={(e) => e.target.select()}
                       aria-label={`Price for ${productName(p)}`}
-                      aria-invalid={!wholeNumber(d.price) || undefined}
-                      className={cn("h-8 w-[4.5rem] sm:w-24", d.price.trim() !== String(p.price) && "border-primary")}
+                      aria-invalid={!isPrice(d.price) || undefined}
+                      className={cn("h-8 w-[4.5rem] sm:w-24", d.price.trim() !== priceInput(p.price) && "border-primary")}
                     />
                   </td>
                 )}
@@ -620,7 +624,7 @@ function Editor({
                   <td className="px-1.5 py-2 sm:px-2">
                     <Input
                       data-bulk-cell={`sale-${i}`}
-                      inputMode="numeric"
+                      inputMode="decimal"
                       value={d.sale}
                       onChange={(e) => patch(p.id, { sale: e.target.value })}
                       onKeyDown={(e) => handleEnter(e, "sale", i)}
@@ -629,7 +633,7 @@ function Editor({
                       aria-label={`Sale price for ${productName(p)}`}
                       className={cn(
                         "h-8 w-[4.5rem] sm:w-24",
-                        d.sale.trim() !== (p.discountPrice == null ? "" : String(p.discountPrice)) &&
+                        d.sale.trim() !== priceInput(p.discountPrice) &&
                           "border-primary",
                       )}
                     />
@@ -639,7 +643,7 @@ function Editor({
                   <td className="px-1.5 py-2 sm:px-2">
                     <Input
                       data-bulk-cell={`affiliate-${i}`}
-                      inputMode="numeric"
+                      inputMode="decimal"
                       value={d.affiliate}
                       onChange={(e) => patch(p.id, { affiliate: e.target.value })}
                       onKeyDown={(e) => handleEnter(e, "affiliate", i)}
@@ -649,7 +653,7 @@ function Editor({
                       aria-label={`Affiliate price for ${productName(p)}`}
                       className={cn(
                         "h-8 w-[4.5rem] sm:w-24",
-                        d.affiliate.trim() !== (p.affiliatePrice == null ? "" : String(p.affiliatePrice)) &&
+                        d.affiliate.trim() !== priceInput(p.affiliatePrice) &&
                           "border-primary",
                       )}
                     />

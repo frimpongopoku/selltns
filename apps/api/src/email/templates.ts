@@ -8,14 +8,9 @@ import type {
   Tenant,
 } from '../common/types';
 
-function formatGHS(amount: number): string {
-  return new Intl.NumberFormat('en-GH', {
-    style: 'currency',
-    currency: 'GHS',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
+
+import { formatGHS } from '../common/money';
 function itemOptions(item: Order['items'][number]): string {
   const options = [item.size, item.color].filter(Boolean).join(', ');
   return options ? ` <span style="color: #6b7280;">(${options})</span>` : '';

@@ -41,6 +41,7 @@ import { MAX_OPTIONS } from "@/lib/item-options";
 import type { MediaAsset, Product } from "@/lib/types";
 
 import { DEFAULT_POSITION, assetPosition } from "@/lib/image-focus";
+import { toPesewas } from "@/lib/money";
 interface DraftRow {
   key: string;
   images: string[];
@@ -103,20 +104,19 @@ function newRow(patch: Partial<DraftRow> = {}): DraftRow {
 }
 
 function rowProblem(row: DraftRow): string | null {
-  if (row.price.trim() === "" || Number(row.price) < 0 || Number.isNaN(Number(row.price))) {
-    return "Needs a price";
-  }
+  const price = toPesewas(row.price);
+  if (price === null) return "Needs a price";
   if (row.discountPrice.trim() !== "") {
-    const discount = Number(row.discountPrice);
-    // Same rule the API enforces: a positive whole number below the price.
-    if (!Number.isInteger(discount) || discount <= 0 || discount >= Number(row.price)) {
-      return "Discount must be a whole number lower than the price";
+    const discount = toPesewas(row.discountPrice);
+    // Same rule the API enforces: more than 0 and below the price.
+    if (discount === null || discount <= 0 || discount >= price) {
+      return "Discount must be lower than the price";
     }
   }
   if (row.forAffiliates && row.affiliatePrice.trim() !== "") {
-    const affiliate = Number(row.affiliatePrice);
-    if (!Number.isInteger(affiliate) || affiliate <= 0 || affiliate >= Number(row.price)) {
-      return "Affiliate price must be a whole number lower than the price";
+    const affiliate = toPesewas(row.affiliatePrice);
+    if (affiliate === null || affiliate <= 0 || affiliate >= price) {
+      return "Affiliate price must be lower than the price";
     }
   }
   return null;
@@ -295,11 +295,11 @@ export function ProductBulkCreateDialog({
           description: row.description.trim(),
           sku: row.sku.trim(),
           videoUrls: row.videoUrls,
-          price: Number(row.price) || 0,
-          discountPrice: row.discountPrice.trim() === "" ? null : Number(row.discountPrice),
+          price: toPesewas(row.price) ?? 0,
+          discountPrice: row.discountPrice.trim() === "" ? null : toPesewas(row.discountPrice),
           // An affiliate price only matters if affiliates can see the product.
           affiliatePrice:
-            row.forAffiliates && row.affiliatePrice.trim() !== "" ? Number(row.affiliatePrice) : null,
+            row.forAffiliates && row.affiliatePrice.trim() !== "" ? toPesewas(row.affiliatePrice) : null,
           hiddenFromAllAffiliates: !row.forAffiliates,
           images: row.images,
           tags: [...new Set([...bulkTags, ...row.tags])],
@@ -778,9 +778,7 @@ function ApplyField({
       <div className="mt-1 flex gap-1.5">
         <Input
           id={id}
-          type="number"
-          inputMode="numeric"
-          min={0}
+          inputMode="decimal"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -916,9 +914,7 @@ function BulkRow({
 
         <div className="flex items-center gap-2 sm:gap-3">
           <Input
-            type="number"
             inputMode="decimal"
-            min={0}
             value={row.price}
             onChange={(e) => onPatch({ price: e.target.value })}
             placeholder="Price"
@@ -928,9 +924,7 @@ function BulkRow({
             className="min-w-0 flex-1 sm:w-24 sm:flex-none"
           />
           <Input
-            type="number"
-            inputMode="numeric"
-            min={0}
+            inputMode="decimal"
             value={row.discountPrice}
             onChange={(e) => onPatch({ discountPrice: e.target.value })}
             placeholder="Discount"
@@ -1037,9 +1031,7 @@ function BulkRow({
                 aria-label="Offer to affiliates"
               />
               <Input
-                type="number"
-                inputMode="numeric"
-                min={0}
+                inputMode="decimal"
                 value={row.forAffiliates ? row.affiliatePrice : ""}
                 onChange={(e) => onPatch({ affiliatePrice: e.target.value })}
                 placeholder={row.forAffiliates ? "Affiliate price (GHS)" : "Not offered to affiliates"}

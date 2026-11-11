@@ -611,7 +611,7 @@ export class OrdersService {
       const price = item.price ?? discountedPrice(product);
       if (!Number.isInteger(price) || price < 0) {
         throw new BadRequestException(
-          `"${productLabel(product)}" needs a price of 0 or more, in whole GHS.`,
+          `"${productLabel(product)}" needs a price of 0 or more.`,
         );
       }
       return {

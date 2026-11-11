@@ -109,13 +109,22 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const slug = useStoreSlug();
-  const storageKey = `selltns-cart:${slug}`;
+  // v2: prices in pesewas. Carts saved under the old key (whole cedis) are
+  // converted once on load, then the old key is dropped.
+  const storageKey = `selltns-cart-v2:${slug}`;
+  const legacyKey = `selltns-cart:${slug}`;
   const [lines, setLines] = useState<CartLine[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(storageKey);
+      let raw = window.localStorage.getItem(storageKey);
+      const legacy = window.localStorage.getItem(legacyKey);
+      if (!raw && legacy) {
+        const old = JSON.parse(legacy) as CartLine[];
+        raw = JSON.stringify(old.map((l) => ({ ...l, price: l.price * 100 })));
+      }
+      if (legacy) window.localStorage.removeItem(legacyKey);
       // One-time hydration from localStorage after mount — deliberately deferred
       // to this effect (rather than a lazy useState initializer) so the client's
       // first render matches the server-rendered empty cart and avoids a

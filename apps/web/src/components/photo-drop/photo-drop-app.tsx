@@ -30,6 +30,8 @@ import { PhotoDropHelp } from "./photo-drop-help";
 import { assetPosition } from "@/lib/image-focus";
 import type { DropItem, DropItemInput, PhotoDropPublic } from "@/lib/types";
 
+import { priceInput, toPesewas } from "@/lib/money";
+import { formatMoney } from "@/lib/format";
 type Filter = "all" | "needs" | "ready" | "unavailable";
 
 interface Upload {
@@ -464,7 +466,7 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
                     </span>
                   ) : isReady(item) ? (
                     <span className="absolute bottom-1.5 left-1.5 flex h-[22px] items-center rounded-md bg-white px-1.5 text-[11px] font-bold text-green-800">
-                      GHS {item.price}
+                      {formatMoney(item.price ?? 0)}
                     </span>
                   ) : (
                     <span className="absolute bottom-1.5 left-1.5 flex h-[22px] items-center rounded-md bg-amber-100 px-1.5 text-[11px] font-bold text-amber-900">
@@ -584,7 +586,7 @@ function ItemEditor({
   onClose: () => void;
 }) {
   const [title, setTitle] = useState(item.title);
-  const [price, setPrice] = useState(item.price === null ? "" : String(item.price));
+  const [price, setPrice] = useState(priceInput(item.price));
   const [sizes, setSizes] = useState<string[]>(item.sizes);
   const [colors, setColors] = useState<string[]>(item.colors);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -643,13 +645,14 @@ function ItemEditor({
 
   async function save() {
     const trimmed = price.trim();
-    if (trimmed !== "" && (!/^\d+$/.test(trimmed))) {
-      toast.error("Price must be a whole number");
+    const pesewas = trimmed === "" ? null : toPesewas(trimmed);
+    if (trimmed !== "" && pesewas === null) {
+      toast.error("Enter a price, like 50 or 4.99");
       return;
     }
     setSaving(true);
     try {
-      await onSave({ title: title.trim(), price: trimmed === "" ? null : Number(trimmed), sizes, colors });
+      await onSave({ title: title.trim(), price: pesewas, sizes, colors });
       onNext();
     } catch (err) {
       toast.error((err as Error).message || "Couldn't save — try again");
@@ -802,22 +805,21 @@ function ItemEditor({
                   <input
                     id="drop-price"
                     type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
+                    inputMode="decimal"
                     value={price}
-                    onChange={(e) => setPrice(e.target.value.replace(/[^\d]/g, ""))}
+                    onChange={(e) => setPrice(e.target.value.replace(/[^\d.]/g, ""))}
                     placeholder="0"
                     className="w-0 min-w-0 flex-1 bg-transparent text-2xl font-bold outline-none placeholder:text-muted-foreground/50"
                   />
                 </div>
-                {lastPrice !== null && String(lastPrice) !== price && (
+                {lastPrice !== null && priceInput(lastPrice) !== price && (
                   <button
                     type="button"
-                    onClick={() => setPrice(String(lastPrice))}
+                    onClick={() => setPrice(priceInput(lastPrice))}
                     className="flex h-13 shrink-0 flex-col items-start justify-center rounded-xl border bg-muted px-3 text-sm leading-tight font-semibold"
                   >
                     <span className="text-[11px] font-medium text-muted-foreground">Same as last</span>
-                    GHS {lastPrice}
+                    {formatMoney(lastPrice)}
                   </button>
                 )}
               </div>

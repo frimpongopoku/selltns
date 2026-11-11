@@ -15,6 +15,7 @@ import { discountedPrice } from "@/lib/pricing";
 import type { Product } from "@/lib/types";
 
 import { productName } from "@/lib/product-name";
+import { priceInput, toPesewas } from "@/lib/money";
 interface DraftLine {
   key: string;
   product: Product;
@@ -31,7 +32,7 @@ function newLine(product: Product): DraftLine {
     key: `line-${lineSeq}`,
     product,
     quantity: "1",
-    price: String(discountedPrice(product)),
+    price: priceInput(discountedPrice(product)),
     size: product.sizes.length === 1 ? product.sizes[0] : "",
     color: product.colors.length === 1 ? product.colors[0] : "",
   };
@@ -62,7 +63,7 @@ export function ManualOrderForm({ tenantId }: { tenantId: string }) {
 
   const selectedIds = new Set(lines.map((l) => l.product.id));
   const total = lines.reduce(
-    (sum, l) => sum + (Number(l.price) || 0) * (Number(l.quantity) || 0),
+    (sum, l) => sum + (toPesewas(l.price) ?? 0) * (Number(l.quantity) || 0),
     0,
   );
 
@@ -91,10 +92,7 @@ export function ManualOrderForm({ tenantId }: { tenantId: string }) {
   function lineProblem(line: DraftLine): string | null {
     const quantity = Number(line.quantity);
     if (!Number.isInteger(quantity) || quantity < 1) return "Quantity must be at least 1";
-    const price = Number(line.price);
-    if (line.price.trim() === "" || !Number.isInteger(price) || price < 0) {
-      return "Enter a price in whole GHS";
-    }
+    if (toPesewas(line.price) === null) return "Enter a price, like 50 or 4.99";
     if (line.product.sizes.length > 0 && !line.size) return "Pick a size";
     if (line.product.colors.length > 0 && !line.color) return "Pick a color";
     return null;
@@ -128,7 +126,7 @@ export function ManualOrderForm({ tenantId }: { tenantId: string }) {
         items: lines.map((l) => ({
           productId: l.product.id,
           quantity: Number(l.quantity),
-          price: Number(l.price),
+          price: toPesewas(l.price) ?? 0,
           size: l.size || null,
           color: l.color || null,
         })),
@@ -210,9 +208,7 @@ export function ManualOrderForm({ tenantId }: { tenantId: string }) {
                     <div>
                       <Label className="text-xs">Price each (GHS)</Label>
                       <Input
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
+                        inputMode="decimal"
                         value={line.price}
                         onChange={(e) => patchLine(line.key, { price: e.target.value })}
                         className="mt-1"

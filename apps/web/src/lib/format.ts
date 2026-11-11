@@ -7,19 +7,27 @@ export function capLabel(capType: AffiliateCapType, capValue: number) {
   return capType === "FIXED" ? `up to ${formatMoney(capValue)} extra` : `up to ${capValue}% extra`;
 }
 
-export function formatMoney(amount: number) {
+// All money from the API is in pesewas (GHS 4.99 = 499). Shows "GH₵4.99",
+// or "GH₵5" when there are no pesewas. See lib/money.ts for price inputs.
+export function formatMoney(pesewas: number) {
+  const digits = pesewas % 100 === 0 ? 0 : 2;
   return new Intl.NumberFormat("en-GH", {
     style: "currency",
     currency: "GHS",
-    maximumFractionDigits: 0,
-  }).format(amount);
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(pesewas / 100);
 }
 
 // jsPDF's built-in fonts only support WinAnsi encoding, which has no glyph
 // for the Ghana Cedi sign (₵) — it renders as garbled characters. The PDF
 // booklet uses this ASCII-safe variant instead of formatMoney().
-export function formatMoneyAscii(amount: number) {
-  return `GHS ${new Intl.NumberFormat("en-GH", { maximumFractionDigits: 0 }).format(amount)}`;
+export function formatMoneyAscii(pesewas: number) {
+  const digits = pesewas % 100 === 0 ? 0 : 2;
+  return `GHS ${new Intl.NumberFormat("en-GH", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(pesewas / 100)}`;
 }
 
 export function formatDate(iso: string) {

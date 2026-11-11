@@ -39,6 +39,7 @@ import {
 import { decodeCursor, encodeCursor } from '../products/products.utils';
 import { productLabel } from '../common/product-label';
 
+import { ghs } from '../common/money';
 // Name contains `q`, or — for "42" / "#42" — product number 42.
 function productSearch(q: string): Prisma.ProductWhereInput {
   const byName: Prisma.ProductWhereInput = {
@@ -136,7 +137,7 @@ function affiliateBasePrice(product: {
   return product.affiliatePrice ?? product.price;
 }
 
-// FIXED = a flat GHS ceiling on top of the owner's price; PERCENTAGE = a
+// FIXED = a flat ceiling (in pesewas) on top of the owner's price; PERCENTAGE = a
 // ceiling expressed as a percentage of it. The owner's price is always the
 // source of truth — this is recomputed fresh every time, never cached.
 function capCeiling(
@@ -175,7 +176,7 @@ export class AffiliatesService {
     if (capType === 'FIXED') {
       if (capValue < MIN_FIXED_CAP || capValue > MAX_FIXED_CAP) {
         throw new BadRequestException(
-          `Fixed cap must be between GHS ${MIN_FIXED_CAP} and GHS ${MAX_FIXED_CAP}.`,
+          `Fixed cap must be between ${ghs(MIN_FIXED_CAP)} and ${ghs(MAX_FIXED_CAP)}.`,
         );
       }
     } else if (capValue < MIN_PERCENTAGE_CAP || capValue > MAX_PERCENTAGE_CAP) {
@@ -280,7 +281,7 @@ export class AffiliatesService {
 
     const capNote =
       input.capType === 'FIXED'
-        ? `up to GHS ${input.capValue} extra`
+        ? `up to ${ghs(input.capValue)} extra`
         : `up to ${input.capValue}% extra`;
     const history = [
       ...((existing?.history as unknown as HistoryEntry[]) ?? []),
@@ -1043,7 +1044,7 @@ export class AffiliatesService {
       throw new BadRequestException('This relationship is not active.');
     }
     if (!Number.isInteger(price) || price < 0) {
-      throw new BadRequestException('Price must be a whole number of GHS.');
+      throw new BadRequestException('Price must be 0 or more.');
     }
 
     const listing = await this.prisma.affiliateProductListing.findUnique({
@@ -1060,12 +1061,12 @@ export class AffiliatesService {
     const ceiling = capCeiling(existing.capType, existing.capValue, ownerPrice);
     if (price < ownerPrice) {
       throw new BadRequestException(
-        `Your price can't be lower than the owner's price of GHS ${ownerPrice}.`,
+        `Your price can't be lower than the owner's price of ${ghs(ownerPrice)}.`,
       );
     }
     if (price > ceiling) {
       throw new BadRequestException(
-        `Your price can't be higher than GHS ${ceiling} — that's the agreed cap on top of the owner's GHS ${ownerPrice}.`,
+        `Your price can't be higher than ${ghs(ceiling)} — that's the agreed cap on top of the owner's ${ghs(ownerPrice)}.`,
       );
     }
 
@@ -1243,7 +1244,7 @@ export class AffiliatesService {
         ...relationship.history,
         historyEntry(
           'price_clamped',
-          `${listing.relationship.affiliateTenant.name}'s price was reduced from GHS ${oldPrice} to GHS ${ceiling} after the owner's price changed to GHS ${newOwnerPrice}`,
+          `${listing.relationship.affiliateTenant.name}'s price was reduced from ${ghs(oldPrice)} to ${ghs(ceiling)} after the owner's price changed to ${ghs(newOwnerPrice)}`,
         ),
       ];
 
