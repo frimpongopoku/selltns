@@ -18,8 +18,19 @@ import {
 } from "@/components/ui/select";
 import { GalleryPicker } from "@/components/admin/gallery-picker";
 import { TagInput } from "@/components/admin/tag-input";
-import { ProductPicker } from "@/components/admin/product-picker";
-import { AffiliateCollectionItemsManager } from "@/components/admin/affiliate-collection-items-manager";
+import { ProductPickerDialog } from "@/components/admin/product-picker-dialog";
+import {
+  AffiliateCollectionItemsManager,
+  useResellRelationships,
+} from "@/components/admin/affiliate-collection-items-manager";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
 import {
   CollectionItemsOrderList,
   collectionItemKey,
@@ -111,12 +122,20 @@ export function CollectionForm({
   const [isActive, setIsActive] = useState(collection?.isActive ?? true);
   const [saving, setSaving] = useState(false);
 
-  function handleToggleProduct(product: Product) {
-    setItems((prev) =>
-      prev.some((p) => !p.affiliateSource && p.id === product.id)
-        ? prev.filter((p) => p.affiliateSource || p.id !== product.id)
-        : [...prev, product],
-    );
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [resoldOpen, setResoldOpen] = useState(false);
+  const resellRelationships = useResellRelationships(tenantId);
+  const ownItems = useMemo(() => items.filter((p) => !p.affiliateSource), [items]);
+
+  // Applies the picker's selection: products taken out leave, ones still in
+  // keep their place, and new ones go on the end in the order they were picked.
+  function handlePickedProducts(picked: Product[]) {
+    const pickedIds = new Set(picked.map((p) => p.id));
+    setItems((prev) => {
+      const kept = prev.filter((p) => p.affiliateSource || pickedIds.has(p.id));
+      const have = new Set(kept.filter((p) => !p.affiliateSource).map((p) => p.id));
+      return [...kept, ...picked.filter((p) => !have.has(p.id))];
+    });
   }
 
   function handleToggleResold(relationship: AffiliateRelationship, listing: AffiliateListing) {
@@ -298,38 +317,78 @@ export function CollectionForm({
       </div>
 
       <div>
-        <Label>Products in this collection</Label>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Use the arrows to set the order they appear in on your storefront.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+          <div>
+            <Label>Products in this collection</Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use the arrows to set the order they appear in on your storefront.
+            </p>
+          </div>
+          {items.length > 0 && (
+            <div className="flex gap-2">
+              {resellRelationships.length > 0 && (
+                <Button type="button" variant="outline" size="sm" onClick={() => setResoldOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  Resold products
+                </Button>
+              )}
+              <Button type="button" variant="outline" size="sm" onClick={() => setPickerOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add products
+              </Button>
+            </div>
+          )}
+        </div>
         <div className="mt-2">
           <CollectionItemsOrderList
             items={items}
             onMove={handleMoveItem}
             onRemove={handleRemoveItem}
+            onAdd={() => setPickerOpen(true)}
           />
         </div>
+        {items.length === 0 && resellRelationships.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setResoldOpen(true)}
+            className="mt-2 text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            Or add products you resell for other shops
+          </button>
+        )}
       </div>
 
-      <div>
-        <p className="text-sm font-medium">Add your products</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Not-live products can&apos;t be newly added — turn a product live first.
-        </p>
-        <div className="mt-2">
-          <ProductPicker
-            tenantId={tenantId}
-            selectedIds={selectedProductIds}
-            onToggle={handleToggleProduct}
-          />
-        </div>
-      </div>
-
-      <AffiliateCollectionItemsManager
+      <ProductPickerDialog
         tenantId={tenantId}
-        memberListingIds={memberListingIds}
-        onToggle={handleToggleResold}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        selected={ownItems}
+        onDone={handlePickedProducts}
       />
+
+      <Dialog open={resoldOpen} onOpenChange={setResoldOpen}>
+        <DialogContent className="flex max-h-[90dvh] flex-col gap-3 sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add products you resell</DialogTitle>
+            <DialogDescription>
+              Products from shops you&apos;re an affiliate for. They can go anywhere in the collection&apos;s order.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+            <AffiliateCollectionItemsManager
+              tenantId={tenantId}
+              relationships={resellRelationships}
+              memberListingIds={memberListingIds}
+              onToggle={handleToggleResold}
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button type="button" onClick={() => setResoldOpen(false)}>
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="rounded-lg border p-4">
         <label className="flex items-center gap-2 text-sm font-medium">

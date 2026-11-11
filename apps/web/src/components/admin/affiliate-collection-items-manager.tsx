@@ -27,18 +27,11 @@ import { productName } from "@/lib/product-name";
 // useAffiliateListingLibrary / OwnerResellableList below) — same
 // server-side cursor pagination as ProductPicker, so a catalog running
 // into the thousands never gets loaded into the page all at once.
-export function AffiliateCollectionItemsManager({
-  tenantId,
-  memberListingIds,
-  onToggle,
-}: {
-  tenantId: string;
-  memberListingIds: Set<string>;
-  onToggle: (relationship: AffiliateRelationship, listing: AffiliateListing) => void;
-}) {
-  const [loading, setLoading] = useState(true);
+// The shops this tenant actively resells for — empty while loading, or when
+// there are none (or the fetch failed), which callers treat as "nothing to
+// resell".
+export function useResellRelationships(tenantId: string): AffiliateRelationship[] {
   const [relationships, setRelationships] = useState<AffiliateRelationship[]>([]);
-
   useEffect(() => {
     let cancelled = false;
     getIncomingAffiliates(tenantId)
@@ -46,36 +39,37 @@ export function AffiliateCollectionItemsManager({
         if (!cancelled) setRelationships(result.filter((r) => r.status === "ACTIVE"));
       })
       .catch(() => {
-        // Nothing to resell, or the fetch failed — either way there's
-        // nothing useful to show here.
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        // Nothing useful to show either way.
       });
     return () => {
       cancelled = true;
     };
   }, [tenantId]);
+  return relationships;
+}
 
-  if (loading || relationships.length === 0) return null;
-
+export function AffiliateCollectionItemsManager({
+  tenantId,
+  relationships,
+  memberListingIds,
+  onToggle,
+}: {
+  tenantId: string;
+  relationships: AffiliateRelationship[];
+  memberListingIds: Set<string>;
+  onToggle: (relationship: AffiliateRelationship, listing: AffiliateListing) => void;
+}) {
   return (
-    <div>
-      <p className="text-sm font-medium">Add products you resell</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Products from shops you&apos;re an affiliate for — they can go anywhere in the order above.
-      </p>
-      <div className="mt-3 flex flex-col gap-6">
-        {relationships.map((relationship) => (
-          <OwnerResellableList
-            key={relationship.id}
-            tenantId={tenantId}
-            relationship={relationship}
-            memberListingIds={memberListingIds}
-            onToggle={(listing) => onToggle(relationship, listing)}
-          />
-        ))}
-      </div>
+    <div className="flex flex-col gap-6">
+      {relationships.map((relationship) => (
+        <OwnerResellableList
+          key={relationship.id}
+          tenantId={tenantId}
+          relationship={relationship}
+          memberListingIds={memberListingIds}
+          onToggle={(listing) => onToggle(relationship, listing)}
+        />
+      ))}
     </div>
   );
 }

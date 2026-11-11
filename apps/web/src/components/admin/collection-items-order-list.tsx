@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductThumb } from "@/components/admin/product-picker";
@@ -20,16 +20,24 @@ export function CollectionItemsOrderList({
   items,
   onMove,
   onRemove,
+  onAdd,
 }: {
   items: Product[];
+  onAdd: () => void;
   onMove: (key: string, direction: "up" | "down") => void;
   onRemove: (product: Product) => void;
 }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-        No products yet — add some below.
-      </p>
+      <button
+        type="button"
+        onClick={onAdd}
+        className="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
+      >
+        <Plus className="h-5 w-5" />
+        <span className="font-medium text-foreground">Add products</span>
+        No products in this collection yet.
+      </button>
     );
   }
 
