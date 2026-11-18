@@ -16,8 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { ChipGroup } from "@/components/photo-drop/chip-group";
-import { COLOR_PRESETS, SIZE_PRESETS, swatchFor } from "@/lib/drop-options";
+import { SizeColorPickers } from "@/components/photo-drop/chip-group";
 import { DEFAULT_POSITION } from "@/lib/image-focus";
 import { formatMoney } from "@/lib/format";
 import { toPesewas } from "@/lib/money";
@@ -69,17 +68,6 @@ export function SheetEditor({
 
   const images = form.images;
   const photo = images[photoIndex] ?? images[0];
-  const sizeOptions = [
-    ...SIZE_PRESETS,
-    ...form.sizes.filter(
-      (s) => !SIZE_PRESETS.some((p) => p.toLowerCase() === s.toLowerCase()),
-    ),
-  ];
-  const colorOptions = [
-    ...COLOR_PRESETS.map((c) => c.label),
-    ...form.colors.filter((c) => !swatchFor(c)),
-  ];
-
   async function run(
     kind: "save" | "undo" | "delete",
     action: () => Promise<void>,
@@ -315,20 +303,11 @@ export function SheetEditor({
               )}
             </div>
 
-            <ChipGroup
-              label="Sizes available"
-              options={sizeOptions}
-              selected={form.sizes}
-              onChange={(sizes) => patch({ sizes })}
-              addLabel="Add a size"
-            />
-            <ChipGroup
-              label="Colors"
-              options={colorOptions}
-              selected={form.colors}
-              onChange={(colors) => patch({ colors })}
-              addLabel="Add a color"
-              rounded
+            <SizeColorPickers
+              sizes={form.sizes}
+              colors={form.colors}
+              onSizesChange={(sizes) => patch({ sizes })}
+              onColorsChange={(colors) => patch({ colors })}
             />
 
             <div className="flex flex-col gap-2">

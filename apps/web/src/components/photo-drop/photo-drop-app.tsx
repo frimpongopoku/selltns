@@ -24,10 +24,9 @@ import {
 } from "@/lib/api";
 import { uploadDropPhoto } from "@/lib/upload";
 import { ACCEPTED_IMAGE_INPUT_ACCEPT, isHeicFile, prepareImageFile } from "@/lib/media-constraints";
-import { COLOR_PRESETS, SIZE_PRESETS, swatchFor } from "@/lib/drop-options";
 import { cn } from "@/lib/utils";
 import { PhotoDropHelp } from "./photo-drop-help";
-import { ChipGroup } from "./chip-group";
+import { SizeColorPickers } from "./chip-group";
 import { assetPosition } from "@/lib/image-focus";
 import type { DropItem, DropItemInput, PhotoDropPublic } from "@/lib/types";
 
@@ -393,7 +392,7 @@ export function PhotoDropApp({ token, initial }: { token: string; initial: Photo
           <div className="mt-10 flex flex-col items-center gap-2 text-center">
             <p className="font-medium">No photos yet</p>
             <p className="max-w-xs text-sm text-muted-foreground">
-              Tap “Take or choose photos” to add product photos. You can add prices, sizes and colors after.
+              Tap “Take or choose photos” to add product photos. You can add prices and other details after.
             </p>
           </div>
         ) : (
@@ -637,11 +636,6 @@ function ItemEditor({
     }
   }
 
-  const sizeOptions = [...SIZE_PRESETS, ...sizes.filter((s) => !SIZE_PRESETS.some((p) => p.toLowerCase() === s.toLowerCase()))];
-  const colorOptions = [
-    ...COLOR_PRESETS.map((c) => c.label),
-    ...colors.filter((c) => !swatchFor(c)),
-  ];
   const isLast = position >= total;
 
   async function save() {
@@ -826,22 +820,7 @@ function ItemEditor({
               </div>
             </div>
 
-            <ChipGroup
-              label="Sizes available"
-              options={sizeOptions}
-              selected={sizes}
-              onChange={setSizes}
-              addLabel="Add a size"
-            />
-
-            <ChipGroup
-              label="Colors"
-              options={colorOptions}
-              selected={colors}
-              onChange={setColors}
-              addLabel="Add a color"
-              rounded
-            />
+            <SizeColorPickers sizes={sizes} colors={colors} onSizesChange={setSizes} onColorsChange={setColors} />
 
             <div className="flex flex-col gap-2">
               <label htmlFor="drop-name" className="text-sm font-semibold">

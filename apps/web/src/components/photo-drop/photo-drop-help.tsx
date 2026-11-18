@@ -51,7 +51,7 @@ function AdminHelp() {
           steps={[
             "Copy the team link on this page and send it to whoever takes the photos.",
             "They take or upload photos from any phone or computer, and group the angles of the same product.",
-            "They add a price, sizes, colors and a name. Items with a price show as Ready.",
+            "They add a price, plus sizes and colors when an item comes in them, and an optional name. Items with a price show as Ready.",
             "If a product isn't available, they mark it Unavailable instead of filling it in. Those are greyed out here so you can remove them.",
             <>
               You review them here and choose: <b className="text-foreground">Create products</b> (opens Add several,
@@ -68,7 +68,7 @@ function AdminHelp() {
               In the Gallery, tap <b className="text-foreground">Select photos</b>, pick photos, then{" "}
               <b className="text-foreground">Send to photo drop</b>, as separate products or as one product.
             </>,
-            "They appear on the team link. The team fills in price, sizes and colors, and can add or remove photos.",
+            "They appear on the team link. The team fills in the price (and sizes or colors if the item has them), and can add or remove photos.",
             "You review them here and create products, the same as above.",
           ]}
         />
@@ -116,7 +116,7 @@ function TeamHelp({ shopName }: { shopName: string }) {
               Several photos of the same product? Tap <b className="text-foreground">Select</b>, tap them, then{" "}
               <b className="text-foreground">Group</b>.
             </>,
-            "Tap an item to add its price, sizes and colors. A name is optional. You can also add or remove photos there.",
+            "Tap an item to add its price. Tap Add sizes or Add colors only if it comes in them. A name is optional. You can also add or remove photos there.",
             <>
               Product not available? Tap <b className="text-foreground">Unavailable</b> on the item (or select several
               and tap it). No details needed. You can undo it any time.

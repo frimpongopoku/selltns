@@ -206,7 +206,7 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
               <p className="font-medium">Team link</p>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 Turn it on to get a link your photographers can open on their phones — no login. They drop photos and
-                add prices, sizes and colors; you review everything here.
+                add prices (and sizes or colors when an item has them); you review everything here.
               </p>
             </div>
             <Button onClick={() => handleToggleLink(true)} className="gap-1.5">
@@ -377,9 +377,9 @@ export function PhotoDropManager({ tenantId }: { tenantId: string }) {
                       No price yet
                     </span>
                   )}
-                  <p className="truncate text-xs text-muted-foreground">
-                    {item.sizes.length > 0 ? item.sizes.join(" · ") : "No sizes"}
-                  </p>
+                  {item.sizes.length > 0 && (
+                    <p className="truncate text-xs text-muted-foreground">{item.sizes.join(" · ")}</p>
+                  )}
                   <div className="mt-auto flex items-center gap-1 pt-1">
                     {item.colors.slice(0, 6).map((c) => (
                       <span
