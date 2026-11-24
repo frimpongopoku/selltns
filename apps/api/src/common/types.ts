@@ -178,6 +178,10 @@ export interface OrderItem {
   // The option the customer picked, when the product offers sizes/colors.
   size?: string | null;
   color?: string | null;
+  // Read-time only (not stored): the product's current first photo and its
+  // focus point, added by OrdersService.withItemImages.
+  image?: string | null;
+  imageFocus?: string | null;
 }
 
 export interface Order {

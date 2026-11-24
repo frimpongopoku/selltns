@@ -400,6 +400,10 @@ export interface OrderItem {
   // The option the customer picked, when the product offers sizes/colors.
   size?: string | null;
   color?: string | null;
+  // Added by the API at read time (not stored): the product's current first
+  // photo and its focus point. Missing if the product was deleted.
+  image?: string | null;
+  imageFocus?: string | null;
 }
 
 export interface Order {

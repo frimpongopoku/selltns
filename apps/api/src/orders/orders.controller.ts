@@ -10,7 +10,12 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { OrdersService, type ManualOrderInput } from './orders.service';
-import type { OrderItem, OrderStatus, OrderSource } from '../common/types';
+import type {
+  Order,
+  OrderItem,
+  OrderStatus,
+  OrderSource,
+} from '../common/types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -28,6 +33,12 @@ interface CreateOrderItemInput {
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  private async withImages<T extends Order | Order[]>(
+    result: Promise<T>,
+  ): Promise<T> {
+    return this.ordersService.withItemImages(await result);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Get()
@@ -35,13 +46,13 @@ export class OrdersController {
     @CurrentUser() user: SessionPayload,
     @Query('source') source?: OrderSource,
   ) {
-    return this.ordersService.findAll(user.tenantId, source);
+    return this.withImages(this.ordersService.findAll(user.tenantId, source));
   }
 
   // Public — the customer-facing tracking page reads by token, no login.
   @Get('track/:token')
   findByTrackingToken(@Param('token') token: string) {
-    return this.ordersService.findByTrackingToken(token);
+    return this.withImages(this.ordersService.findByTrackingToken(token));
   }
 
   // Public — anyone with the tracking link can view the order, but cancelling
@@ -52,14 +63,16 @@ export class OrdersController {
     @Param('token') token: string,
     @Body() body: { paymentReference: string },
   ) {
-    return this.ordersService.cancelByToken(token, body.paymentReference);
+    return this.withImages(
+      this.ordersService.cancelByToken(token, body.paymentReference),
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: SessionPayload) {
-    return this.ordersService.findOne(id, user.tenantId);
+    return this.withImages(this.ordersService.findOne(id, user.tenantId));
   }
 
   // Public — this is checkout: a guest customer creates their own booking.
@@ -78,7 +91,7 @@ export class OrdersController {
       items: CreateOrderItemInput[];
     },
   ) {
-    return this.ordersService.create(body);
+    return this.withImages(this.ordersService.create(body));
   }
 
   // An order the vendor took outside the storefront (in person, by phone,
@@ -90,14 +103,16 @@ export class OrdersController {
     @CurrentUser() user: SessionPayload,
     @Body() body: ManualOrderInput,
   ) {
-    return this.ordersService.createManual(user.tenantId, body);
+    return this.withImages(
+      this.ordersService.createManual(user.tenantId, body),
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Patch(':id/seen')
   markSeen(@Param('id') id: string, @CurrentUser() user: SessionPayload) {
-    return this.ordersService.markSeen(id, user.tenantId);
+    return this.withImages(this.ordersService.markSeen(id, user.tenantId));
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -108,11 +123,13 @@ export class OrdersController {
     @CurrentUser() user: SessionPayload,
     @Body() body: { status: OrderStatus; note?: string },
   ) {
-    return this.ordersService.updateStatus(
-      id,
-      user.tenantId,
-      body.status,
-      body.note,
+    return this.withImages(
+      this.ordersService.updateStatus(
+        id,
+        user.tenantId,
+        body.status,
+        body.note,
+      ),
     );
   }
 
@@ -120,7 +137,7 @@ export class OrdersController {
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Patch(':id/reopen')
   reopen(@Param('id') id: string, @CurrentUser() user: SessionPayload) {
-    return this.ordersService.reopen(id, user.tenantId);
+    return this.withImages(this.ordersService.reopen(id, user.tenantId));
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -131,11 +148,21 @@ export class OrdersController {
     @CurrentUser() user: SessionPayload,
     @Body() body: { items: OrderItem[]; note?: string },
   ) {
-    return this.ordersService.modifyItems(
-      id,
-      user.tenantId,
-      body.items,
-      body.note,
+    return this.withImages(
+      this.ordersService.modifyItems(
+        id,
+        user.tenantId,
+        // image/imageFocus are read-time only — never store them.
+        body.items.map((item) => ({
+          productId: item.productId,
+          title: item.title,
+          quantity: item.quantity,
+          priceAtOrder: item.priceAtOrder,
+          size: item.size,
+          color: item.color,
+        })),
+        body.note,
+      ),
     );
   }
 
@@ -147,14 +174,18 @@ export class OrdersController {
     @CurrentUser() user: SessionPayload,
     @Body() body: { note: string },
   ) {
-    return this.ordersService.addOrderUpdate(id, user.tenantId, body.note);
+    return this.withImages(
+      this.ordersService.addOrderUpdate(id, user.tenantId, body.note),
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('OWNER', 'MANAGER', 'STAFF')
   @Patch(':id/request-balance')
   requestBalance(@Param('id') id: string, @CurrentUser() user: SessionPayload) {
-    return this.ordersService.requestBalance(id, user.tenantId);
+    return this.withImages(
+      this.ordersService.requestBalance(id, user.tenantId),
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -164,6 +195,8 @@ export class OrdersController {
     @Param('id') id: string,
     @CurrentUser() user: SessionPayload,
   ) {
-    return this.ordersService.markBalancePaid(id, user.tenantId);
+    return this.withImages(
+      this.ordersService.markBalancePaid(id, user.tenantId),
+    );
   }
 }

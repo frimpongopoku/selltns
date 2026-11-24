@@ -264,6 +264,34 @@ export class OrdersService {
     };
   }
 
+  // Order items only snapshot title/price, so the photo is looked up from
+  // the product at read time (current first image). Works for old orders too;
+  // an item whose product was deleted just has no image.
+  async withItemImages<T extends Order | Order[]>(orders: T): Promise<T> {
+    const list: Order[] = Array.isArray(orders) ? orders : [orders];
+    const ids = [
+      ...new Set(list.flatMap((o) => o.items.map((i) => i.productId))),
+    ];
+    if (!ids.length) return orders;
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, images: true, imageFocus: true },
+    });
+    const byId = new Map(products.map((p) => [p.id, p]));
+    for (const order of list) {
+      order.items = order.items.map((item) => {
+        const product = byId.get(item.productId);
+        const image = product?.images[0] ?? null;
+        const focus =
+          image && product
+            ? ((product.imageFocus as Record<string, string>)[image] ?? null)
+            : null;
+        return { ...item, image, imageFocus: focus };
+      });
+    }
+    return orders;
+  }
+
   async findAll(
     tenantId: string,
     source?: 'DIRECT' | 'AFFILIATE',

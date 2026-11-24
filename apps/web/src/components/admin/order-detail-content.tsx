@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ImageOff } from "lucide-react";
+import { getCanonicalUrl } from "@/lib/canonical";
 import { formatMoney, formatDateTime } from "@/lib/format";
 import { itemOptionsLabel } from "@/lib/item-options";
 import { StatusBadge } from "@/components/storefront/status-badge";
@@ -33,6 +35,8 @@ export function OrderDetailContent({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order.id]);
+
+  const trackingUrl = getCanonicalUrl(tenant, `/track/${order.trackingToken}`);
 
   function handleUpdated(updated: Order) {
     setOrder(updated);
@@ -66,15 +70,31 @@ export function OrderDetailContent({
 
       <Card className="mt-6 divide-y p-0">
         {order.items.map((item, index) => (
-          <div key={index} className="flex justify-between px-5 py-3.5 text-sm">
-            <span>
+          <div key={index} className="flex items-center gap-3 px-4 py-3 text-sm">
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
+              {item.image ? (
+                <Image
+                  src={item.image}
+                  alt=""
+                  fill
+                  sizes="56px"
+                  className="object-cover"
+                  style={item.imageFocus ? { objectPosition: item.imageFocus } : undefined}
+                />
+              ) : (
+                <ImageOff className="absolute inset-0 m-auto h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+            <span className="min-w-0 flex-1 break-words">
               {item.title}
               {itemOptionsLabel(item) && (
                 <span className="font-medium"> ({itemOptionsLabel(item)})</span>
               )}{" "}
-              <span className="text-muted-foreground">× {item.quantity}</span>
+              <span className="whitespace-nowrap text-muted-foreground">× {item.quantity}</span>
             </span>
-            <span>{formatMoney(item.priceAtOrder * item.quantity)}</span>
+            <span className="shrink-0 tabular-nums">
+              {formatMoney(item.priceAtOrder * item.quantity)}
+            </span>
           </div>
         ))}
         <div className="flex justify-between px-5 py-3.5 font-medium">
@@ -102,10 +122,16 @@ export function OrderDetailContent({
         </ol>
       </div>
 
-      <p className="mt-8 text-xs text-muted-foreground">
-        Customer tracking link:{" "}
-        <span className="font-mono">/{tenant.slug}/track/{order.trackingToken}</span>
-      </p>
+      <a
+        href={trackingUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-8 flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ExternalLink className="h-3 w-3 shrink-0" />
+        <span>Customer&apos;s order page:</span>
+        <span className="min-w-0 truncate font-mono underline underline-offset-2">{trackingUrl}</span>
+      </a>
     </div>
   );
 }
